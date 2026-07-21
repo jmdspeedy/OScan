@@ -1,65 +1,73 @@
 # OScan
 
-OScan is a privacy-first, offline document-scanning project written in Kotlin. The current Phase 1 MVP provides a desktop-testable engine that detects a document, corrects its perspective, applies a high-contrast scan filter, and exports the result as a PDF.
+OScan is a privacy-first, offline document-scanning app written in Kotlin.
 
-All document detection and image processing run locally. Images and telemetry are not sent to a remote service.
+All document detection and image processing run locally on-device using OpenCV and ONNX Runtime. Images and telemetry are never sent to a remote service.
 
 ## Current capabilities
 
-- Hybrid four-corner detection using an offline DocQuadNet ONNX model with a classical OpenCV line-based fallback
-- Perspective correction from detected or supplied corners
-- MVP grayscale “Magic” filter using CLAHE and adaptive thresholding
-- Single-page A4 PDF export
-- Desktop batch runner with five checked-in visual regression fixtures
-
-Phase 2 will port this workflow to Android with a basic Jetpack Compose UI, interactive crop handles, system image selection, PDF saving, and sharing.
+- **Offline Machine Learning & Classical Detection**: Hybrid four-corner detection using MakeACopy's DocQuadNet ONNX model with a robust OpenCV line-based classical fallback.
+- **Interactive Jetpack Compose UI**: 4 draggable corner handles clamped to image bounds, live polygon rendering, and corner geometry validation.
+- **Perspective Correction**: Precise 4-point perspective warp from confirmed corners.
+- **Magic Enhancement Filter**: Grayscale + CLAHE + adaptive thresholding for clear background whitening and legible text.
+- **Single-page PDF Export**: SAF (Storage Access Framework) saving and Android content URI sharing via system share sheet.
+- **Desktop Tester**: Desktop batch harness (`:desktop-tester`) preserving desktop visual regression testing.
 
 ## Repository layout
 
 ```text
-core-engine/      Kotlin/JVM detection, crop, enhancement, and PDF pipeline
-desktop-tester/   Batch CLI for exercising the Phase 1 pipeline
+core-engine/      Platform-agnostic Kotlin detection, crop, filter, geometry & coordinate logic
+android-app/      Jetpack Compose Material 3 Android app module
+desktop-tester/   Phase 1 desktop batch runner for visual regression testing
 docs/             Design, testing, and Phase 2 implementation documentation
-test-images/      Phase 1 inputs and manually approved visual references
+test-images/      Inputs and manually approved visual references
 ```
 
 ## Requirements
 
 - JDK 17 or newer
+- Android SDK (API level 34 build-tools, minSdk 26)
 - Internet access on the first build to resolve Gradle dependencies
-- A compatible Microsoft Visual C++ runtime on Windows if OpenCV native loading fails
+- A compatible Microsoft Visual C++ runtime on Windows for desktop OpenCV native loading
 
-The Gradle wrapper is included, so a separate Gradle installation is unnecessary.
+The Gradle wrapper is included.
 
-## Run the desktop pipeline
+## Build and Run Instructions
 
-From the repository root on Windows:
+### 1. Build Android Debug APK
+
+```powershell
+.\gradlew.bat :android-app:assembleDebug
+```
+
+The APK will be generated at `android-app/build/outputs/apk/debug/android-app-debug.apk`.
+
+### 2. Run Desktop Visual Tester
 
 ```powershell
 .\gradlew.bat :desktop-tester:run
 ```
 
-The runner processes each `.jpg` in `test-images/` except names containing `_expected`. Generated boundary overlays, corrected crops, filtered images, and PDFs are written to `test-images/output/`.
+Output artifacts (boundary overlay, crop, magic filter, PDF) will be written to `test-images/output/`.
 
-See [the Phase 1 testing guide](docs/testing_guide.md) for acceptance checks and troubleshooting.
+### 3. Run Unit Tests
+
+```powershell
+.\gradlew.bat :core-engine:test :android-app:test
+```
 
 ## Documentation
 
 - [Design specification](docs/design_doc.md)
 - [Phase 1 testing guide](docs/testing_guide.md)
+- [Android Studio run and testing guide](docs/android_testing_guide.md)
 - [Phase 2 Android implementation instructions](docs/phase2_instructions.md)
 
 ## Technology
 
-- Kotlin/JVM 1.9.22 and Java 17
-- OpenCV 4.9 desktop bindings
-- ONNX Runtime 1.24.1
-- Apache PDFBox 3.0.1
-- Gradle 8.5
-
-The DocQuadNet model is distributed with its upstream license and notice in `core-engine/src/main/resources/docquad/`.
-
-## Project status
-
-Phase 1 is an MVP. The checked-in fixtures provide manual visual regression coverage; automated image-quality comparison and Android support are planned work. The current Magic filter favors readable black-and-white output and is expected to evolve after the initial Android port.
-
+- Kotlin 1.9.22 & Java 17
+- Jetpack Compose & Material 3
+- OpenCV for Android (`com.quickbirdstudios:opencv-android`) / Desktop OpenPnP OpenCV 4.9
+- ONNX Runtime for Android 1.22.0 / JVM 1.24.1
+- Android Platform `PdfDocument` / Desktop Apache PDFBox
+- Gradle 8.7 and Android Gradle Plugin 8.5.2

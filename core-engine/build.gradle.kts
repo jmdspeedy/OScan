@@ -15,4 +15,10 @@ dependencies {
     
     // Apache PDFBox for PDF Generation
     implementation("org.apache.pdfbox:pdfbox:3.0.1")
+
+    testImplementation(kotlin("test"))
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

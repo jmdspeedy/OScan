@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 rootProject.name = "OScan"
 include(":core-engine")
 include(":desktop-tester")
+include(":android-app")

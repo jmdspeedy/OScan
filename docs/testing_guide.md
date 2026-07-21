@@ -90,4 +90,4 @@ Try a smaller source image. Classical detection works on a downscaled copy, but 
 
 ## Phase 2 testing handoff
 
-Phase 2 must keep this desktop regression check working. Android-specific unit, instrumentation, manual-device, memory, rotation, storage, and share-flow checks are specified in [`phase2_instructions.md`](phase2_instructions.md).
+Phase 2 must keep this desktop regression check working. Follow the hands-on setup and validation steps in the [Android Studio run and testing guide](android_testing_guide.md). The original implementation requirements remain in [`phase2_instructions.md`](phase2_instructions.md).

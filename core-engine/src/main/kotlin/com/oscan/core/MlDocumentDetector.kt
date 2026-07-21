@@ -22,10 +22,11 @@ import kotlin.math.roundToInt
  * The model consumes a mid-gray-letterboxed 256x256 RGB tensor and returns one 64x64 heatmap for
  * each corner in TL/TR/BR/BL order. No image or telemetry leaves the device.
  */
-internal class MlDocumentDetector private constructor(
+class MlDocumentDetector private constructor(
     private val environment: OrtEnvironment,
     private val session: OrtSession
 ) : AutoCloseable {
+
     private data class Letterbox(
         val scale: Double,
         val offsetX: Double,
@@ -155,10 +156,8 @@ internal class MlDocumentDetector private constructor(
         private const val OUTPUT_SIZE = 64
         private const val MODEL_RESOURCE = "/docquad/docquadnet256_trained_opset17.ort"
 
-        fun loadDefaultOrNull(): MlDocumentDetector? {
+        fun loadFromBytesOrNull(bytes: ByteArray): MlDocumentDetector? {
             return try {
-                val bytes = MlDocumentDetector::class.java.getResourceAsStream(MODEL_RESOURCE)?.use { it.readBytes() }
-                    ?: return null
                 val environment = OrtEnvironment.getEnvironment()
                 val options = OrtSession.SessionOptions().apply {
                     setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
@@ -169,5 +168,12 @@ internal class MlDocumentDetector private constructor(
                 null
             }
         }
+
+        fun loadDefaultOrNull(): MlDocumentDetector? {
+            val bytes = MlDocumentDetector::class.java.getResourceAsStream(MODEL_RESOURCE)?.use { it.readBytes() }
+                ?: return null
+            return loadFromBytesOrNull(bytes)
+        }
+
     }
 }

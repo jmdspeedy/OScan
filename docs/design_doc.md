@@ -11,7 +11,7 @@ OScan is a privacy-first, open-source document scanner. Image analysis is perfor
 - `test-images/` contains the five Phase 1 input/reference pairs.
 - `test-images/output/` contains the generated diagnostic images and PDFs.
 
-The root build uses Kotlin 1.9.22, Gradle 8.5, and a Java 17 toolchain.
+The root build uses Kotlin 1.9.22, Gradle 8.7, Android Gradle Plugin 8.5.2, and a Java 17 toolchain.
 
 ## Phase 1 — completed MVP
 
