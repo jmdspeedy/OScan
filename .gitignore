@@ -1,0 +1,25 @@
+# Gradle and build output
+.gradle/
+**/build/
+gradle-bin/
+
+# Local Android/SDK configuration
+local.properties
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local agent configuration
+.agents/
+.codex/
+
+# Generated Phase 1 artifacts
+test-images/output/
+

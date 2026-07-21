@@ -1,0 +1,9 @@
+DocQuadNet-256 model
+Copyright 2025 Christian Kierdorf / MakeACopy contributors
+
+Source: https://github.com/egdels/makeacopy
+License: Apache License 2.0
+Model SHA-256: AAEF348EB81709D26F7E8974401795B141D70BA88BC69792C779FBAE102EADAA
+
+This product includes an unmodified exported inference model from MakeACopy. The model is used
+locally for document-corner detection; images are not transmitted to any service.
