@@ -1,6 +1,6 @@
 # OScan Phase 1 Testing Guide
 
-This guide describes the Phase 1 desktop batch harness as it exists in the repository. It exercises corner detection, perspective correction, the MVP magic filter, and single-page PDF export without an Android emulator.
+This guide describes the desktop batch harness as it exists in the repository. It exercises corner detection, perspective correction, all document treatments, and single-page PDF export without an Android emulator.
 
 ## Prerequisites
 
@@ -39,7 +39,7 @@ The runner creates `test-images/output/` when needed. For each successfully proc
 
 1. `<name>_step1_box.jpg` — the overlay should follow the actual page boundary and label four sensible corners.
 2. `<name>_step2_cropped.jpg` — the page should be rectangular, upright relative to the supplied corner order, and should not omit meaningful page content.
-3. `<name>_step3_magic.jpg` — text should remain legible and the background should generally be white. The current filter is intentionally a grayscale adaptive binary filter; color retention and perfect shadow removal are not Phase 1 pass criteria.
+3. `<name>_step3_magic.jpg` — the default treatment should whiten uneven paper, sharpen text, and retain document colours. The runner also writes `_step3_grayscale.jpg` and `_step3_black_white.jpg` treatment previews.
 4. `<name>_step4_output.pdf` — the PDF should open, contain one centered page image, preserve the image aspect ratio, and fit on A4 without clipping.
 
 The console should finish with `Pipeline completed successfully for all images!`. Note that this message means the batch loop finished; individual detection failures are printed as errors and must still be reviewed.
@@ -54,7 +54,7 @@ The console should finish with `Pipeline completed successfully for all images!`
 - Each generated PDF opens successfully and shows the corresponding filtered result.
 - No network service is contacted while processing images; dependency download during the build is separate from runtime processing.
 
-Because the current project has no automated assertions, this is a build plus manual visual acceptance test, not a unit-test suite.
+Projective aspect recovery and treatment channel/resolution behavior have automated core tests. Output quality still requires visual comparison because lighting and page content vary.
 
 ## Adding a regression image
 

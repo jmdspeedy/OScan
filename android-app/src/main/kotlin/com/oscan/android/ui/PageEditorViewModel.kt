@@ -126,10 +126,10 @@ class PageEditorViewModel(
         viewModelScope.launch {
             _uiState.value = PageEditorUiState.Processing("Straightening page…")
             runCatching {
-                scannerEngine.cropAndFilter(uri, current.corners, FilterType.ORIGINAL)
+                scannerEngine.cropAndFilter(uri, current.corners, FilterType.MAGIC)
             }.onSuccess { bitmap ->
-                treatmentCache[FilterType.ORIGINAL] = bitmap
-                _uiState.value = PageEditorUiState.PreviewReady(FilterType.ORIGINAL, bitmap)
+                treatmentCache[FilterType.MAGIC] = bitmap
+                _uiState.value = PageEditorUiState.PreviewReady(FilterType.MAGIC, bitmap)
             }.onFailure {
                 _uiState.value = PageEditorUiState.Error("Could not crop page with selected edges.", current)
             }

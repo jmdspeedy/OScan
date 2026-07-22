@@ -37,7 +37,7 @@ data class SessionPage(
     val corners: CornerPoints? = null,
     val initialCorners: CornerPoints? = null,
     val isAutoDetected: Boolean = false,
-    val filter: FilterType = FilterType.ORIGINAL,
+    val filter: FilterType = FilterType.MAGIC,
     val failureMessage: String? = null
 )
 
@@ -237,7 +237,7 @@ class ScanSessionStore(
         outputWidth = optInt("outputWidth"), outputHeight = optInt("outputHeight"),
         corners = optJSONArray("corners")?.toCorners(), initialCorners = optJSONArray("initialCorners")?.toCorners(),
         isAutoDetected = optBoolean("isAutoDetected"),
-        filter = runCatching { FilterType.valueOf(optString("filter")) }.getOrDefault(FilterType.ORIGINAL),
+        filter = runCatching { FilterType.valueOf(optString("filter")) }.getOrDefault(FilterType.MAGIC),
         failureMessage = nullableString("failureMessage")
     )
 

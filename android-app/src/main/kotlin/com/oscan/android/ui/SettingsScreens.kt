@@ -64,6 +64,7 @@ import com.oscan.android.data.preferences.PdfPageSize
 import com.oscan.android.data.preferences.ThemeChoice
 import com.oscan.android.data.preferences.UserPreferences
 import com.oscan.android.data.storage.DocumentFileStore
+import com.oscan.core.model.FilterType
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -178,40 +179,38 @@ fun EnhancementSettingsScreen(
             Text("Default Enhancement Treatment", style = MaterialTheme.typography.titleMedium)
             Text("Choose the default processing applied when scanning pages.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onDefaultTreatmentChanged("MAGIC") }
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = preferences.defaultTreatment == "MAGIC",
-                    onClick = { onDefaultTreatmentChanged("MAGIC") }
-                )
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text("Magic (Recommended)", style = MaterialTheme.typography.titleMedium)
-                    Text("Optimizes document contrast, cleans background, and sharpens text locally.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val descriptions = mapOf(
+                FilterType.MAGIC to "Whitens paper and sharpens text while preserving document colours.",
+                FilterType.ORIGINAL to "Keeps the full-colour capture without enhancement.",
+                FilterType.GRAYSCALE to "Removes colour while retaining smooth tones and fine detail.",
+                FilterType.BLACK_WHITE to "Creates a high-contrast binary page for plain text documents."
+            )
+            FilterType.entries.forEachIndexed { index, filter ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onDefaultTreatmentChanged(filter.name) }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = preferences.defaultTreatment == filter.name,
+                        onClick = { onDefaultTreatmentChanged(filter.name) }
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            if (filter == FilterType.MAGIC) "Magic (Recommended)" else filter.displayName,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            descriptions.getValue(filter),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-            }
-            HorizontalDivider()
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onDefaultTreatmentChanged("ORIGINAL") }
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = preferences.defaultTreatment == "ORIGINAL",
-                    onClick = { onDefaultTreatmentChanged("ORIGINAL") }
-                )
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text("Original photo", style = MaterialTheme.typography.titleMedium)
-                    Text("Keeps natural full-color capture without enhancement.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                if (index < FilterType.entries.lastIndex) HorizontalDivider()
             }
         }
     }

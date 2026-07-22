@@ -53,7 +53,9 @@ data class CornerPoints(
 /**
  * Enum defining available image enhancement filters.
  */
-enum class FilterType {
-    ORIGINAL,
-    MAGIC
+enum class FilterType(val displayName: String) {
+    MAGIC("Magic"),
+    ORIGINAL("Original"),
+    GRAYSCALE("Gray"),
+    BLACK_WHITE("B&W")
 }

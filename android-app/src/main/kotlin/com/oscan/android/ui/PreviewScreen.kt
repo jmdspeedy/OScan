@@ -65,12 +65,12 @@ fun PreviewScreen(
                 ) {
                     Text("Treatment", style = MaterialTheme.typography.titleMedium)
                     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                        FilterType.values().forEachIndexed { index, filter ->
+                        FilterType.entries.forEachIndexed { index, filter ->
                             SegmentedButton(
                                 selected = selectedFilter == filter,
                                 onClick = { onFilterSelected(filter) },
-                                shape = SegmentedButtonDefaults.itemShape(index, FilterType.values().size),
-                                label = { Text(filter.name.lowercase().replaceFirstChar { it.uppercase() }) }
+                                shape = SegmentedButtonDefaults.itemShape(index, FilterType.entries.size),
+                                label = { Text(filter.displayName) }
                             )
                         }
                     }

@@ -10,8 +10,8 @@ All document detection and image processing run locally on-device using OpenCV a
 
 - **Offline Machine Learning & Classical Detection**: Hybrid four-corner detection using MakeACopy's DocQuadNet ONNX model with a robust OpenCV line-based classical fallback.
 - **Interactive Jetpack Compose UI**: 4 draggable corner handles clamped to image bounds, live polygon rendering, and corner geometry validation.
-- **Perspective Correction**: Precise 4-point perspective warp from confirmed corners.
-- **Magic Enhancement Filter**: Grayscale + CLAHE + adaptive thresholding for clear background whitening and legible text.
+- **Perspective Correction**: Projective aspect recovery and high-resolution 4-point warp from confirmed corners.
+- **Document Treatments**: Default colour-preserving Magic enhancement plus Original, Gray, and B&W modes.
 - **Recoverable Multi-page Imports**: Ordered image import, per-page review and retry, reordering, and durable local document saving.
 - **Local Document Library**: Recent and All documents collections, persistent grid/list and sort preferences, document metadata, rename, favorites, folder moves, and Trash moves.
 - **Document Inspection**: Multi-page detail grids and an edge-to-edge page viewer with zoom, pan, double-tap zoom, and accessible page navigation.

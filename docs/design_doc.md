@@ -33,17 +33,11 @@ Phase 1 established an end-to-end, PC-testable pipeline:
 
 The fallback intentionally does not require a single connected four-point contour. This improves recovery when glare, shadows, or low paper/background contrast interrupt a border. A weak result is rejected instead of returning a misleading crop.
 
-`DocumentScanner.cropWarped()` expects corners in TL/TR/BR/BL order, chooses the largest measured opposing widths and heights, and applies an OpenCV perspective transform.
+`DocumentScanner.cropWarped()` expects corners in TL/TR/BR/BL order. It estimates the physical rectangle ratio from projective vanishing geometry, snaps common sheets to A-series or Letter proportions, keeps unusual receipt ratios, and preserves the best-observed edge at native sampling density.
 
 ### Magic filter as implemented
 
-`ImageEnhancer.applyMagicFilter()` currently:
-
-1. converts the warped image to grayscale;
-2. applies CLAHE with clip limit `2.0` and an `8 × 8` tile grid; and
-3. applies Gaussian adaptive binary thresholding with block size `21` and constant `10`.
-
-This is an acceptable MVP, but it is not yet the originally envisioned illumination-normalization and sharpening pipeline. It can lose color and fine tonal detail and may produce uneven or harsh results on difficult lighting. Improving it is deferred; Phase 2 must preserve the current behavior before attempting algorithm changes.
+`ImageEnhancer.applyMagicFilter()` converts the page to Lab, removes large-scale illumination gradients from luminance, applies restrained local contrast, retains and modestly strengthens chroma, and finishes with an unsharp mask. It returns a full-resolution colour image. `applyFilter()` also exposes Original, Gray, and adaptive B&W treatments.
 
 ### PDF export as implemented
 
@@ -55,7 +49,8 @@ The CLI scans `test-images/` for `.jpg` files, ignores files whose names contain
 
 - `<name>_step1_box.jpg` — original image with the detected quadrilateral, corners, and side markers;
 - `<name>_step2_cropped.jpg` — perspective-corrected document;
-- `<name>_step3_magic.jpg` — grayscale binary enhancement; and
+- `<name>_step3_magic.jpg` — colour-preserving Magic enhancement;
+- `<name>_step3_grayscale.jpg` and `<name>_step3_black_white.jpg` — alternate treatment previews; and
 - `<name>_step4_output.pdf` — one-page A4 PDF.
 
 Detection failure is reported per image and does not stop the remaining batch. The checked-in `test1` through `test5` images and their `_expected` references provide a visual regression set; there is no automated pixel or geometry comparison yet.

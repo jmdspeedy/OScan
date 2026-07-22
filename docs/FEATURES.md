@@ -37,7 +37,7 @@ The repository already provides:
 - Ordered multi-image selection through the Android system photo picker.
 - Offline ONNX/OpenCV document-edge detection with a manual fallback rectangle.
 - Four-corner crop adjustment, geometry validation, reset, and perspective correction.
-- Original and Magic enhancement treatments.
+- Magic (default), Original, Gray, and B&W enhancement treatments.
 - A Room-backed local document repository with managed original, processed, thumbnail, and temporary session assets.
 - Recoverable multi-page scan sessions with per-page retry/removal, sequential review, reordering, and named local document saving.
 - Stable-ID document detail and full-page viewer routes with metadata, page thumbnails, rename, favorite, folder move, Trash, zoom, pan, double-tap zoom, and page navigation.

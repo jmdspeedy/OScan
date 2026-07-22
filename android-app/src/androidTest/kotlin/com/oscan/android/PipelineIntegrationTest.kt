@@ -12,6 +12,7 @@ import com.oscan.core.model.CornerPoints
 import com.oscan.core.model.ImageDimensions
 import com.oscan.core.util.CornerValidator
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.opencv.core.Point
@@ -61,6 +62,7 @@ class PipelineIntegrationTest {
         // 4. Verify non-empty PDF created
         assertTrue("Output PDF should exist", outputFile.exists())
         assertTrue("Output PDF size should be > 0 bytes", outputFile.length() > 0)
+        assertEquals("%PDF", pdfHeader(outputFile))
 
         outputFile.delete()
         bitmap.recycle()
@@ -88,11 +90,20 @@ class PipelineIntegrationTest {
 
         assertTrue("Multi-page output PDF should exist", outputFile.exists())
         assertTrue("Multi-page output PDF size should be > 0 bytes", outputFile.length() > 0)
+        assertEquals("%PDF", pdfHeader(outputFile))
 
         outputFile.delete()
         file1.delete()
         file2.delete()
         bitmap1.recycle()
         bitmap2.recycle()
+    }
+
+    private fun pdfHeader(file: File): String {
+        val bytes = ByteArray(4)
+        file.inputStream().use { input ->
+            check(input.read(bytes) == bytes.size) { "PDF output is shorter than its header" }
+        }
+        return String(bytes, Charsets.US_ASCII)
     }
 }

@@ -3,6 +3,7 @@ package com.oscan.desktop
 import com.oscan.core.DocumentScanner
 import com.oscan.core.ImageEnhancer
 import com.oscan.core.PdfExporter
+import com.oscan.core.model.FilterType
 import nu.pattern.OpenCV
 import org.opencv.imgcodecs.Imgcodecs
 import java.io.File
@@ -48,6 +49,7 @@ fun main() {
             println("Error: Could not detect a document in ${inputFile.name}.")
             continue
         }
+        println("Detected corners: ${corners.joinToString { "(%.1f, %.1f)".format(it.x, it.y) }}")
         
         val boxImg = source.clone()
         val green = org.opencv.core.Scalar(170.0, 255.0, 0.0) // BGR for cyan/green
@@ -99,12 +101,18 @@ fun main() {
         Imgcodecs.imwrite(croppedPath, cropped)
         println("Saved cropped image to $croppedPath")
         
-        // 3. Magic Filter
-        val filtered = enhancer.applyMagicFilter(cropped)
-        
+        // 3. Filter previews. Magic remains the default PDF treatment.
+        val filtered = enhancer.applyFilter(cropped, FilterType.MAGIC)
         val filteredPath = File(outputDir, "${fileName}_step3_magic.jpg").absolutePath
         Imgcodecs.imwrite(filteredPath, filtered)
-        println("Saved enhanced image to $filteredPath")
+        println("Saved colour Magic image to $filteredPath (${filtered.width()}x${filtered.height()})")
+        for (filter in listOf(FilterType.GRAYSCALE, FilterType.BLACK_WHITE)) {
+            val preview = enhancer.applyFilter(cropped, filter)
+            val suffix = filter.name.lowercase()
+            val previewPath = File(outputDir, "${fileName}_step3_$suffix.jpg").absolutePath
+            Imgcodecs.imwrite(previewPath, preview)
+            preview.release()
+        }
         
         // 4. Export PDF
         val pdfPath = File(outputDir, "${fileName}_step4_output.pdf").absolutePath

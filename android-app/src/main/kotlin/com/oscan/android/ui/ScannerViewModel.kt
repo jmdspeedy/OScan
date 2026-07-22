@@ -76,7 +76,8 @@ class ScannerViewModel(
     private val scannerEngine: ScannerEngine,
     private val repository: DocumentRepository,
     private val sessionStore: ScanSessionStore,
-    private val contentResolver: ContentResolver
+    private val contentResolver: ContentResolver,
+    private val defaultFilterProvider: suspend () -> FilterType = { FilterType.MAGIC }
 ) : ViewModel() {
 
     private var session: ScanSession? = sessionStore.loadActive()
@@ -238,18 +239,19 @@ class ScannerViewModel(
         val current = _uiState.value as? ScannerUiState.CropReady ?: return
         if (!current.isValidGeometry) return
         viewModelScope.launch {
+            val defaultFilter = runCatching { defaultFilterProvider() }.getOrDefault(FilterType.MAGIC)
             updatePage(current.page.id) {
-                it.copy(status = SessionPageStatus.PROCESSING, corners = current.corners, filter = FilterType.ORIGINAL)
+                it.copy(status = SessionPageStatus.PROCESSING, corners = current.corners, filter = defaultFilter)
             }
             _uiState.value = ScannerUiState.Processing(requireSession(), "Straightening page…")
             runCatching {
-                scannerEngine.cropAndFilter(sourceUri(current.page), current.corners, FilterType.ORIGINAL)
+                scannerEngine.cropAndFilter(sourceUri(current.page), current.corners, defaultFilter)
             }.onSuccess { bitmap ->
                 updatePage(current.page.id) {
-                    it.copy(status = SessionPageStatus.TREATMENT_REVIEW, corners = current.corners, filter = FilterType.ORIGINAL)
+                    it.copy(status = SessionPageStatus.TREATMENT_REVIEW, corners = current.corners, filter = defaultFilter)
                 }
                 val page = requireSession().pages.first { it.id == current.page.id }
-                _uiState.value = ScannerUiState.PreviewReady(requireSession(), page, FilterType.ORIGINAL, bitmap)
+                _uiState.value = ScannerUiState.PreviewReady(requireSession(), page, defaultFilter, bitmap)
             }.onFailure {
                 updatePage(current.page.id) { it.copy(status = SessionPageStatus.CROP_REVIEW) }
                 _uiState.value = ScannerUiState.Error("This page could not be cropped. Try adjusting its edges.", current)

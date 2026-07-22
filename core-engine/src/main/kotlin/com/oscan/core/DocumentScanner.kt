@@ -392,23 +392,31 @@ class DocumentScanner {
         val measuredHeight = max(leftHeight, rightHeight)
         require(measuredWidth > 1.0 && measuredHeight > 1.0) { "Document corners form an empty crop" }
 
-        // Edge lengths in a perspective projection can make a portrait sheet look almost square.
-        // Use the quadrilateral's overall orientation to recognize common sheet proportions, while
-        // retaining measured proportions for receipts and other unusually shaped documents.
+        // Edge lengths and axis-aligned bounds are both distorted by an oblique camera view. Use
+        // the projective vanishing geometry to recover the physical rectangle's aspect ratio.
         val boundsWidth = corners.maxOf(Point::x) - corners.minOf(Point::x)
         val boundsHeight = corners.maxOf(Point::y) - corners.minOf(Point::y)
         val boundsRatio = boundsWidth / boundsHeight.coerceAtLeast(1.0)
         val measuredRatio = measuredWidth / measuredHeight
-        val targetRatio = correctedDocumentAspect(measuredRatio, boundsRatio)
-        val areaScale = kotlin.math.sqrt((measuredWidth * measuredHeight) / targetRatio)
-        val outputHeight = max(2, areaScale.roundToInt())
-        val outputWidth = max(2, (outputHeight * targetRatio).roundToInt())
+        val projectiveRatio = estimateProjectiveAspect(corners, source.width(), source.height())
+        val targetRatio = correctedDocumentAspect(measuredRatio, boundsRatio, projectiveRatio)
+
+        // Keep the best-observed edge at native sampling density. This preserves fine text on the
+        // near side instead of reducing the whole page to the geometric-mean edge length.
+        var outputWidth = if (targetRatio <= 1.0) measuredWidth else measuredHeight * targetRatio
+        var outputHeight = if (targetRatio <= 1.0) measuredWidth / targetRatio else measuredHeight
+        val maxOutputEdge = max(source.width(), source.height()) * 1.25
+        val outputScale = min(1.0, maxOutputEdge / max(outputWidth, outputHeight))
+        outputWidth *= outputScale
+        outputHeight *= outputScale
+        val outputWidthPx = max(2, outputWidth.roundToInt())
+        val outputHeightPx = max(2, outputHeight.roundToInt())
 
         val destination = MatOfPoint2f(
             Point(0.0, 0.0),
-            Point(outputWidth - 1.0, 0.0),
-            Point(outputWidth - 1.0, outputHeight - 1.0),
-            Point(0.0, outputHeight - 1.0)
+            Point(outputWidthPx - 1.0, 0.0),
+            Point(outputWidthPx - 1.0, outputHeightPx - 1.0),
+            Point(0.0, outputHeightPx - 1.0)
         )
         val transform = Imgproc.getPerspectiveTransform(MatOfPoint2f(*corners), destination)
         val warped = Mat()
@@ -416,7 +424,7 @@ class DocumentScanner {
             source,
             warped,
             transform,
-            Size(outputWidth.toDouble(), outputHeight.toDouble()),
+            Size(outputWidthPx.toDouble(), outputHeightPx.toDouble()),
             Imgproc.INTER_CUBIC,
             Core.BORDER_REPLICATE
         )
@@ -424,15 +432,65 @@ class DocumentScanner {
         return warped
     }
 
-    internal fun correctedDocumentAspect(measuredRatio: Double, boundsRatio: Double): Double {
+    internal fun correctedDocumentAspect(
+        measuredRatio: Double,
+        boundsRatio: Double,
+        projectiveRatio: Double? = null
+    ): Double {
         val portraitBounds = boundsRatio in 0.52..0.92
         val landscapeBounds = boundsRatio in 1.09..1.92
         if (!portraitBounds && !landscapeBounds) return measuredRatio.coerceIn(0.15, 6.5)
 
-        val portraitObservation = if (portraitBounds) boundsRatio else 1.0 / boundsRatio
+        val observation = projectiveRatio?.takeIf { it.isFinite() && it in 0.35..2.85 } ?: boundsRatio
+        val portraitObservation = if (portraitBounds) observation else 1.0 / observation
         val commonPortraitRatios = doubleArrayOf(1.0 / kotlin.math.sqrt(2.0), 8.5 / 11.0)
         val paperRatio = commonPortraitRatios.minBy { abs(it - portraitObservation) }
         return if (portraitBounds) paperRatio else 1.0 / paperRatio
+    }
+
+    /**
+     * Estimates the physical width/height of a rectangular page from one perspective view.
+     * The principal point is assumed to be the image centre; the focal length is recovered from
+     * the orthogonality of the page axes. Near-affine/degenerate views return null and fall back to
+     * the conservative common-paper heuristic.
+     */
+    internal fun estimateProjectiveAspect(
+        corners: Array<Point>,
+        imageWidth: Int,
+        imageHeight: Int
+    ): Double? {
+        if (corners.size != 4 || imageWidth <= 0 || imageHeight <= 0) return null
+        val (p0, p1, p2, p3) = corners
+        val dx1 = p1.x - p2.x
+        val dx2 = p3.x - p2.x
+        val dx3 = p0.x - p1.x + p2.x - p3.x
+        val dy1 = p1.y - p2.y
+        val dy2 = p3.y - p2.y
+        val dy3 = p0.y - p1.y + p2.y - p3.y
+        val denominator = dx1 * dy2 - dx2 * dy1
+        if (abs(denominator) < 1e-8) return null
+
+        val g = (dx3 * dy2 - dx2 * dy3) / denominator
+        val h = (dx1 * dy3 - dx3 * dy1) / denominator
+        if (abs(g * h) < 1e-10) return null
+
+        val a = p1.x - p0.x + g * p1.x
+        val b = p3.x - p0.x + h * p3.x
+        val d = p1.y - p0.y + g * p1.y
+        val e = p3.y - p0.y + h * p3.y
+        val centreX = imageWidth / 2.0
+        val centreY = imageHeight / 2.0
+        val u1 = a - centreX * g
+        val v1 = d - centreY * g
+        val u2 = b - centreX * h
+        val v2 = e - centreY * h
+        val focalSquared = -(u1 * u2 + v1 * v2) / (g * h)
+        if (!focalSquared.isFinite() || focalSquared <= 0.0) return null
+
+        val firstNorm = kotlin.math.sqrt((u1 * u1 + v1 * v1) / focalSquared + g * g)
+        val secondNorm = kotlin.math.sqrt((u2 * u2 + v2 * v2) / focalSquared + h * h)
+        val ratio = firstNorm / secondNorm
+        return ratio.takeIf { it.isFinite() && it in 0.15..6.5 }
     }
 
     fun detectAndCrop(source: Mat): Mat? = detectCorners(source)?.let { cropWarped(source, it) }

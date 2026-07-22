@@ -133,13 +133,12 @@ class AndroidScannerEngine(private val context: Context) : ScannerEngine {
         val croppedMat = scanner.cropWarped(sourceMat, corners.toArray())
         sourceMat.release()
 
-        val finalMat = when (filterType) {
-            FilterType.ORIGINAL -> croppedMat
-            FilterType.MAGIC -> {
-                val enhanced = enhancer.applyMagicFilter(croppedMat)
-                croppedMat.release()
-                enhanced
-            }
+        val finalMat = if (filterType == FilterType.ORIGINAL) {
+            croppedMat
+        } else {
+            val enhanced = enhancer.applyFilter(croppedMat, filterType)
+            croppedMat.release()
+            enhanced
         }
 
         val resultBitmap = matToBitmap(finalMat)

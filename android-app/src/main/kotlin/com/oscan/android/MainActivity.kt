@@ -16,6 +16,8 @@ import com.oscan.android.ui.theme.OScanTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.view.WindowCompat
+import com.oscan.core.model.FilterType
+import kotlinx.coroutines.flow.first
 
 class MainActivity : ComponentActivity() {
 
@@ -30,7 +32,12 @@ class MainActivity : ComponentActivity() {
                     scannerEngine = scannerEngine,
                     repository = container.documentRepository,
                     sessionStore = container.scanSessionStore,
-                    contentResolver = contentResolver
+                    contentResolver = contentResolver,
+                    defaultFilterProvider = {
+                        runCatching {
+                            FilterType.valueOf(container.userPreferences.preferences.first().defaultTreatment)
+                        }.getOrDefault(FilterType.MAGIC)
+                    }
                 ) as T
             }
         }
