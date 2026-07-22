@@ -11,6 +11,7 @@ import com.oscan.android.engine.AndroidScannerEngine
 import com.oscan.android.ui.ScannerApp
 import com.oscan.android.ui.ScannerViewModel
 import com.oscan.android.ui.LibraryViewModel
+import com.oscan.android.ui.CameraViewModel
 import com.oscan.android.ui.theme.OScanTheme
 
 class MainActivity : ComponentActivity() {
@@ -44,6 +45,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val cameraViewModel: CameraViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                CameraViewModel(application, scannerEngine) as T
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -51,6 +60,7 @@ class MainActivity : ComponentActivity() {
                 Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.background) {
                     ScannerApp(
                         viewModel = viewModel,
+                        cameraViewModel = cameraViewModel,
                         libraryViewModel = libraryViewModel,
                         fileStore = container.fileStore
                     )

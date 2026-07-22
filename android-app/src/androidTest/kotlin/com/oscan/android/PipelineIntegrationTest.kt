@@ -65,4 +65,34 @@ class PipelineIntegrationTest {
         outputFile.delete()
         bitmap.recycle()
     }
+
+    @Test
+    fun testMultiPagePdfExportProducesNonEmptyPdf() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+        val bitmap1 = Bitmap.createBitmap(400, 600, Bitmap.Config.ARGB_8888).apply { Canvas(this).drawColor(Color.RED) }
+        val bitmap2 = Bitmap.createBitmap(600, 400, Bitmap.Config.ARGB_8888).apply { Canvas(this).drawColor(Color.BLUE) }
+
+        val file1 = File(context.cacheDir, "test_page1.jpg")
+        val file2 = File(context.cacheDir, "test_page2.jpg")
+        java.io.FileOutputStream(file1).use { bitmap1.compress(Bitmap.CompressFormat.JPEG, 90, it) }
+        java.io.FileOutputStream(file2).use { bitmap2.compress(Bitmap.CompressFormat.JPEG, 90, it) }
+
+        val pdfExporter = AndroidPdfExporter()
+        val outputFile = File(context.cacheDir, "integration_test_multipage.pdf")
+        if (outputFile.exists()) outputFile.delete()
+
+        java.io.FileOutputStream(outputFile).use { out ->
+            pdfExporter.exportPageFilesToPdf(listOf(file1, file2), out)
+        }
+
+        assertTrue("Multi-page output PDF should exist", outputFile.exists())
+        assertTrue("Multi-page output PDF size should be > 0 bytes", outputFile.length() > 0)
+
+        outputFile.delete()
+        file1.delete()
+        file2.delete()
+        bitmap1.recycle()
+        bitmap2.recycle()
+    }
 }

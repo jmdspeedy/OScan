@@ -59,8 +59,20 @@ interface LibraryDao {
     @Query("UPDATE documents SET trashedAtEpochMillis = NULL, previousFolderId = NULL, modifiedAtEpochMillis = :restoredAt WHERE id = :id")
     suspend fun markRestored(id: String, restoredAt: Long): Int
 
-    @Query("SELECT EXISTS(SELECT 1 FROM folders WHERE id = :id)")
-    suspend fun folderExists(id: String): Boolean
+    @Query("SELECT * FROM folders WHERE id = :id LIMIT 1")
+    suspend fun getFolder(id: String): FolderEntity?
+
+    @Query("SELECT EXISTS(SELECT 1 FROM folders WHERE LOWER(name) = LOWER(:name))")
+    suspend fun folderNameExists(name: String): Boolean
+
+    @Query("SELECT EXISTS(SELECT 1 FROM folders WHERE LOWER(name) = LOWER(:name) AND id != :excludeId)")
+    suspend fun folderNameExistsExcluding(name: String, excludeId: String): Boolean
+
+    @Query("UPDATE folders SET name = :name, modifiedAtEpochMillis = :modifiedAt WHERE id = :id")
+    suspend fun renameFolder(id: String, name: String, modifiedAt: Long): Int
+
+    @Query("DELETE FROM folders WHERE id = :id")
+    suspend fun deleteFolder(id: String): Int
 
     @Delete
     suspend fun deleteDocument(document: DocumentEntity)

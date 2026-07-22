@@ -1,5 +1,9 @@
 package com.oscan.android.ui
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oscan.android.data.model.Document
@@ -12,6 +16,12 @@ import com.oscan.android.data.preferences.UserPreferences
 import com.oscan.android.data.preferences.UserPreferencesStore
 import com.oscan.android.data.repository.DocumentRepository
 import com.oscan.android.data.repository.RepositoryError
+import com.oscan.android.data.storage.DocumentFileStore
+import com.oscan.android.engine.AndroidPdfExporter
+import java.io.File
+import java.io.FileOutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -19,25 +29,46 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+enum class DocumentFilter { ALL, FAVORITES, UNFILED }
 
 data class LibraryUiState(
     val isLoading: Boolean = true,
     val documents: List<Document> = emptyList(),
     val recentDocuments: List<Document> = emptyList(),
     val folders: List<Folder> = emptyList(),
+    val trashDocuments: List<Document> = emptyList(),
     val selectedDocument: Document? = null,
     val selectedDocumentId: DocumentId? = null,
+    val selectedFolderId: FolderId? = null,
+    val isViewingTrash: Boolean = false,
+    val searchQuery: String = "",
+    val filter: DocumentFilter = DocumentFilter.ALL,
+    val selectionMode: Boolean = false,
+    val selectedDocumentIds: Set<DocumentId> = emptySet(),
     val presentation: LibraryPresentation = LibraryPresentation.GRID,
     val sort: DocumentSort = DocumentSort.MODIFIED_DESC,
+    val isExporting: Boolean = false,
     val message: String? = null
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class LibraryViewModel(
     private val repository: DocumentRepository,
-    private val preferencesStore: UserPreferencesStore
+    private val preferencesStore: UserPreferencesStore,
+    private val pdfExporter: AndroidPdfExporter = AndroidPdfExporter()
 ) : ViewModel() {
     private val selectedDocumentId = MutableStateFlow<DocumentId?>(null)
+    private val selectedFolderId = MutableStateFlow<FolderId?>(null)
+    private val isViewingTrash = MutableStateFlow(false)
+    private val searchQuery = MutableStateFlow("")
+    private val filter = MutableStateFlow(DocumentFilter.ALL)
+    private val selectionMode = MutableStateFlow(false)
+    private val selectedDocumentIds = MutableStateFlow<Set<DocumentId>>(emptySet())
+    private val isExporting = MutableStateFlow(false)
     private val message = MutableStateFlow<String?>(null)
+
     private val selectedDocument = selectedDocumentId.flatMapLatest { id ->
         if (id == null) flowOf(null) else repository.observeDocument(id)
     }
@@ -45,20 +76,76 @@ class LibraryViewModel(
     val uiState = combine(
         repository.observeDocuments(),
         repository.observeFolders(),
+        repository.observeTrash(),
         preferencesStore.preferences,
         selectedDocument,
+        selectedFolderId,
+        isViewingTrash,
+        searchQuery,
+        filter,
+        selectionMode,
+        selectedDocumentIds,
+        isExporting,
         message
-    ) { documents, folders, preferences, selected, currentMessage ->
-        val sorted = documents.sortedWith(preferences.documentSort.comparator())
+    ) { flows ->
+        @Suppress("UNCHECKED_CAST")
+        val documents = flows[0] as List<Document>
+        @Suppress("UNCHECKED_CAST")
+        val folders = flows[1] as List<Folder>
+        @Suppress("UNCHECKED_CAST")
+        val trashDocs = flows[2] as List<Document>
+        val preferences = flows[3] as UserPreferences
+        val selectedDoc = flows[4] as Document?
+        val currentFolderId = flows[5] as FolderId?
+        val viewingTrash = flows[6] as Boolean
+        val query = flows[7] as String
+        val currentFilter = flows[8] as DocumentFilter
+        val inSelectionMode = flows[9] as Boolean
+        @Suppress("UNCHECKED_CAST")
+        val selectedIds = flows[10] as Set<DocumentId>
+        val exporting = flows[11] as Boolean
+        val currentMessage = flows[12] as String?
+
+        var filteredDocs = documents
+
+        // Filter by folder if selected
+        if (currentFolderId != null) {
+            filteredDocs = filteredDocs.filter { it.folder?.id == currentFolderId }
+        }
+
+        // Filter by chip
+        filteredDocs = when (currentFilter) {
+            DocumentFilter.ALL -> filteredDocs
+            DocumentFilter.FAVORITES -> filteredDocs.filter { it.isFavorite }
+            DocumentFilter.UNFILED -> filteredDocs.filter { it.folder == null }
+        }
+
+        // Filter by search query (document name or folder name)
+        if (query.isNotBlank()) {
+            val q = query.trim().lowercase()
+            filteredDocs = filteredDocs.filter { doc ->
+                doc.name.lowercase().contains(q) || (doc.folder?.name?.lowercase()?.contains(q) == true)
+            }
+        }
+
+        val sorted = filteredDocs.sortedWith(preferences.documentSort.comparator())
         LibraryUiState(
             isLoading = false,
             documents = sorted,
             recentDocuments = documents.sortedByDescending(Document::modifiedAt).take(5),
             folders = folders,
-            selectedDocument = selected,
+            trashDocuments = trashDocs,
+            selectedDocument = selectedDoc,
             selectedDocumentId = selectedDocumentId.value,
+            selectedFolderId = currentFolderId,
+            isViewingTrash = viewingTrash,
+            searchQuery = query,
+            filter = currentFilter,
+            selectionMode = inSelectionMode,
+            selectedDocumentIds = selectedIds,
             presentation = preferences.libraryPresentation,
             sort = preferences.documentSort,
+            isExporting = exporting,
             message = currentMessage
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryUiState())
@@ -71,6 +158,34 @@ class LibraryViewModel(
     fun closeDocument() {
         selectedDocumentId.value = null
         message.value = null
+    }
+
+    fun setSearchQuery(query: String) {
+        searchQuery.value = query
+    }
+
+    fun setFilter(newFilter: DocumentFilter) {
+        filter.value = newFilter
+    }
+
+    fun openFolder(id: FolderId?) {
+        selectedFolderId.value = id
+        clearSelection()
+    }
+
+    fun closeFolder() {
+        selectedFolderId.value = null
+        clearSelection()
+    }
+
+    fun openTrash() {
+        isViewingTrash.value = true
+        clearSelection()
+    }
+
+    fun closeTrash() {
+        isViewingTrash.value = false
+        clearSelection()
     }
 
     fun setPresentation(presentation: LibraryPresentation) {
@@ -99,6 +214,237 @@ class LibraryViewModel(
         }
     }
 
+    fun createFolder(name: String) {
+        viewModelScope.launch {
+            runCatching { repository.createFolder(name) }
+                .onSuccess { message.value = "Folder created" }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
+    fun renameFolder(id: FolderId, name: String) {
+        viewModelScope.launch {
+            runCatching { repository.renameFolder(id, name) }
+                .onSuccess { message.value = "Folder renamed" }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
+    fun deleteFolder(id: FolderId) {
+        viewModelScope.launch {
+            runCatching { repository.deleteFolder(id) }
+                .onSuccess {
+                    if (selectedFolderId.value == id) selectedFolderId.value = null
+                    message.value = "Folder deleted. Documents moved to Unfiled."
+                }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
+    fun toggleSelectionMode(initialSelectedId: DocumentId? = null) {
+        if (selectionMode.value) {
+            selectionMode.value = false
+            selectedDocumentIds.value = emptySet()
+        } else {
+            selectionMode.value = true
+            selectedDocumentIds.value = if (initialSelectedId != null) setOf(initialSelectedId) else emptySet()
+        }
+    }
+
+    fun toggleDocumentSelection(id: DocumentId) {
+        val current = selectedDocumentIds.value
+        val updated = if (current.contains(id)) current - id else current + id
+        selectedDocumentIds.value = updated
+        if (updated.isEmpty()) {
+            selectionMode.value = false
+        }
+    }
+
+    fun selectAll(documentIds: List<DocumentId>) {
+        if (selectedDocumentIds.value.size == documentIds.size) {
+            selectedDocumentIds.value = emptySet()
+        } else {
+            selectedDocumentIds.value = documentIds.toSet()
+        }
+    }
+
+    fun clearSelection() {
+        selectionMode.value = false
+        selectedDocumentIds.value = emptySet()
+    }
+
+    fun bulkMoveToTrash() {
+        val ids = selectedDocumentIds.value.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repository.bulkMoveToTrash(ids) }
+                .onSuccess {
+                    val count = ids.size
+                    clearSelection()
+                    message.value = if (count == 1) "Document moved to Trash" else "$count documents moved to Trash"
+                }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
+    fun bulkMoveToFolder(folderId: FolderId?) {
+        val ids = selectedDocumentIds.value.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repository.bulkMoveToFolder(ids, folderId) }
+                .onSuccess {
+                    clearSelection()
+                    message.value = "Documents moved"
+                }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
+    fun bulkSetFavorite(favorite: Boolean) {
+        val ids = selectedDocumentIds.value.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repository.bulkSetFavorite(ids, favorite) }
+                .onSuccess {
+                    clearSelection()
+                    message.value = if (favorite) "Added to Favorites" else "Removed from Favorites"
+                }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
+    fun restoreDocument(id: DocumentId) {
+        viewModelScope.launch {
+            runCatching { repository.restore(id) }
+                .onSuccess { message.value = "Document restored" }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
+    fun permanentlyDeleteDocument(id: DocumentId) {
+        viewModelScope.launch {
+            runCatching { repository.permanentlyDelete(id) }
+                .onSuccess { message.value = "Document permanently deleted" }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
+    fun restoreMultiple(ids: List<DocumentId>) {
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repository.restoreMultiple(ids) }
+                .onSuccess {
+                    clearSelection()
+                    message.value = "Documents restored"
+                }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
+    fun permanentlyDeleteMultiple(ids: List<DocumentId>) {
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repository.permanentlyDeleteMultiple(ids) }
+                .onSuccess {
+                    clearSelection()
+                    message.value = "Documents permanently deleted"
+                }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
+    fun emptyTrash() {
+        viewModelScope.launch {
+            runCatching { repository.emptyTrash() }
+                .onSuccess {
+                    clearSelection()
+                    message.value = "Trash emptied"
+                }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
+    fun exportDocumentPdfToUri(
+        context: Context,
+        document: Document,
+        fileStore: DocumentFileStore,
+        targetUri: Uri
+    ) {
+        if (isExporting.value) return
+        isExporting.value = true
+        message.value = null
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val pageFiles = document.pages.sortedBy { it.position }.mapNotNull { page ->
+                        fileStore.resolve(page.processedAsset).takeIf { it.isFile }
+                            ?: fileStore.resolve(page.originalAsset).takeIf { it.isFile }
+                    }
+                    if (pageFiles.isEmpty()) {
+                        throw IllegalStateException("No page assets found for document")
+                    }
+                    context.contentResolver.openOutputStream(targetUri)?.use { out ->
+                        pdfExporter.exportPageFilesToPdf(pageFiles, out)
+                    } ?: throw IllegalStateException("Could not open output stream")
+                }
+                message.value = "PDF exported successfully"
+            } catch (e: Exception) {
+                message.value = "Export failed: ${e.userMessage()}"
+            } finally {
+                isExporting.value = false
+            }
+        }
+    }
+
+    fun shareDocumentPdf(
+        context: Context,
+        document: Document,
+        fileStore: DocumentFileStore,
+        onLaunchShare: (Intent) -> Unit
+    ) {
+        if (isExporting.value) return
+        isExporting.value = true
+        message.value = null
+        viewModelScope.launch {
+            try {
+                val chooserIntent = withContext(Dispatchers.IO) {
+                    val pageFiles = document.pages.sortedBy { it.position }.mapNotNull { page ->
+                        fileStore.resolve(page.processedAsset).takeIf { it.isFile }
+                            ?: fileStore.resolve(page.originalAsset).takeIf { it.isFile }
+                    }
+                    if (pageFiles.isEmpty()) {
+                        throw IllegalStateException("No page assets found for document")
+                    }
+                    val pdfDir = File(context.cacheDir, "pdfs")
+                    if (!pdfDir.exists()) pdfDir.mkdirs()
+
+                    val safeName = document.name.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+                    val pdfFile = File(pdfDir, "$safeName.pdf")
+                    FileOutputStream(pdfFile).use { out ->
+                        pdfExporter.exportPageFilesToPdf(pageFiles, out)
+                    }
+
+                    val contentUri = FileProvider.getUriForFile(
+                        context,
+                        "com.oscan.android.fileprovider",
+                        pdfFile
+                    )
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, contentUri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    Intent.createChooser(shareIntent, "Share ${document.name}")
+                }
+                onLaunchShare(chooserIntent)
+            } catch (e: Exception) {
+                message.value = "Share failed: ${e.userMessage()}"
+            } finally {
+                isExporting.value = false
+            }
+        }
+    }
+
     fun clearMessage() {
         message.value = null
     }
@@ -113,6 +459,10 @@ class LibraryViewModel(
     }
 }
 
+private fun Throwable.userMessage(): String =
+    if (this is RepositoryError) message ?: "That change could not be saved"
+    else message ?: "Operation could not be completed"
+
 private fun DocumentSort.comparator(): Comparator<Document> = when (this) {
     DocumentSort.MODIFIED_DESC -> compareByDescending(Document::modifiedAt)
     DocumentSort.MODIFIED_ASC -> compareBy(Document::modifiedAt)
@@ -121,7 +471,3 @@ private fun DocumentSort.comparator(): Comparator<Document> = when (this) {
     DocumentSort.NAME_ASC -> compareBy(String.CASE_INSENSITIVE_ORDER, Document::name)
     DocumentSort.NAME_DESC -> compareByDescending<Document, String>(String.CASE_INSENSITIVE_ORDER) { it.name }
 }
-
-private fun Throwable.userMessage(): String =
-    if (this is RepositoryError) message ?: "That change could not be saved"
-    else "That change could not be saved"

@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.oscan.core.model.CornerPoints
@@ -39,6 +40,7 @@ fun CropScreen(
     onCropConfirmed: () -> Unit
 ) {
     var containerSize by remember { mutableStateOf(IntSize.Zero) }
+    var activeHandleIndex by remember { mutableStateOf<Int?>(null) }
     val oscanColors = OScanTheme.colors
     val errorColor = MaterialTheme.colorScheme.error
 
@@ -87,7 +89,8 @@ fun CropScreen(
             Image(
                 bitmap = previewBitmap.asImageBitmap(),
                 contentDescription = "Scan Preview",
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
             )
 
             if (containerSize.width > 0 && containerSize.height > 0) {
@@ -102,25 +105,26 @@ fun CropScreen(
                     displayCorners.bottomLeft
                 )
 
-                var activeHandleIndex by remember { mutableStateOf<Int?>(null) }
+                val latestDisplayPoints by rememberUpdatedState(displayPoints)
 
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(containerDimensions, corners) {
+                        .pointerInput(containerDimensions, sourceDimensions) {
                             detectDragGestures(
                                 onDragStart = { startOffset ->
-                                    val touchThreshold = 60.dp.toPx()
-                                    val closestIndex = displayPoints.indices.minByOrNull { i ->
+                                    val points = latestDisplayPoints
+                                    val touchThreshold = 72.dp.toPx()
+                                    val closestIndex = points.indices.minByOrNull { i ->
                                         hypot(
-                                            displayPoints[i].x - startOffset.x,
-                                            displayPoints[i].y - startOffset.y
+                                            points[i].x - startOffset.x,
+                                            points[i].y - startOffset.y
                                         )
                                     }
                                     if (closestIndex != null) {
                                         val dist = hypot(
-                                            displayPoints[closestIndex].x - startOffset.x,
-                                            displayPoints[closestIndex].y - startOffset.y
+                                            points[closestIndex].x - startOffset.x,
+                                            points[closestIndex].y - startOffset.y
                                         )
                                         if (dist <= touchThreshold) {
                                             activeHandleIndex = closestIndex
@@ -129,13 +133,12 @@ fun CropScreen(
                                 },
                                 onDragEnd = { activeHandleIndex = null },
                                 onDragCancel = { activeHandleIndex = null },
-                                onDrag = { change, dragAmount ->
+                                onDrag = { change, _ ->
                                     val handle = activeHandleIndex ?: return@detectDragGestures
                                     change.consume()
-                                    val currentDisplayPoint = displayPoints[handle]
                                     val newDisplayPoint = Point(
-                                        currentDisplayPoint.x + dragAmount.x,
-                                        currentDisplayPoint.y + dragAmount.y
+                                        change.position.x.toDouble(),
+                                        change.position.y.toDouble()
                                     )
                                     onCornerMoved(handle, newDisplayPoint, containerDimensions)
                                 }
@@ -168,7 +171,8 @@ fun CropScreen(
                     for (i in displayPoints.indices) {
                         val pt = displayPoints[i]
                         val center = Offset(pt.x.toFloat(), pt.y.toFloat())
-                        val handleRadius = 14.dp.toPx()
+                        val isActive = activeHandleIndex == i
+                        val handleRadius = (if (isActive) 22.dp else 17.dp).toPx()
                         drawCircle(
                             color = oscanColors.workspace,
                             radius = handleRadius,
@@ -178,8 +182,9 @@ fun CropScreen(
                             color = lineColor,
                             radius = handleRadius,
                             center = center,
-                            style = Stroke(width = 3.dp.toPx())
+                            style = Stroke(width = (if (isActive) 5.dp else 3.dp).toPx())
                         )
+                        drawCircle(color = lineColor, radius = 4.dp.toPx(), center = center)
                     }
                 }
             }

@@ -21,11 +21,16 @@ import com.oscan.core.model.ImageDimensions
 import com.oscan.core.util.CoordinateTransformer
 import com.oscan.core.util.CornerValidator
 import java.io.File
+import java.io.FileInputStream
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.opencv.core.Point
 
 data class SessionPageSummary(
@@ -79,6 +84,10 @@ class ScannerViewModel(
         if (session == null) ScannerUiState.Empty else ScannerUiState.LoadingSession
     )
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
+    private val _cameraCaptureState = MutableStateFlow(CameraCaptureState())
+    val cameraCaptureState: StateFlow<CameraCaptureState> = _cameraCaptureState.asStateFlow()
+    private var activeCameraImports = 0
+    private val cameraDetectionMutex = Mutex()
 
     init {
         session?.let { restored ->
@@ -113,6 +122,57 @@ class ScannerViewModel(
             }
             if (firstNewReviewable != null) openPage(firstNewReviewable) else showReview()
         }
+    }
+
+    /** Copies a CameraX output into durable session storage before deleting the transient file. */
+    fun onCameraCaptured(file: File) {
+        activeCameraImports++
+        _cameraCaptureState.value = _cameraCaptureState.value.copy(isProcessing = true, message = null)
+        viewModelScope.launch {
+            val draft = session ?: sessionStore.create().also { session = it }
+            val page = SessionPage(
+                id = sessionStore.newPageId(),
+                position = draft.pages.size,
+                status = SessionPageStatus.IMPORTING
+            )
+            updateSession(draft.copy(pages = draft.pages + page))
+            try {
+                val sourcePath = withContext(Dispatchers.IO) {
+                    FileInputStream(file).use { input ->
+                        sessionStore.importSource(requireSession().id, page.id, input, "jpg")
+                    }
+                }
+                updatePage(page.id) {
+                    it.copy(status = SessionPageStatus.DETECTING, sourcePath = sourcePath, originalExtension = "jpg")
+                }
+                _cameraCaptureState.value = _cameraCaptureState.value.copy(
+                    capturedCount = requireSession().pages.count { it.sourcePath != null }
+                )
+                cameraDetectionMutex.withLock { detectStoredPage(page.id) }
+                val latest = requireSession().pages.first { it.id == page.id }
+                _cameraCaptureState.value = _cameraCaptureState.value.copy(
+                    capturedCount = requireSession().pages.count { it.sourcePath != null },
+                    message = if (latest.status == SessionPageStatus.FAILED) "That photo could not be prepared. You can keep scanning." else null
+                )
+            } catch (_: Throwable) {
+                updatePage(page.id) {
+                    it.copy(status = SessionPageStatus.FAILED, failureMessage = "This photo could not be added. Remove it or try again.")
+                }
+                _cameraCaptureState.value = _cameraCaptureState.value.copy(
+                    message = "That photo could not be added. Try again."
+                )
+            } finally {
+                file.delete()
+                activeCameraImports--
+                _cameraCaptureState.value = _cameraCaptureState.value.copy(isProcessing = activeCameraImports > 0)
+            }
+        }
+    }
+
+    fun finishCameraCapture() {
+        val draft = session ?: return
+        val first = draft.pages.sortedBy { it.position }.firstOrNull { it.status == SessionPageStatus.CROP_REVIEW }
+        if (first != null) openPage(first.id) else showReview()
     }
 
     fun onReplacementSelected(pageId: String, uri: Uri?) {
@@ -358,6 +418,7 @@ class ScannerViewModel(
         session?.let { sessionStore.discard(it.id) }
         session = null
         _uiState.value = ScannerUiState.Empty
+        _cameraCaptureState.value = CameraCaptureState()
     }
 
     fun dismissError() {
@@ -505,3 +566,9 @@ class ScannerViewModel(
         return Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
     }
 }
+
+data class CameraCaptureState(
+    val capturedCount: Int = 0,
+    val isProcessing: Boolean = false,
+    val message: String? = null
+)

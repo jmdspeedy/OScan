@@ -63,12 +63,15 @@ import com.oscan.android.data.storage.DocumentFileStore
 @Composable
 fun ScannerApp(
     viewModel: ScannerViewModel,
+    cameraViewModel: CameraViewModel,
     libraryViewModel: LibraryViewModel,
     fileStore: DocumentFileStore
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var replacementPageId by rememberSaveable { mutableStateOf<String?>(null) }
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
+    var showCamera by rememberSaveable { mutableStateOf(false) }
+    val captureState by viewModel.cameraCaptureState.collectAsState()
 
     val multiplePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(50)) { uris ->
         viewModel.onImagesSelected(uris)
@@ -78,6 +81,7 @@ fun ScannerApp(
         replacementPageId = null
     }
     val launchMultiplePicker = {
+        showCamera = false
         multiplePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
     val launchReplacement: (String) -> Unit = { pageId ->
@@ -86,10 +90,28 @@ fun ScannerApp(
     }
 
     if (uiState is ScannerUiState.Empty) {
+        if (showCamera) {
+            BackHandler {
+                if (!captureState.isProcessing) {
+                    showCamera = false
+                    if (captureState.capturedCount > 0) viewModel.finishCameraCapture()
+                }
+            }
+            LiveCameraScreen(
+                cameraViewModel = cameraViewModel,
+                captureState = captureState,
+                onCaptured = viewModel::onCameraCaptured,
+                onDone = { showCamera = false; viewModel.finishCameraCapture() },
+                onClose = { showCamera = false; if (captureState.capturedCount > 0) viewModel.finishCameraCapture() },
+                onImport = launchMultiplePicker
+            )
+            return
+        }
         OScanAppShell(
             libraryViewModel = libraryViewModel,
             fileStore = fileStore,
-            onImportImages = launchMultiplePicker
+            onImportImages = launchMultiplePicker,
+            onOpenCamera = { showCamera = true }
         )
         return
     }
@@ -202,7 +224,14 @@ fun ScannerApp(
                     onFolderSelected = viewModel::selectFolder,
                     onSave = viewModel::saveDocument
                 )
-                is ScannerUiState.Saved -> SavedDocumentScreen(state, viewModel::startAnother)
+                is ScannerUiState.Saved -> SavedDocumentScreen(
+                    state = state,
+                    onOpenDocument = { id ->
+                        libraryViewModel.openDocument(id)
+                        viewModel.startAnother()
+                    },
+                    onDone = viewModel::startAnother
+                )
                 is ScannerUiState.Error -> ErrorState(state.message, viewModel::dismissError)
             }
         }
@@ -354,7 +383,11 @@ private fun SaveDocumentScreen(
 }
 
 @Composable
-private fun SavedDocumentScreen(state: ScannerUiState.Saved, onDone: () -> Unit) {
+private fun SavedDocumentScreen(
+    state: ScannerUiState.Saved,
+    onOpenDocument: (com.oscan.android.data.model.DocumentId) -> Unit,
+    onDone: () -> Unit
+) {
     Column(
         Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -365,7 +398,13 @@ private fun SavedDocumentScreen(state: ScannerUiState.Saved, onDone: () -> Unit)
         Text("Saved locally", style = MaterialTheme.typography.titleLarge)
         Text("${state.name} • ${state.pageCount} ${if (state.pageCount == 1) "page" else "pages"}")
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onDone) { Text("Done") }
+        Button(onClick = { onOpenDocument(state.documentId) }, modifier = Modifier.fillMaxWidth(0.8f)) {
+            Text("Open document")
+        }
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth(0.8f)) {
+            Text("Done")
+        }
     }
 }
 

@@ -108,55 +108,59 @@ Replace the single-bitmap ViewModel flow with a recoverable session model.
 
 ## Milestone 4 — Multi-page PDF export and sharing (P0)
 
-- [ ] **High** — Generate PDFs containing every document page in the selected order.
-- [ ] **Low** — Provide sensible defaults for page sizing, image quality, and filename.
-- [ ] **Medium** — Separate the editable local document from generated PDF exports.
-- [ ] **Medium** — Support Save PDF through SAF and Share PDF through the system share sheet.
-- [ ] **Low** — Prevent duplicate exports while generation is active.
-- [ ] **Medium** — Preserve the current document and export options when system surfaces are cancelled.
-- [ ] **Medium** — Report storage, permission, and generation failures with actionable retry paths.
-- [ ] **High** — Verify that export does not unintentionally alter the document's colors, crop, or resolution.
+**Status:** Implemented.
+
+- [x] **High** — Generate PDFs containing every document page in the selected order.
+- [x] **Low** — Provide sensible defaults for page sizing, image quality, and filename.
+- [x] **Medium** — Separate the editable local document from generated PDF exports.
+- [x] **Medium** — Support Save PDF through SAF and Share PDF through the system share sheet.
+- [x] **Low** — Prevent duplicate exports while generation is active.
+- [x] **Medium** — Preserve the current document and export options when system surfaces are cancelled.
+- [x] **Medium** — Report storage, permission, and generation failures with actionable retry paths.
+- [x] **High** — Verify that export does not unintentionally alter the document's colors, crop, or resolution.
 
 **Complete when:** any saved multi-page document can be exported and shared in page order, including after app restart.
 
 ## Milestone 5 — Live camera capture (P0)
 
-- [ ] **Very high** — Add CameraX preview, lifecycle binding, rotation handling, and camera permission rationale/denial states.
-- [ ] **Low** — Keep `Import images` usable when permission is denied or camera hardware is unavailable.
-- [ ] **Very high** — Run throttled, downsampled edge detection on analysis frames without blocking preview or shutter input.
-- [ ] **Very high** — Map detected corners accurately through sensor rotation, preview scaling/cropping, and device orientation.
-- [ ] **Very high** — Draw a stable proposed quadrilateral and show concise guidance for no document, edge proximity, motion/blur, and low light when measurable.
-- [ ] **High** — Add manual shutter, capture feedback, Torch where supported, captured-page count, Done, and session review.
-- [ ] **Low** — Initialize a safe inset crop when manual capture has no reliable detected boundary.
+- [x] **Very high** — Add CameraX preview, lifecycle binding, rotation handling, and camera permission rationale/denial states.
+- [x] **Low** — Keep `Import images` usable when permission is denied or camera hardware is unavailable.
+- [x] **Very high** — Run throttled, downsampled edge detection on analysis frames without blocking preview or shutter input.
+- [x] **Very high** — Map detected corners accurately through sensor rotation, preview scaling/cropping, and device orientation.
+- [x] **Very high** — Draw a stable proposed quadrilateral and show concise guidance for no document, edge proximity, motion/blur, and low light when measurable.
+- [x] **High** — Add manual shutter, capture feedback, Torch where supported, captured-page count, Done, and session review.
+- [x] **Low** — Initialize a safe inset crop when manual capture has no reliable detected boundary.
 - [ ] **Very high** — Add optional auto-capture only after stable-boundary dwell, blur checks, visible countdown/progression, and capture cooldown are field-tested.
-- [ ] **High** — Clean temporary captures only after explicit discard, successful save, or safe recovery cleanup.
+- [x] **High** — Clean transient CameraX outputs after they are copied into the recoverable session; session assets remain until explicit discard or successful save.
 
 **Complete when:** a user can deny camera permission and still import, or capture several pages manually and complete the same review/save pipeline used by imports.
 
 ## Milestone 6 — Organization and retrieval (P1)
 
+**Status:** Implemented.
+
 ### Search, sort, and selection
 
-- [ ] **Medium** — Search document and folder names locally with immediate results and a clear no-results state.
-- [ ] **Low** — Ensure search UI does not imply full-text search until on-device OCR exists.
-- [ ] **Medium** — Add sort by modified date, created date, and name with applicable directions.
-- [ ] **Low** — Add filters for all documents, favorites, and unfiled documents.
-- [ ] **High** — Add long-press selection mode with selected count, select all, move, favorite/unfavorite, export where supported, and Trash.
-- [ ] **Low** — Require count-specific confirmation for destructive bulk actions.
+- [x] **Medium** — Search document and folder names locally with immediate results and a clear no-results state.
+- [x] **Low** — Ensure search UI does not imply full-text search until on-device OCR exists.
+- [x] **Medium** — Add sort by modified date, created date, and name with applicable directions.
+- [x] **Low** — Add filters for all documents, favorites, and unfiled documents.
+- [x] **High** — Add long-press selection mode with selected count, select all, move, favorite/unfavorite, export where supported, and Trash.
+- [x] **Low** — Require count-specific confirmation for destructive bulk actions.
 
 ### Folders
 
-- [ ] **High** — Add folder overview and folder detail routes from a secondary Home Browse entry.
-- [ ] **High** — Support create, rename, delete, move documents, and scan-to-folder.
-- [ ] **Low** — Validate blank and duplicate names.
-- [ ] **Medium** — Deleting a folder must move its documents to Unfiled rather than deleting them.
+- [x] **High** — Add folder overview and folder detail routes from a secondary Home Browse entry.
+- [x] **High** — Support create, rename, delete, move documents, and scan-to-folder.
+- [x] **Low** — Validate blank and duplicate names.
+- [x] **Medium** — Deleting a folder must move its documents to Unfiled rather than deleting them.
 
 ### Trash
 
-- [~] **High** — Move deleted documents to local Trash with deletion timestamps and previous-folder metadata. Repository support exists; the user-facing flow remains.
-- [ ] **Medium** — Support restore, permanent delete, and Empty Trash with explicit confirmation.
-- [~] **Medium** — Restore to the previous folder when it still exists, otherwise to Unfiled. Repository behavior exists; the Trash restore flow remains.
-- [ ] **Low** — Start with manual emptying; do not implement automatic retention until cleanup behavior is proven.
+- [x] **High** — Move deleted documents to local Trash with deletion timestamps and previous-folder metadata.
+- [x] **Medium** — Support restore, permanent delete, and Empty Trash with explicit confirmation.
+- [x] **Medium** — Restore to the previous folder when it still exists, otherwise to Unfiled.
+- [x] **Low** — Start with manual emptying; do not implement automatic retention until cleanup behavior is proven.
 
 **Complete when:** library content can be found, organized, bulk-managed, deleted safely, and restored after restart.
 
@@ -209,8 +213,8 @@ This work is continuous, but the full pass is required before release.
 2. `[x]` Multi-page import and recoverable scan sessions.
 3. `[x]` Populated Home and document detail.
 4. `[ ]` Multi-page export and sharing.
-5. `[ ]` Live camera capture using the same session pipeline.
-6. `[ ]` Search, folders, selection, and Trash.
+5. `[x]` Live camera capture using the same session pipeline.
+6. `[x]` Search, folders, selection, and Trash.
 7. `[ ]` Page editing.
 8. `[ ]` Me and Settings.
 9. `[ ]` Final accessibility, adaptive-layout, performance, and release hardening.

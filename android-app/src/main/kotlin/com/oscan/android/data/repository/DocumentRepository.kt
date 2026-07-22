@@ -20,6 +20,7 @@ import java.time.Clock
 import java.time.Instant
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 sealed class RepositoryError(message: String, cause: Throwable? = null) : Exception(message, cause) {
@@ -29,6 +30,9 @@ sealed class RepositoryError(message: String, cause: Throwable? = null) : Except
     class AssetWrite(cause: Throwable) : RepositoryError("A page could not be saved", cause)
     class DatabaseWrite(cause: Throwable) : RepositoryError("The document could not be saved", cause)
     class Cleanup(cause: Throwable? = null) : RepositoryError("Some local files could not be cleaned up", cause)
+    class InvalidFolderName : RepositoryError("Choose a folder name")
+    class DuplicateFolderName : RepositoryError("A folder with this name already exists")
+    class FolderNotFound : RepositoryError("This folder is no longer available")
 }
 
 data class NewPage(
@@ -54,6 +58,15 @@ interface DocumentRepository {
     suspend fun moveToTrash(id: DocumentId)
     suspend fun restore(id: DocumentId)
     suspend fun permanentlyDelete(id: DocumentId)
+    suspend fun createFolder(name: String): FolderId
+    suspend fun renameFolder(id: FolderId, name: String)
+    suspend fun deleteFolder(id: FolderId)
+    suspend fun bulkMoveToTrash(ids: List<DocumentId>)
+    suspend fun bulkMoveToFolder(ids: List<DocumentId>, folderId: FolderId?)
+    suspend fun bulkSetFavorite(ids: List<DocumentId>, favorite: Boolean)
+    suspend fun restoreMultiple(ids: List<DocumentId>)
+    suspend fun permanentlyDeleteMultiple(ids: List<DocumentId>)
+    suspend fun emptyTrash()
 }
 
 class LocalDocumentRepository(
@@ -146,7 +159,7 @@ class LocalDocumentRepository(
 
     override suspend fun moveToFolder(id: DocumentId, folderId: FolderId?) {
         if (dao.getDocument(id.value) == null) throw RepositoryError.NotFound()
-        if (folderId != null && !dao.folderExists(folderId.value)) throw RepositoryError.NotFound()
+        if (folderId != null && dao.getFolder(folderId.value) == null) throw RepositoryError.NotFound()
         database.withTransaction {
             dao.clearDocumentFolder(id.value)
             if (folderId != null) {
@@ -170,7 +183,7 @@ class LocalDocumentRepository(
         val previousFolder = document.document.previousFolderId
         database.withTransaction {
             dao.markRestored(id.value, clock.millis())
-            if (previousFolder != null && dao.folderExists(previousFolder)) {
+            if (previousFolder != null && dao.getFolder(previousFolder) != null) {
                 dao.setDocumentFolder(DocumentFolderEntity(id.value, previousFolder))
             }
         }
@@ -180,6 +193,63 @@ class LocalDocumentRepository(
         val document = dao.getDocument(id.value) ?: throw RepositoryError.NotFound()
         database.withTransaction { dao.deleteDocument(document.document) }
         if (!fileStore.deleteDocument(id.value)) throw RepositoryError.Cleanup()
+    }
+
+    override suspend fun createFolder(name: String): FolderId {
+        val safeName = name.trim()
+        if (safeName.isEmpty()) throw RepositoryError.InvalidFolderName()
+        if (dao.folderNameExists(safeName)) throw RepositoryError.DuplicateFolderName()
+        val folderId = newId()
+        val now = clock.millis()
+        dao.insertFolder(
+            com.oscan.android.data.db.FolderEntity(
+                id = folderId,
+                name = safeName,
+                createdAtEpochMillis = now,
+                modifiedAtEpochMillis = now
+            )
+        )
+        return FolderId(folderId)
+    }
+
+    override suspend fun renameFolder(id: FolderId, name: String) {
+        val safeName = name.trim()
+        if (safeName.isEmpty()) throw RepositoryError.InvalidFolderName()
+        if (dao.folderNameExistsExcluding(safeName, id.value)) throw RepositoryError.DuplicateFolderName()
+        if (dao.renameFolder(id.value, safeName, clock.millis()) == 0) throw RepositoryError.FolderNotFound()
+    }
+
+    override suspend fun deleteFolder(id: FolderId) {
+        if (dao.getFolder(id.value) == null) throw RepositoryError.FolderNotFound()
+        dao.deleteFolder(id.value)
+    }
+
+    override suspend fun bulkMoveToTrash(ids: List<DocumentId>) {
+        ids.forEach { moveToTrash(it) }
+    }
+
+    override suspend fun bulkMoveToFolder(ids: List<DocumentId>, folderId: FolderId?) {
+        ids.forEach { moveToFolder(it, folderId) }
+    }
+
+    override suspend fun bulkSetFavorite(ids: List<DocumentId>, favorite: Boolean) {
+        ids.forEach { setFavorite(it, favorite) }
+    }
+
+    override suspend fun restoreMultiple(ids: List<DocumentId>) {
+        ids.forEach { restore(it) }
+    }
+
+    override suspend fun permanentlyDeleteMultiple(ids: List<DocumentId>) {
+        ids.forEach { permanentlyDelete(it) }
+    }
+
+    override suspend fun emptyTrash() {
+        val trashedDocs = dao.observeTrash().first()
+        trashedDocs.forEach { document ->
+            database.withTransaction { dao.deleteDocument(document.document) }
+            fileStore.deleteDocument(document.document.id)
+        }
     }
 
     private fun DocumentAggregate.toModel(): Document {

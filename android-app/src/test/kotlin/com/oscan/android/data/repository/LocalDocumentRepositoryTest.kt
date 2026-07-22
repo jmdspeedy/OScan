@@ -117,6 +117,67 @@ class LocalDocumentRepositoryTest {
         assertEquals(null, repository.observeDocument(id).first()!!.folder)
     }
 
+    @Test
+    fun createRenameAndDeleteFolderMovesDocumentsToUnfiled() = runTest {
+        val folderId = repository.createFolder("Tax 2026")
+        assertEquals("Tax 2026", repository.observeFolders().first().single().name)
+
+        val docId = repository.create("W2 Form", listOf(page("tax")), folderId)
+        assertEquals("Tax 2026", repository.observeDocument(docId).first()!!.folder?.name)
+
+        repository.renameFolder(folderId, "Taxes 2026")
+        assertEquals("Taxes 2026", repository.observeDocument(docId).first()!!.folder?.name)
+
+        // Deleting folder moves document to Unfiled (folder == null)
+        repository.deleteFolder(folderId)
+        assertTrue(repository.observeFolders().first().isEmpty())
+        val unfiledDoc = repository.observeDocument(docId).first()!!
+        assertEquals(null, unfiledDoc.folder)
+    }
+
+    @Test
+    fun duplicateOrEmptyFolderNameThrowsError() = runTest {
+        repository.createFolder("Invoices")
+        assertFailsWith<RepositoryError.InvalidFolderName> { repository.createFolder("   ") }
+        assertFailsWith<RepositoryError.DuplicateFolderName> { repository.createFolder("invoices") }
+    }
+
+    @Test
+    fun emptyTrashDeletesAllTrashedDocumentsAndFiles() = runTest {
+        val doc1 = repository.create("Doc 1", listOf(page("1")))
+        val doc2 = repository.create("Doc 2", listOf(page("2")))
+        val asset1 = repository.observeDocument(doc1).first()!!.pages.single().originalAsset
+        val asset2 = repository.observeDocument(doc2).first()!!.pages.single().originalAsset
+
+        repository.moveToTrash(doc1)
+        repository.moveToTrash(doc2)
+        assertEquals(2, repository.observeTrash().first().size)
+
+        repository.emptyTrash()
+        assertTrue(repository.observeTrash().first().isEmpty())
+        assertFalse(fileStore.resolve(asset1).exists())
+        assertFalse(fileStore.resolve(asset2).exists())
+    }
+
+    @Test
+    fun bulkOperationsMoveAndFavoriteDocuments() = runTest {
+        val folderId = repository.createFolder("Work")
+        val doc1 = repository.create("Doc A", listOf(page("a")))
+        val doc2 = repository.create("Doc B", listOf(page("b")))
+
+        repository.bulkSetFavorite(listOf(doc1, doc2), true)
+        assertTrue(repository.observeDocument(doc1).first()!!.isFavorite)
+        assertTrue(repository.observeDocument(doc2).first()!!.isFavorite)
+
+        repository.bulkMoveToFolder(listOf(doc1, doc2), folderId)
+        assertEquals("Work", repository.observeDocument(doc1).first()!!.folder?.name)
+        assertEquals("Work", repository.observeDocument(doc2).first()!!.folder?.name)
+
+        repository.bulkMoveToTrash(listOf(doc1, doc2))
+        assertTrue(repository.observeDocuments().first().isEmpty())
+        assertEquals(2, repository.observeTrash().first().size)
+    }
+
     private fun page(value: String) = NewPage(
         original = { ByteArrayInputStream("original-$value".toByteArray()) },
         processed = { ByteArrayInputStream("processed-$value".toByteArray()) },

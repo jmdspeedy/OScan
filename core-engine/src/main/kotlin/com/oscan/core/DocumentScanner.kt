@@ -13,6 +13,7 @@ import kotlin.math.atan2
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 /**
  * Detects a document as four independently observed straight borders.
@@ -85,6 +86,16 @@ class DocumentScanner {
         val best = findBestQuadrilateral(working, gray, edges, candidates) ?: return null
         val inverseScale = 1.0 / scale
         return best.map { Point(it.x * inverseScale, it.y * inverseScale) }.toTypedArray()
+    }
+
+    /**
+     * Low-latency detector for live preview frames. The classical line search is intentionally
+     * omitted here: it is substantially slower and can lock onto furniture or screen boundaries.
+     * Full-resolution captures still use [detectCorners] and retain the classical fallback.
+     */
+    fun detectCornersFast(source: Mat): Array<Point>? {
+        if (source.empty() || source.width() < 32 || source.height() < 32) return null
+        return mlDetector?.detect(source)
     }
 
     private fun collectLineCandidates(gray: Mat, enhanced: Mat, edges: Mat): List<LineCandidate> {
@@ -373,20 +384,55 @@ class DocumentScanner {
         val br = corners[2]
         val bl = corners[3]
 
-        val maxWidth = max(hypot(br.x - bl.x, br.y - bl.y), hypot(tr.x - tl.x, tr.y - tl.y)).toInt()
-        val maxHeight = max(hypot(tr.x - br.x, tr.y - br.y), hypot(tl.x - bl.x, tl.y - bl.y)).toInt()
-        require(maxWidth > 0 && maxHeight > 0) { "Document corners form an empty crop" }
+        val topWidth = hypot(tr.x - tl.x, tr.y - tl.y)
+        val bottomWidth = hypot(br.x - bl.x, br.y - bl.y)
+        val leftHeight = hypot(bl.x - tl.x, bl.y - tl.y)
+        val rightHeight = hypot(br.x - tr.x, br.y - tr.y)
+        val measuredWidth = max(topWidth, bottomWidth)
+        val measuredHeight = max(leftHeight, rightHeight)
+        require(measuredWidth > 1.0 && measuredHeight > 1.0) { "Document corners form an empty crop" }
+
+        // Edge lengths in a perspective projection can make a portrait sheet look almost square.
+        // Use the quadrilateral's overall orientation to recognize common sheet proportions, while
+        // retaining measured proportions for receipts and other unusually shaped documents.
+        val boundsWidth = corners.maxOf(Point::x) - corners.minOf(Point::x)
+        val boundsHeight = corners.maxOf(Point::y) - corners.minOf(Point::y)
+        val boundsRatio = boundsWidth / boundsHeight.coerceAtLeast(1.0)
+        val measuredRatio = measuredWidth / measuredHeight
+        val targetRatio = correctedDocumentAspect(measuredRatio, boundsRatio)
+        val areaScale = kotlin.math.sqrt((measuredWidth * measuredHeight) / targetRatio)
+        val outputHeight = max(2, areaScale.roundToInt())
+        val outputWidth = max(2, (outputHeight * targetRatio).roundToInt())
 
         val destination = MatOfPoint2f(
             Point(0.0, 0.0),
-            Point(maxWidth - 1.0, 0.0),
-            Point(maxWidth - 1.0, maxHeight - 1.0),
-            Point(0.0, maxHeight - 1.0)
+            Point(outputWidth - 1.0, 0.0),
+            Point(outputWidth - 1.0, outputHeight - 1.0),
+            Point(0.0, outputHeight - 1.0)
         )
         val transform = Imgproc.getPerspectiveTransform(MatOfPoint2f(*corners), destination)
         val warped = Mat()
-        Imgproc.warpPerspective(source, warped, transform, Size(maxWidth.toDouble(), maxHeight.toDouble()))
+        Imgproc.warpPerspective(
+            source,
+            warped,
+            transform,
+            Size(outputWidth.toDouble(), outputHeight.toDouble()),
+            Imgproc.INTER_CUBIC,
+            Core.BORDER_REPLICATE
+        )
+        transform.release()
         return warped
+    }
+
+    internal fun correctedDocumentAspect(measuredRatio: Double, boundsRatio: Double): Double {
+        val portraitBounds = boundsRatio in 0.52..0.92
+        val landscapeBounds = boundsRatio in 1.09..1.92
+        if (!portraitBounds && !landscapeBounds) return measuredRatio.coerceIn(0.15, 6.5)
+
+        val portraitObservation = if (portraitBounds) boundsRatio else 1.0 / boundsRatio
+        val commonPortraitRatios = doubleArrayOf(1.0 / kotlin.math.sqrt(2.0), 8.5 / 11.0)
+        val paperRatio = commonPortraitRatios.minBy { abs(it - portraitObservation) }
+        return if (portraitBounds) paperRatio else 1.0 / paperRatio
     }
 
     fun detectAndCrop(source: Mat): Mat? = detectCorners(source)?.let { cropWarped(source, it) }

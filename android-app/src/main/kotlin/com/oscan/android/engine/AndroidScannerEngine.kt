@@ -13,6 +13,8 @@ import com.oscan.core.model.FilterType
 import com.oscan.core.model.ImageDimensions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.opencv.android.Utils
 import org.opencv.core.CvType
 import org.opencv.core.Mat
@@ -48,6 +50,7 @@ class AndroidScannerEngine(private val context: Context) : ScannerEngine {
 
     private val scanner: DocumentScanner by lazy { DocumentScanner() }
     private val enhancer: ImageEnhancer by lazy { ImageEnhancer() }
+    private val detectorMutex = Mutex()
     private var isNativeInitialized = false
 
     /**
@@ -79,7 +82,7 @@ class AndroidScannerEngine(private val context: Context) : ScannerEngine {
         val dimensions = ImageDimensions(sourceMat.cols(), sourceMat.rows())
 
         // Run ML/classical document corner detection
-        val rawCorners = scanner.detectCorners(sourceMat)
+        val rawCorners = detectorMutex.withLock { scanner.detectCorners(sourceMat) }
         val (corners, autoDetected) = if (rawCorners != null && rawCorners.size == 4) {
             CornerPoints.fromArray(rawCorners) to true
         } else {
@@ -98,6 +101,19 @@ class AndroidScannerEngine(private val context: Context) : ScannerEngine {
             isAutoDetected = autoDetected,
             previewBitmap = previewBitmap
         )
+    }
+
+    /** Detects a boundary in an already oriented, downsampled camera frame. */
+    suspend fun detectCameraFrame(bitmap: Bitmap): CornerPoints? = withContext(Dispatchers.Default) {
+        require(initialize()) { "Failed to initialize image processing" }
+        val source = bitmapToMat(bitmap)
+        try {
+            detectorMutex.withLock {
+                scanner.detectCornersFast(source)?.takeIf { it.size == 4 }?.let(CornerPoints::fromArray)
+            }
+        } finally {
+            source.release()
+        }
     }
 
     /**
