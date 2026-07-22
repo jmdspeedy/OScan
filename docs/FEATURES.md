@@ -196,17 +196,19 @@ Replace the single-bitmap ViewModel flow with a recoverable session model.
 
 ## Milestone 9 — Accessibility, adaptive layouts, and hardening (P0 before release)
 
+**Status:** Core implementation complete. Physical-device layout/accessibility audits, the full failure-path UI matrix, varied-scene camera validation, and performance profiling remain release validation work.
+
 This work is continuous, but the full pass is required before release.
 
-- [ ] **Very high** — Support compact portrait, compact landscape, medium, expanded, split-screen, and resizable layouts.
-- [ ] **High** — Use two-pane editor and library/detail layouts where width permits.
-- [ ] **Very high** — Maintain function at 320dp width and 200% font scale without clipped or unreachable actions.
+- [x] **Very high** — Support compact portrait, compact landscape, medium, expanded, split-screen, and resizable layouts.
+- [x] **High** — Use two-pane editor and library/detail layouts where width permits.
+- [~] **Very high** — Maintain function at 320dp width and 200% font scale without clipped or unreachable actions. Adaptive action stacking and an automated 320dp/200% text check are present; complete route-level device validation remains.
 - [~] **High** — Keep all touch targets at least 48x48dp and ensure WCAG 2.2 AA contrast. The design system targets this, but the complete audit remains.
-- [ ] **Very high** — Add logical TalkBack traversal and throttled announcements for camera readiness, guidance changes, capture, processing completion, errors, selection count, and crop validity.
-- [~] **High** — Add non-drag crop adjustment actions and accessible page-reorder controls. Button-based page reordering exists; non-drag crop controls remain.
-- [ ] **High** — Respect reduced motion, haptics settings, high-contrast text, system theme, system bars, cutouts, and navigation insets.
+- [x] **Very high** — Add logical TalkBack traversal and throttled announcements for camera readiness, guidance changes, capture, processing completion, errors, selection count, and crop validity.
+- [x] **High** — Add non-drag crop adjustment actions and accessible page-reorder controls.
+- [x] **High** — Respect reduced motion, haptics settings, high-contrast text, system theme, system bars, cutouts, and navigation insets.
 - [ ] **High** — Test bright paper, dark receipts, colorful backgrounds, low-contrast edges, rotation, and preview crop modes.
-- [ ] **Very high** — Add automated UI tests for import, live capture, permission denial, detection fallback, invalid crop, save failure, folder operations, Trash restore, and export failure.
+- [~] **Very high** — Add automated UI tests for import, live capture, permission denial, detection fallback, invalid crop, save failure, folder operations, Trash restore, and export failure. Adaptive layout and non-drag crop semantics are covered; the complete end-to-end failure matrix remains.
 - [ ] **Very high** — Profile camera analysis, thumbnail loading, repository queries, and memory use with large multi-page documents.
 
 **Complete when:** the exposed product passes the above checks without network access, raw internal errors, data loss, or camera-preview stalls.
@@ -221,7 +223,7 @@ This work is continuous, but the full pass is required before release.
 6. `[x]` Search, folders, selection, and Trash.
 7. `[x]` Page editing.
 8. `[x]` Me and Settings.
-9. `[ ]` Final accessibility, adaptive-layout, performance, and release hardening.
+9. `[~]` Final accessibility, adaptive-layout, performance, and release hardening.
 
 The first meaningful product milestone is steps 1–4: import several images, review them, save a durable document, find it in Home, and export/share a multi-page PDF. Steps 1–3 are usable now; durable multi-page export is the remaining part of that product milestone. Live camera capture follows and must reuse the same persistence and session architecture.
 

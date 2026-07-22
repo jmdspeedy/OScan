@@ -86,6 +86,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.oscan.android.data.model.DocumentId
 import com.oscan.android.data.model.FolderId
@@ -117,7 +120,6 @@ fun OScanAppShell(
     var editingPage by remember { mutableStateOf<com.oscan.android.data.model.Page?>(null) }
     var addPagesDialogOpen by remember { mutableStateOf(false) }
     var isViewingFolders by rememberSaveable { mutableStateOf(false) }
-    var createFolderDialogOpen by remember { mutableStateOf(false) }
     var activeSubRoute by rememberSaveable { mutableStateOf(SettingsSubRoute.NONE) }
 
     val gridState = rememberLazyGridState()
@@ -195,27 +197,47 @@ fun OScanAppShell(
     if (state.selectedDocumentId != null) {
         val context = androidx.compose.ui.platform.LocalContext.current
         BackHandler { libraryViewModel.closeDocument() }
-        DocumentDetailScreen(
-            document = state.selectedDocument,
-            requestedDocumentExists = state.documents.any { it.id == state.selectedDocumentId },
-            folders = state.folders,
-            fileStore = fileStore,
-            snackbarHostState = snackbarHostState,
-            isExporting = state.isExporting,
-            onBack = libraryViewModel::closeDocument,
-            onRename = libraryViewModel::rename,
-            onFavorite = libraryViewModel::setFavorite,
-            onMove = libraryViewModel::moveToFolder,
-            onTrash = libraryViewModel::moveToTrash,
-            onSavePdf = { ctx, doc, uri -> libraryViewModel.exportDocumentPdfToUri(ctx, doc, fileStore, uri) },
-            onSharePdf = { ctx, doc -> libraryViewModel.shareDocumentPdf(ctx, doc, fileStore, context::startActivity) },
-            onOpenPage = { viewerPage = it },
-            onReorderPages = { pageIds: List<PageId> -> state.selectedDocumentId?.let { libraryViewModel.reorderPages(it, pageIds) } },
-            onRotatePage = { pageId: PageId, delta: Int -> state.selectedDocumentId?.let { libraryViewModel.rotatePage(it, pageId, delta) } },
-            onDeletePage = { pageId: PageId -> state.selectedDocumentId?.let { libraryViewModel.deletePage(it, pageId) } },
-            onAddPages = { addPagesDialogOpen = true },
-            onEditPage = { page: Page -> editingPage = page }
-        )
+        val detailPane: @Composable () -> Unit = {
+            DocumentDetailScreen(
+                document = state.selectedDocument,
+                requestedDocumentExists = state.documents.any { it.id == state.selectedDocumentId },
+                folders = state.folders,
+                fileStore = fileStore,
+                snackbarHostState = snackbarHostState,
+                isExporting = state.isExporting,
+                onBack = libraryViewModel::closeDocument,
+                onRename = libraryViewModel::rename,
+                onFavorite = libraryViewModel::setFavorite,
+                onMove = libraryViewModel::moveToFolder,
+                onTrash = libraryViewModel::moveToTrash,
+                onSavePdf = { ctx, doc, uri -> libraryViewModel.exportDocumentPdfToUri(ctx, doc, fileStore, uri) },
+                onSharePdf = { ctx, doc -> libraryViewModel.shareDocumentPdf(ctx, doc, fileStore, context::startActivity) },
+                onOpenPage = { viewerPage = it },
+                onReorderPages = { pageIds: List<PageId> -> state.selectedDocumentId?.let { libraryViewModel.reorderPages(it, pageIds) } },
+                onRotatePage = { pageId: PageId, delta: Int -> state.selectedDocumentId?.let { libraryViewModel.rotatePage(it, pageId, delta) } },
+                onDeletePage = { pageId: PageId -> state.selectedDocumentId?.let { libraryViewModel.deletePage(it, pageId) } },
+                onAddPages = { addPagesDialogOpen = true },
+                onEditPage = { page: Page -> editingPage = page }
+            )
+        }
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            if (maxWidth >= 840.dp) {
+                Row(Modifier.fillMaxSize()) {
+                    LibraryMasterPane(
+                        state = state,
+                        fileStore = fileStore,
+                        gridState = gridState,
+                        listState = listState,
+                        libraryViewModel = libraryViewModel,
+                        modifier = Modifier.widthIn(min = 320.dp, max = 400.dp).fillMaxHeight()
+                    )
+                    Surface(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.width(1.dp).fillMaxHeight()) {}
+                    Box(Modifier.weight(1f).fillMaxHeight()) { detailPane() }
+                }
+            } else {
+                detailPane()
+            }
+        }
 
         if (addPagesDialogOpen && state.selectedDocument != null && scannerViewModel != null) {
             val doc = state.selectedDocument!!
@@ -357,6 +379,43 @@ fun OScanAppShell(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LibraryMasterPane(
+    state: LibraryUiState,
+    fileStore: DocumentFileStore,
+    gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
+    listState: androidx.compose.foundation.lazy.LazyListState,
+    libraryViewModel: LibraryViewModel,
+    modifier: Modifier = Modifier
+) {
+    Scaffold(
+        modifier = modifier,
+        topBar = { TopAppBar(title = { Text("Library") }) }
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            HomeLibraryScreen(
+                state = state,
+                fileStore = fileStore,
+                gridState = gridState,
+                listState = listState,
+                onOpenDocument = libraryViewModel::openDocument,
+                onSearchQueryChange = libraryViewModel::setSearchQuery,
+                onFilterChange = libraryViewModel::setFilter,
+                onToggleSelectionMode = libraryViewModel::toggleSelectionMode,
+                onToggleDocumentSelection = libraryViewModel::toggleDocumentSelection,
+                onOpenFolder = libraryViewModel::openFolder,
+                onCreateFolderRequested = {},
+                emptyContent = {
+                    Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                        Text("No documents", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            )
+        }
+    }
+}
+
 @Composable
 private fun OScanNavigationRail(selected: AppDestination, onDestinationSelected: (AppDestination) -> Unit) {
     NavigationRail(modifier = Modifier.fillMaxHeight()) {
@@ -400,7 +459,12 @@ private fun DestinationScaffold(
         topBar = {
             if (state.selectionMode && destination == AppDestination.Home) {
                 TopAppBar(
-                    title = { Text("${state.selectedDocumentIds.size} selected") },
+                    title = {
+                        Text(
+                            "${state.selectedDocumentIds.size} selected",
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = libraryViewModel::clearSelection) {
                             Icon(Icons.Default.Close, "Cancel selection")

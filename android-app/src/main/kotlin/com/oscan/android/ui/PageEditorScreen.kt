@@ -96,54 +96,14 @@ fun PageEditorScreen(
                     }
                 }
                 is PageEditorUiState.PreviewReady -> {
-                    Column(
-                        Modifier.fillMaxSize().background(OScanTheme.colors.workspace)
-                    ) {
-                        Box(
-                            Modifier.weight(1f).fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                bitmap = current.croppedBitmap.asImageBitmap(),
-                                contentDescription = "Cropped Preview",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit
-                            )
-                        }
-
-                        Surface(
-                            color = MaterialTheme.colorScheme.surface,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(Modifier.padding(16.dp)) {
-                                Text("Treatment", style = MaterialTheme.typography.titleMedium)
-                                Spacer(Modifier.height(8.dp))
-                                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                                    SegmentedButton(
-                                        selected = current.selectedFilter == FilterType.ORIGINAL,
-                                        onClick = { viewModel.onFilterSelected(FilterType.ORIGINAL) },
-                                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
-                                    ) {
-                                        Text("Original")
-                                    }
-                                    SegmentedButton(
-                                        selected = current.selectedFilter == FilterType.MAGIC,
-                                        onClick = { viewModel.onFilterSelected(FilterType.MAGIC) },
-                                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                                    ) {
-                                        Text("Magic")
-                                    }
-                                }
-                                Spacer(Modifier.height(12.dp))
-                                OutlinedButton(
-                                    onClick = viewModel::onBackToCrop,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("Re-adjust crop")
-                                }
-                            }
-                        }
-                    }
+                    PreviewScreen(
+                        croppedBitmap = current.croppedBitmap,
+                        selectedFilter = current.selectedFilter,
+                        onFilterSelected = viewModel::onFilterSelected,
+                        onBackToCrop = viewModel::onBackToCrop,
+                        onExportPdfRequested = viewModel::saveEdits,
+                        primaryActionLabel = "Save page"
+                    )
                 }
                 is PageEditorUiState.Error -> {
                     AlertDialog(

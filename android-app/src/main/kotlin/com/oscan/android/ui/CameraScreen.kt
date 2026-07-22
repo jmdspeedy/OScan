@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -48,11 +50,19 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.core.content.ContextCompat
 import java.io.File
+import kotlinx.coroutines.delay
 
 @Composable
 fun LiveCameraScreen(
@@ -61,7 +71,8 @@ fun LiveCameraScreen(
     onCaptured: (File) -> Unit,
     onDone: () -> Unit,
     onClose: () -> Unit,
-    onImport: () -> Unit
+    onImport: () -> Unit,
+    shutterFeedbackEnabled: Boolean = true
 ) {
     val context = LocalContext.current
     var permissionGranted by remember {
@@ -84,6 +95,7 @@ fun LiveCameraScreen(
     }
 
     val state by cameraViewModel.uiState.collectAsState()
+    val haptics = LocalHapticFeedback.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val orientation = LocalConfiguration.current.orientation
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
@@ -91,6 +103,15 @@ fun LiveCameraScreen(
         previewView?.let { cameraViewModel.bind(lifecycleOwner, it, it.display?.rotation ?: 0) }
     }
     DisposableEffect(Unit) { onDispose(cameraViewModel::unbind) }
+
+    val currentStatus = state.errorMessage ?: captureState.message ?: state.guidance
+    var announcedStatus by remember { mutableStateOf("Camera starting") }
+    LaunchedEffect(state.isStarting, currentStatus) {
+        if (!state.isStarting) {
+            delay(1_200)
+            announcedStatus = currentStatus
+        }
+    }
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
@@ -120,7 +141,7 @@ fun LiveCameraScreen(
         }
 
         Row(
-            Modifier.fillMaxWidth().background(Color.Black.copy(alpha = .62f)).padding(horizontal = 8.dp, vertical = 10.dp),
+            Modifier.fillMaxWidth().background(Color.Black.copy(alpha = .62f)).statusBarsPadding().padding(horizontal = 8.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onClose, enabled = !state.isCapturing && !captureState.isProcessing) { Icon(Icons.Default.Close, "Close camera", tint = Color.White) }
@@ -139,10 +160,16 @@ fun LiveCameraScreen(
         }
 
         Column(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color.Black.copy(alpha = .68f)).padding(16.dp),
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color.Black.copy(alpha = .68f)).navigationBarsPadding().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(state.errorMessage ?: captureState.message ?: state.guidance, color = Color.White)
+            Text(currentStatus, color = Color.White)
+            Box(
+                Modifier.size(1.dp).semantics {
+                    liveRegion = LiveRegionMode.Polite
+                    contentDescription = announcedStatus
+                }
+            )
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly) {
                 Surface(color = Color.White.copy(alpha = .14f), shape = MaterialTheme.shapes.large) {
@@ -150,13 +177,17 @@ fun LiveCameraScreen(
                 }
                 Surface(
                     onClick = {
+                        if (shutterFeedbackEnabled) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         val temp = File.createTempFile("capture-", ".jpg", context.cacheDir)
                         cameraViewModel.capture(temp) { it?.let(onCaptured) }
                     },
                     enabled = state.isAvailable && !state.isStarting && !state.isCapturing,
                     shape = CircleShape,
                     color = Color.White,
-                    modifier = Modifier.size(72.dp)
+                    modifier = Modifier.size(72.dp).semantics {
+                        contentDescription = "Capture page"
+                        stateDescription = if (state.isCapturing) "Capturing" else "Ready"
+                    }
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         if (state.isCapturing) CircularProgressIndicator(Modifier.size(28.dp))
@@ -165,6 +196,12 @@ fun LiveCameraScreen(
                 }
                 Button(onClick = onDone, enabled = captureState.capturedCount > 0 && !captureState.isProcessing) { Text("Done") }
             }
+            Box(
+                Modifier.size(1.dp).semantics {
+                    liveRegion = LiveRegionMode.Assertive
+                    contentDescription = if (captureState.capturedCount == 1) "1 page captured" else "${captureState.capturedCount} pages captured"
+                }
+            )
         }
 
         if (state.isStarting) {

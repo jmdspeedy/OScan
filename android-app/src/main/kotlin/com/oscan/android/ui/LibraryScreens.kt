@@ -106,6 +106,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -877,6 +878,8 @@ fun DocumentDetailScreen(
     onEditPage: (Page) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val compactActions = configuration.screenWidthDp < 600 || configuration.fontScale >= 1.5f
     var overflowOpen by remember { mutableStateOf(false) }
     var renameOpen by rememberSaveable { mutableStateOf(false) }
     var moveOpen by rememberSaveable { mutableStateOf(false) }
@@ -898,20 +901,22 @@ fun DocumentDetailScreen(
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
                 actions = {
                     if (document != null) {
-                        IconButton(onClick = onAddPages) {
-                            Icon(Icons.Default.AddPhotoAlternate, "Add pages")
-                        }
-                        IconButton(
-                            onClick = { onSharePdf(context, document) },
-                            enabled = !isExporting
-                        ) {
-                            Icon(Icons.Default.Share, "Share PDF")
-                        }
-                        IconButton(
-                            onClick = { createDocumentLauncher.launch("${document.name}.pdf") },
-                            enabled = !isExporting
-                        ) {
-                            Icon(Icons.Default.PictureAsPdf, "Save PDF")
+                        if (!compactActions) {
+                            IconButton(onClick = onAddPages) {
+                                Icon(Icons.Default.AddPhotoAlternate, "Add pages")
+                            }
+                            IconButton(
+                                onClick = { onSharePdf(context, document) },
+                                enabled = !isExporting
+                            ) {
+                                Icon(Icons.Default.Share, "Share PDF")
+                            }
+                            IconButton(
+                                onClick = { createDocumentLauncher.launch("${document.name}.pdf") },
+                                enabled = !isExporting
+                            ) {
+                                Icon(Icons.Default.PictureAsPdf, "Save PDF")
+                            }
                         }
                         IconButton(onClick = { onFavorite(!document.isFavorite) }) {
                             Icon(if (document.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, if (document.isFavorite) "Remove favorite" else "Add favorite")
@@ -935,6 +940,11 @@ fun DocumentDetailScreen(
                                     leadingIcon = { Icon(Icons.Default.Share, null) },
                                     onClick = { overflowOpen = false; onSharePdf(context, document) },
                                     enabled = !isExporting
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(if (document.isFavorite) "Remove favorite" else "Add favorite") },
+                                    leadingIcon = { Icon(if (document.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, null) },
+                                    onClick = { overflowOpen = false; onFavorite(!document.isFavorite) }
                                 )
                                 DropdownMenuItem(text = { Text("Rename") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { overflowOpen = false; renameOpen = true })
                                 if (folders.isNotEmpty() || document.folder != null) {
@@ -1051,7 +1061,7 @@ fun DocumentDetailScreen(
                                             }
                                         },
                                         enabled = position > 0,
-                                        modifier = Modifier.size(36.dp)
+                                        modifier = Modifier.size(48.dp)
                                     ) {
                                         Icon(Icons.AutoMirrored.Filled.NavigateBefore, "Move page ${position + 1} left")
                                     }
@@ -1067,7 +1077,7 @@ fun DocumentDetailScreen(
                                             }
                                         },
                                         enabled = position < document.pages.lastIndex,
-                                        modifier = Modifier.size(36.dp)
+                                        modifier = Modifier.size(48.dp)
                                     ) {
                                         Icon(Icons.AutoMirrored.Filled.NavigateNext, "Move page ${position + 1} right")
                                     }

@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -52,6 +54,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.oscan.android.data.model.FolderId
@@ -70,6 +76,7 @@ fun ScannerApp(
     repository: com.oscan.android.data.repository.DocumentRepository? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val libraryState by libraryViewModel.uiState.collectAsState()
     var replacementPageId by rememberSaveable { mutableStateOf<String?>(null) }
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
     var showCamera by rememberSaveable { mutableStateOf(false) }
@@ -105,7 +112,8 @@ fun ScannerApp(
                 onCaptured = viewModel::onCameraCaptured,
                 onDone = { showCamera = false; viewModel.finishCameraCapture() },
                 onClose = { showCamera = false; if (captureState.capturedCount > 0) viewModel.finishCameraCapture() },
-                onImport = launchMultiplePicker
+                onImport = launchMultiplePicker,
+                shutterFeedbackEnabled = libraryState.userPreferences.shutterFeedback
             )
             return
         }
@@ -184,6 +192,26 @@ fun ScannerApp(
         }
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
+            val announcement = when (state) {
+                ScannerUiState.LoadingSession -> "Restoring scan"
+                is ScannerUiState.CropReady -> "Page ready. Adjust the crop boundary."
+                is ScannerUiState.Processing -> state.message
+                is ScannerUiState.PreviewReady -> "Processing complete. Choose a treatment."
+                is ScannerUiState.Review -> "Review ready. ${state.session.acceptedPages.size} pages accepted."
+                is ScannerUiState.SaveDocument -> state.errorMessage ?: if (state.isSaving) "Saving document" else "Ready to save document"
+                is ScannerUiState.Saved -> "Document saved locally"
+                is ScannerUiState.Error -> state.message
+                is ScannerUiState.Importing -> if (state.completed == state.total) "Import complete" else ""
+                ScannerUiState.Empty -> ""
+            }
+            if (announcement.isNotEmpty()) {
+                Box(
+                    Modifier.size(1.dp).semantics {
+                        liveRegion = if (state is ScannerUiState.Error) LiveRegionMode.Assertive else LiveRegionMode.Polite
+                        contentDescription = announcement
+                    }
+                )
+            }
             when (state) {
                 ScannerUiState.Empty -> Unit
                 ScannerUiState.LoadingSession -> ProgressState("Restoring your scan…")
@@ -320,10 +348,7 @@ private fun SessionReviewScreen(
                 HorizontalDivider()
             }
         }
-        Row(
-            Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
-        ) {
+        AdaptiveActionGroup(Modifier.fillMaxWidth().padding(16.dp)) {
             OutlinedButton(onClick = onAdd) { Text("Add pages") }
             Button(onClick = onFinish, enabled = state.session.acceptedPages.isNotEmpty() && !pending) { Text("Finish") }
         }
@@ -340,7 +365,7 @@ private fun SaveDocumentScreen(
     var folderMenuOpen by remember { mutableStateOf(false) }
     val selectedFolder = state.folders.find { it.id.value == state.session.selectedFolderId }
     Column(
-        Modifier.fillMaxSize().padding(24.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text("Save ${state.session.acceptedPages.size} pages as one local document.")
@@ -372,7 +397,7 @@ private fun SaveDocumentScreen(
             }
         }
         state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(8.dp))
         Button(
             onClick = onSave,
             enabled = !state.isSaving && state.session.documentName.isNotBlank(),

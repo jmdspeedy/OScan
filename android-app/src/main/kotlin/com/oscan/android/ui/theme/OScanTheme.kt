@@ -21,6 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import com.oscan.android.ui.LocalOScanAccessibilitySettings
+import com.oscan.android.ui.currentOScanAccessibilitySettings
 
 private val OScanLightColorScheme = lightColorScheme(
     primary = Color(0xFF006874),
@@ -157,7 +159,18 @@ fun OScanTheme(
     },
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) OScanDarkColorScheme else OScanLightColorScheme
+    val accessibilitySettings = currentOScanAccessibilitySettings()
+    val baseColorScheme = if (darkTheme) OScanDarkColorScheme else OScanLightColorScheme
+    val colorScheme = if (accessibilitySettings.highContrastText) {
+        baseColorScheme.copy(
+            onBackground = if (darkTheme) Color.White else Color.Black,
+            onSurface = if (darkTheme) Color.White else Color.Black,
+            onSurfaceVariant = if (darkTheme) Color.White else Color(0xFF202425),
+            outline = if (darkTheme) Color.White else Color.Black
+        )
+    } else {
+        baseColorScheme
+    }
     val extendedColors = if (darkTheme) DarkExtendedColors else LightExtendedColors
     val view = LocalView.current
 
@@ -173,7 +186,10 @@ fun OScanTheme(
         }
     }
 
-    CompositionLocalProvider(LocalOScanExtendedColors provides extendedColors) {
+    CompositionLocalProvider(
+        LocalOScanExtendedColors provides extendedColors,
+        LocalOScanAccessibilitySettings provides accessibilitySettings
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = OScanTypography,

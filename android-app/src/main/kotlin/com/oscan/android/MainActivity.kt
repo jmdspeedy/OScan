@@ -15,6 +15,7 @@ import com.oscan.android.ui.CameraViewModel
 import com.oscan.android.ui.theme.OScanTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.core.view.WindowCompat
 
 class MainActivity : ComponentActivity() {
 
@@ -57,6 +58,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             val uiState by libraryViewModel.uiState.collectAsState()
             OScanTheme(themeChoice = uiState.userPreferences.themeChoice) {
