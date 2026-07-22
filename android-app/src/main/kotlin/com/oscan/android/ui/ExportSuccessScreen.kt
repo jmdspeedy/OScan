@@ -9,8 +9,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.oscan.android.ui.theme.OScanTheme
 
 @Composable
 fun ExportSuccessScreen(
@@ -18,6 +18,7 @@ fun ExportSuccessScreen(
     onShareClicked: () -> Unit,
     onScanAnotherClicked: () -> Unit
 ) {
+    val oscanColors = OScanTheme.colors
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -25,17 +26,25 @@ fun ExportSuccessScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.CheckCircle,
-            contentDescription = "PDF Exported Successfully",
-            tint = Color(0xFF00E676),
-            modifier = Modifier.size(80.dp)
-        )
+        Surface(
+            color = oscanColors.successContainer,
+            shape = MaterialTheme.shapes.extraLarge,
+            modifier = Modifier.size(96.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = oscanColors.onSuccessContainer,
+                    modifier = Modifier.size(56.dp)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "PDF Created Successfully!",
+            text = "PDF created",
             style = MaterialTheme.typography.titleLarge
         )
 
@@ -69,7 +78,7 @@ fun ExportSuccessScreen(
                 .fillMaxWidth(0.8f)
                 .height(48.dp)
         ) {
-            Text("Scan Another Document")
+            Text("Scan another")
         }
     }
 }

@@ -7,6 +7,7 @@ import android.graphics.Paint
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.oscan.android.engine.AndroidPdfExporter
+import com.oscan.android.engine.AndroidScannerEngine
 import com.oscan.core.model.CornerPoints
 import com.oscan.core.model.ImageDimensions
 import com.oscan.core.util.CornerValidator
@@ -14,10 +15,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.opencv.core.Point
+import kotlinx.coroutines.runBlocking
 import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class PipelineIntegrationTest {
+
+    @Test
+    fun openCvNativeLibraryInitializes() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        assertTrue("OpenCV Android native library should initialize", AndroidScannerEngine(context).initialize())
+    }
 
     @Test
     fun testFullPipelineProducesNonEmptyPdf() {

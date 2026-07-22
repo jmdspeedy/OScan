@@ -1,6 +1,7 @@
 # Gradle and build output
 .gradle/
 **/build/
+**/bin/
 gradle-bin/
 
 # Local Android/SDK configuration

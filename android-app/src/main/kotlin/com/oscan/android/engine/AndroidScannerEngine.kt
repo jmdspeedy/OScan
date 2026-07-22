@@ -13,7 +13,7 @@ import com.oscan.core.model.FilterType
 import com.oscan.core.model.ImageDimensions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import nu.pattern.OpenCV
+import org.opencv.android.Utils
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.Point
@@ -36,10 +36,15 @@ data class DetectionResult(
     val previewBitmap: Bitmap
 )
 
+interface ScannerEngine {
+    suspend fun decodeAndDetect(uri: Uri): DetectionResult
+    suspend fun cropAndFilter(uri: Uri, corners: CornerPoints, filterType: FilterType): Bitmap
+}
+
 /**
  * Android scanner engine boundary isolating OpenCV Mat direct manipulation from Compose code.
  */
-class AndroidScannerEngine(private val context: Context) {
+class AndroidScannerEngine(private val context: Context) : ScannerEngine {
 
     private val scanner: DocumentScanner by lazy { DocumentScanner() }
     private val enhancer: ImageEnhancer by lazy { ImageEnhancer() }
@@ -51,15 +56,10 @@ class AndroidScannerEngine(private val context: Context) {
     suspend fun initialize(): Boolean = withContext(Dispatchers.IO) {
         if (isNativeInitialized) return@withContext true
         val openCvSuccess = try {
-            OpenCV.loadLocally()
+            System.loadLibrary("opencv_java4")
             true
         } catch (_: Throwable) {
-            try {
-                System.loadLibrary("opencv_java4")
-                true
-            } catch (_: Throwable) {
-                false
-            }
+            false
         }
         isNativeInitialized = openCvSuccess
         openCvSuccess
@@ -68,7 +68,7 @@ class AndroidScannerEngine(private val context: Context) {
     /**
      * Decodes source URI, applies EXIF orientation correction, and detects corners.
      */
-    suspend fun decodeAndDetect(uri: Uri): DetectionResult = withContext(Dispatchers.IO) {
+    override suspend fun decodeAndDetect(uri: Uri): DetectionResult = withContext(Dispatchers.IO) {
         require(initialize()) { "Failed to initialize OpenCV native libraries" }
 
         val decodedBitmap = decodeUriWithExif(uri)
@@ -103,7 +103,7 @@ class AndroidScannerEngine(private val context: Context) {
     /**
      * Crops image using user-confirmed corners and applies requested filter.
      */
-    suspend fun cropAndFilter(
+    override suspend fun cropAndFilter(
         uri: Uri,
         corners: CornerPoints,
         filterType: FilterType
@@ -134,15 +134,9 @@ class AndroidScannerEngine(private val context: Context) {
 
     private fun bitmapToMat(bitmap: Bitmap): Mat {
         val bmp32 = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        val width = bmp32.width
-        val height = bmp32.height
-        val pixels = IntArray(width * height)
-        bmp32.getPixels(pixels, 0, width, 0, 0, width, height)
-
-        val matRgba = Mat(height, width, CvType.CV_8UC4)
-        val byteBuffer = java.nio.ByteBuffer.allocateDirect(width * height * 4)
-        byteBuffer.asIntBuffer().put(pixels)
-        matRgba.put(0, 0, byteBuffer.array())
+        val matRgba = Mat(bmp32.height, bmp32.width, CvType.CV_8UC4)
+        Utils.bitmapToMat(bmp32, matRgba)
+        bmp32.recycle()
 
         val matBgr = Mat()
         Imgproc.cvtColor(matRgba, matBgr, Imgproc.COLOR_RGBA2BGR)
@@ -160,15 +154,8 @@ class AndroidScannerEngine(private val context: Context) {
             mat.copyTo(rgbaMat)
         }
 
-        val width = rgbaMat.cols()
-        val height = rgbaMat.rows()
-        val pixels = IntArray(width * height)
-        val byteBuffer = java.nio.ByteBuffer.allocateDirect(width * height * 4)
-        rgbaMat.get(0, 0, byteBuffer.array())
-        byteBuffer.asIntBuffer().get(pixels)
-
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+        val bitmap = Bitmap.createBitmap(rgbaMat.cols(), rgbaMat.rows(), Bitmap.Config.ARGB_8888)
+        Utils.matToBitmap(rgbaMat, bitmap)
         rgbaMat.release()
         return bitmap
     }

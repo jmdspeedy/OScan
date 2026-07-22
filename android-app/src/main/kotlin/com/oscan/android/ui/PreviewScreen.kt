@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import com.oscan.core.model.FilterType
+import com.oscan.android.ui.theme.OScanTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PreviewScreen(
     croppedBitmap: Bitmap,
@@ -23,7 +25,7 @@ fun PreviewScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(OScanTheme.colors.workspace)
     ) {
         Box(
             modifier = Modifier
@@ -39,23 +41,21 @@ fun PreviewScreen(
             )
         }
 
-        // Filter selection segment
         Surface(
             tonalElevation = 2.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
+            SingleChoiceSegmentedButtonRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp, horizontal = 16.dp),
-                horizontalArrangement = Arrangement.Center
             ) {
-                FilterType.values().forEach { filter ->
-                    FilterChip(
+                FilterType.values().forEachIndexed { index, filter ->
+                    SegmentedButton(
                         selected = selectedFilter == filter,
                         onClick = { onFilterSelected(filter) },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = FilterType.values().size),
                         label = { Text(filter.name.lowercase().replaceFirstChar { it.uppercase() }) },
-                        modifier = Modifier.padding(horizontal = 8.dp)
                     )
                 }
             }
@@ -65,15 +65,16 @@ fun PreviewScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedButton(onClick = onBackToCrop) {
-                Text("Back to Crop")
+                Text("Adjust edges")
             }
             Button(onClick = onExportPdfRequested) {
-                Text("Export PDF")
+                Text("Accept page")
             }
         }
     }

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.oscan.core.model.CornerPoints
 import com.oscan.core.model.ImageDimensions
 import com.oscan.core.util.CoordinateTransformer
+import com.oscan.android.ui.theme.OScanTheme
 import org.opencv.core.Point
 import kotlin.math.hypot
 
@@ -38,21 +39,23 @@ fun CropScreen(
     onCropConfirmed: () -> Unit
 ) {
     var containerSize by remember { mutableStateOf(IntSize.Zero) }
+    val oscanColors = OScanTheme.colors
+    val errorColor = MaterialTheme.colorScheme.error
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(oscanColors.workspace)
     ) {
         if (!isAutoDetected) {
             Surface(
-                color = MaterialTheme.colorScheme.tertiaryContainer,
+                color = oscanColors.warningContainer,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Could not auto-detect document edges. Please adjust corners manually.",
+                    text = "Edges need a quick check. Place each handle on a document corner.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    color = oscanColors.onWarningContainer,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
@@ -64,7 +67,7 @@ fun CropScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Invalid corner configuration. Corners must form a convex 4-sided shape.",
+                    text = "The crop boundary cannot cross itself. Adjust the highlighted corners.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -139,7 +142,7 @@ fun CropScreen(
                             )
                         }
                 ) {
-                    val lineColor = if (isValidGeometry) Color(0xFF00E676) else Color.Red
+                    val lineColor = if (isValidGeometry) oscanColors.cropBoundary else errorColor
                     val path = Path().apply {
                         moveTo(displayPoints[0].x.toFloat(), displayPoints[0].y.toFloat())
                         lineTo(displayPoints[1].x.toFloat(), displayPoints[1].y.toFloat())
@@ -167,7 +170,7 @@ fun CropScreen(
                         val center = Offset(pt.x.toFloat(), pt.y.toFloat())
                         val handleRadius = 14.dp.toPx()
                         drawCircle(
-                            color = Color.White,
+                            color = oscanColors.workspace,
                             radius = handleRadius,
                             center = center
                         )
@@ -186,21 +189,22 @@ fun CropScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedButton(onClick = onRetake) {
-                Text("Retake")
+                Text("Choose another")
             }
             OutlinedButton(onClick = onReset) {
-                Text("Reset Corners")
+                Text("Reset")
             }
             Button(
                 onClick = onCropConfirmed,
                 enabled = isValidGeometry
             ) {
-                Text("Crop & Warp")
+                Text("Continue")
             }
         }
     }

@@ -1,239 +1,507 @@
 package com.oscan.android.ui
 
-import android.content.Context
-import android.content.Intent
+import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.net.Uri
-import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.oscan.android.engine.AndroidPdfExporter
-import com.oscan.android.engine.AndroidScannerEngine
+import com.oscan.android.data.model.DocumentId
+import com.oscan.android.data.model.Folder
+import com.oscan.android.data.model.FolderId
+import com.oscan.android.data.repository.DocumentRepository
+import com.oscan.android.data.repository.NewPage
+import com.oscan.android.data.session.ScanSession
+import com.oscan.android.data.session.ScanSessionStore
+import com.oscan.android.data.session.SessionPage
+import com.oscan.android.data.session.SessionPageStatus
+import com.oscan.android.engine.ScannerEngine
 import com.oscan.core.model.CornerPoints
 import com.oscan.core.model.FilterType
 import com.oscan.core.model.ImageDimensions
 import com.oscan.core.util.CoordinateTransformer
 import com.oscan.core.util.CornerValidator
+import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.opencv.core.Point
-import java.io.File
+
+data class SessionPageSummary(
+    val id: String,
+    val position: Int,
+    val status: SessionPageStatus,
+    val thumbnail: Bitmap?,
+    val message: String?,
+    val canRetryDirectly: Boolean
+)
 
 sealed interface ScannerUiState {
-    object Empty : ScannerUiState
-
-    data class Detecting(val uri: Uri) : ScannerUiState
-
+    data object Empty : ScannerUiState
+    data object LoadingSession : ScannerUiState
+    data class Importing(val completed: Int, val total: Int, val session: ScanSession) : ScannerUiState
     data class CropReady(
-        val uri: Uri,
+        val session: ScanSession,
+        val page: SessionPage,
         val previewBitmap: Bitmap,
-        val sourceDimensions: ImageDimensions,
         val corners: CornerPoints,
         val initialDetectedCorners: CornerPoints,
-        val isAutoDetected: Boolean,
         val isValidGeometry: Boolean
     ) : ScannerUiState
-
-    data class ProcessingCrop(val uri: Uri) : ScannerUiState
-
+    data class Processing(val session: ScanSession, val message: String) : ScannerUiState
     data class PreviewReady(
-        val uri: Uri,
-        val sourceDimensions: ImageDimensions,
-        val corners: CornerPoints,
+        val session: ScanSession,
+        val page: SessionPage,
         val selectedFilter: FilterType,
         val croppedBitmap: Bitmap
     ) : ScannerUiState
-
-    object Exporting : ScannerUiState
-
-    data class ExportSuccess(val pdfUri: Uri) : ScannerUiState
-
-    data class Error(
-        val message: String,
-        val canRetry: Boolean = true,
-        val previousState: ScannerUiState? = null
+    data class Review(val session: ScanSession, val pages: List<SessionPageSummary>) : ScannerUiState
+    data class SaveDocument(
+        val session: ScanSession,
+        val folders: List<Folder>,
+        val isSaving: Boolean = false,
+        val errorMessage: String? = null
     ) : ScannerUiState
+    data class Saved(val documentId: DocumentId, val name: String, val pageCount: Int) : ScannerUiState
+    data class Error(val message: String, val previousState: ScannerUiState?) : ScannerUiState
 }
 
 class ScannerViewModel(
-    private val scannerEngine: AndroidScannerEngine,
-    private val pdfExporter: AndroidPdfExporter = AndroidPdfExporter()
+    private val scannerEngine: ScannerEngine,
+    private val repository: DocumentRepository,
+    private val sessionStore: ScanSessionStore,
+    private val contentResolver: ContentResolver
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<ScannerUiState>(ScannerUiState.Empty)
+    private var session: ScanSession? = sessionStore.loadActive()
+    private val _uiState = MutableStateFlow<ScannerUiState>(
+        if (session == null) ScannerUiState.Empty else ScannerUiState.LoadingSession
+    )
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
 
-    fun onImageSelected(uri: Uri) {
-        viewModelScope.launch {
-            _uiState.value = ScannerUiState.Detecting(uri)
-            try {
-                val detectionResult = scannerEngine.decodeAndDetect(uri)
-                val isValid = CornerValidator.isValidQuadrilateral(
-                    corners = detectionResult.corners.toArray(),
-                    dimensions = detectionResult.sourceDimensions
-                )
-                _uiState.value = ScannerUiState.CropReady(
-                    uri = uri,
-                    previewBitmap = detectionResult.previewBitmap,
-                    sourceDimensions = detectionResult.sourceDimensions,
-                    corners = detectionResult.corners,
-                    initialDetectedCorners = detectionResult.corners,
-                    isAutoDetected = detectionResult.isAutoDetected,
-                    isValidGeometry = isValid
-                )
-            } catch (e: Throwable) {
-                _uiState.value = ScannerUiState.Error(
-                    message = e.localizedMessage ?: "Failed to process selected image",
-                    canRetry = true
-                )
+    init {
+        session?.let { restored ->
+            viewModelScope.launch {
+                val current = restored.currentPageId?.let { id -> restored.pages.find { it.id == id } }
+                if (current != null && current.status != SessionPageStatus.FAILED) openPage(current.id)
+                else showReview()
             }
         }
     }
 
-    fun onCornerMoved(
-        handleIndex: Int,
-        newDisplayPoint: Point,
-        containerDimensions: ImageDimensions
-    ) {
-        val currentState = _uiState.value as? ScannerUiState.CropReady ?: return
+    fun onImagesSelected(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        viewModelScope.launch {
+            val draft = session ?: sessionStore.create().also { session = it }
+            val startPosition = draft.pages.size
+            val placeholders = uris.mapIndexed { index, _ ->
+                SessionPage(
+                    id = sessionStore.newPageId(),
+                    position = startPosition + index,
+                    status = SessionPageStatus.IMPORTING
+                )
+            }
+            updateSession(draft.copy(pages = draft.pages + placeholders))
+            uris.forEachIndexed { index, uri ->
+                _uiState.value = ScannerUiState.Importing(index, uris.size, requireSession())
+                importAndDetect(placeholders[index].id, uri)
+            }
+            _uiState.value = ScannerUiState.Importing(uris.size, uris.size, requireSession())
+            val firstNewReviewable = placeholders.firstNotNullOfOrNull { placeholder ->
+                requireSession().pages.find { it.id == placeholder.id && it.status == SessionPageStatus.CROP_REVIEW }?.id
+            }
+            if (firstNewReviewable != null) openPage(firstNewReviewable) else showReview()
+        }
+    }
 
-        val transform = CoordinateTransformer.computeTransform(
-            source = currentState.sourceDimensions,
-            container = containerDimensions
-        )
-        val newSourcePoint = CoordinateTransformer.displayToSource(
-            displayPoint = newDisplayPoint,
-            transform = transform,
-            source = currentState.sourceDimensions
-        )
+    fun onReplacementSelected(pageId: String, uri: Uri?) {
+        if (uri == null) return
+        viewModelScope.launch {
+            updatePage(pageId) { it.copy(status = SessionPageStatus.IMPORTING, failureMessage = null) }
+            _uiState.value = ScannerUiState.Importing(0, 1, requireSession())
+            importAndDetect(pageId, uri)
+            val page = requireSession().pages.first { it.id == pageId }
+            if (page.status == SessionPageStatus.CROP_REVIEW) openPage(pageId) else showReview()
+        }
+    }
 
-        val cornersArray = currentState.corners.toArray()
-        cornersArray[handleIndex] = newSourcePoint
-        val updatedCorners = CornerPoints.fromArray(cornersArray)
+    fun retryPage(pageId: String) {
+        viewModelScope.launch {
+            val page = requireSession().pages.find { it.id == pageId } ?: return@launch
+            if (page.sourcePath == null) return@launch
+            detectStoredPage(pageId)
+            val updated = requireSession().pages.first { it.id == pageId }
+            if (updated.status == SessionPageStatus.CROP_REVIEW) openPage(pageId) else showReview()
+        }
+    }
 
-        val isValid = CornerValidator.isValidQuadrilateral(
-            corners = cornersArray,
-            dimensions = currentState.sourceDimensions
-        )
+    fun openPage(pageId: String) {
+        viewModelScope.launch {
+            val draft = requireSession()
+            val page = draft.pages.find { it.id == pageId } ?: return@launch
+            updateSession(draft.copy(currentPageId = pageId))
+            when (page.status) {
+                SessionPageStatus.ACCEPTED -> openAcceptedPage(page)
+                SessionPageStatus.TREATMENT_REVIEW -> recreateTreatmentPreview(page)
+                SessionPageStatus.CROP_REVIEW -> openCrop(page)
+                SessionPageStatus.FAILED -> showReview()
+                else -> detectStoredPage(pageId).also { openPage(pageId) }
+            }
+        }
+    }
 
-        _uiState.value = currentState.copy(
-            corners = updatedCorners,
-            isValidGeometry = isValid
+    fun onCornerMoved(handleIndex: Int, newDisplayPoint: Point, containerDimensions: ImageDimensions) {
+        val current = _uiState.value as? ScannerUiState.CropReady ?: return
+        if (handleIndex !in 0..3) return
+        val sourceDimensions = ImageDimensions(current.page.sourceWidth, current.page.sourceHeight)
+        val transform = CoordinateTransformer.computeTransform(sourceDimensions, containerDimensions)
+        val points = current.corners.toArray()
+        points[handleIndex] = CoordinateTransformer.displayToSource(newDisplayPoint, transform, sourceDimensions)
+        val corners = CornerPoints.fromArray(points)
+        _uiState.value = current.copy(
+            corners = corners,
+            isValidGeometry = CornerValidator.isValidQuadrilateral(points, sourceDimensions)
         )
     }
 
     fun onResetCorners() {
-        val currentState = _uiState.value as? ScannerUiState.CropReady ?: return
-        val resetCorners = currentState.initialDetectedCorners
-        val isValid = CornerValidator.isValidQuadrilateral(
-            corners = resetCorners.toArray(),
-            dimensions = currentState.sourceDimensions
-        )
-        _uiState.value = currentState.copy(
-            corners = resetCorners,
-            isValidGeometry = isValid
+        val current = _uiState.value as? ScannerUiState.CropReady ?: return
+        val dimensions = ImageDimensions(current.page.sourceWidth, current.page.sourceHeight)
+        _uiState.value = current.copy(
+            corners = current.initialDetectedCorners,
+            isValidGeometry = CornerValidator.isValidQuadrilateral(current.initialDetectedCorners.toArray(), dimensions)
         )
     }
 
     fun onCropConfirmed() {
-        val currentState = _uiState.value as? ScannerUiState.CropReady ?: return
-        if (!currentState.isValidGeometry) return
-
+        val current = _uiState.value as? ScannerUiState.CropReady ?: return
+        if (!current.isValidGeometry) return
         viewModelScope.launch {
-            _uiState.value = ScannerUiState.ProcessingCrop(currentState.uri)
-            try {
-                val croppedBitmap = scannerEngine.cropAndFilter(
-                    uri = currentState.uri,
-                    corners = currentState.corners,
-                    filterType = FilterType.ORIGINAL
-                )
-                _uiState.value = ScannerUiState.PreviewReady(
-                    uri = currentState.uri,
-                    sourceDimensions = currentState.sourceDimensions,
-                    corners = currentState.corners,
-                    selectedFilter = FilterType.ORIGINAL,
-                    croppedBitmap = croppedBitmap
-                )
-            } catch (e: Throwable) {
-                _uiState.value = ScannerUiState.Error(
-                    message = e.localizedMessage ?: "Crop operation failed",
-                    canRetry = true,
-                    previousState = currentState
-                )
+            updatePage(current.page.id) {
+                it.copy(status = SessionPageStatus.PROCESSING, corners = current.corners, filter = FilterType.ORIGINAL)
+            }
+            _uiState.value = ScannerUiState.Processing(requireSession(), "Straightening page…")
+            runCatching {
+                scannerEngine.cropAndFilter(sourceUri(current.page), current.corners, FilterType.ORIGINAL)
+            }.onSuccess { bitmap ->
+                updatePage(current.page.id) {
+                    it.copy(status = SessionPageStatus.TREATMENT_REVIEW, corners = current.corners, filter = FilterType.ORIGINAL)
+                }
+                val page = requireSession().pages.first { it.id == current.page.id }
+                _uiState.value = ScannerUiState.PreviewReady(requireSession(), page, FilterType.ORIGINAL, bitmap)
+            }.onFailure {
+                updatePage(current.page.id) { it.copy(status = SessionPageStatus.CROP_REVIEW) }
+                _uiState.value = ScannerUiState.Error("This page could not be cropped. Try adjusting its edges.", current)
             }
         }
     }
 
-    fun onFilterSelected(filterType: FilterType) {
-        val currentState = _uiState.value as? ScannerUiState.PreviewReady ?: return
-        if (currentState.selectedFilter == filterType) return
-
+    fun onFilterSelected(filter: FilterType) {
+        val current = _uiState.value as? ScannerUiState.PreviewReady ?: return
+        if (current.selectedFilter == filter) return
         viewModelScope.launch {
-            _uiState.value = ScannerUiState.ProcessingCrop(currentState.uri)
-            try {
-                val filteredBitmap = scannerEngine.cropAndFilter(
-                    uri = currentState.uri,
-                    corners = currentState.corners,
-                    filterType = filterType
-                )
-                _uiState.value = currentState.copy(
-                    selectedFilter = filterType,
-                    croppedBitmap = filteredBitmap
-                )
-            } catch (e: Throwable) {
-                _uiState.value = ScannerUiState.Error(
-                    message = e.localizedMessage ?: "Failed to apply filter",
-                    canRetry = true,
-                    previousState = currentState
-                )
+            _uiState.value = ScannerUiState.Processing(requireSession(), "Applying treatment…")
+            runCatching {
+                val corners = current.page.corners ?: error("Missing crop")
+                scannerEngine.cropAndFilter(sourceUri(current.page), corners, filter)
+            }.onSuccess { bitmap ->
+                updatePage(current.page.id) { it.copy(status = SessionPageStatus.TREATMENT_REVIEW, filter = filter) }
+                val page = requireSession().pages.first { it.id == current.page.id }
+                _uiState.value = ScannerUiState.PreviewReady(requireSession(), page, filter, bitmap)
+            }.onFailure {
+                _uiState.value = ScannerUiState.Error("The treatment could not be applied. Try again.", current)
             }
         }
     }
 
-    fun onExportPdfDestinationSelected(context: Context, destinationUri: Uri) {
-        val currentState = _uiState.value as? ScannerUiState.PreviewReady ?: return
-
+    fun acceptCurrentPage() {
+        val current = _uiState.value as? ScannerUiState.PreviewReady ?: return
         viewModelScope.launch {
-            val previousState = currentState
-            _uiState.value = ScannerUiState.Exporting
-            try {
-                context.contentResolver.openOutputStream(destinationUri)?.use { stream ->
-                    pdfExporter.exportToPdf(currentState.croppedBitmap, stream)
-                } ?: throw IllegalStateException("Could not open destination output stream")
-
-                _uiState.value = ScannerUiState.ExportSuccess(destinationUri)
-            } catch (e: Throwable) {
-                _uiState.value = ScannerUiState.Error(
-                    message = e.localizedMessage ?: "Failed to export PDF",
-                    canRetry = true,
-                    previousState = previousState
-                )
+            _uiState.value = ScannerUiState.Processing(requireSession(), "Saving page to this scan…")
+            runCatching {
+                val processed = sessionStore.writeProcessed(requireSession().id, current.page.id, current.croppedBitmap)
+                val thumbnailBitmap = createThumbnail(current.croppedBitmap)
+                val thumbnail = try {
+                    sessionStore.writeThumbnail(requireSession().id, current.page.id, thumbnailBitmap)
+                } finally {
+                    if (thumbnailBitmap !== current.croppedBitmap) thumbnailBitmap.recycle()
+                }
+                updatePage(current.page.id) {
+                    it.copy(
+                        status = SessionPageStatus.ACCEPTED,
+                        processedPath = processed,
+                        thumbnailPath = thumbnail,
+                        outputWidth = current.croppedBitmap.width,
+                        outputHeight = current.croppedBitmap.height,
+                        filter = current.selectedFilter,
+                        failureMessage = null
+                    )
+                }
+            }.onSuccess {
+                val pages = requireSession().pages.sortedBy { it.position }
+                val next = pages.firstOrNull { it.position > current.page.position && it.status == SessionPageStatus.CROP_REVIEW }
+                    ?: pages.firstOrNull { it.status == SessionPageStatus.CROP_REVIEW }
+                if (next != null) openPage(next.id) else showReview()
+            }.onFailure {
+                _uiState.value = ScannerUiState.Error("This page could not be added to the scan. Try again.", current)
             }
         }
-    }
-
-    fun sharePdf(context: Context, pdfUri: Uri) {
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/pdf"
-            putExtra(Intent.EXTRA_STREAM, pdfUri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        context.startActivity(Intent.createChooser(shareIntent, "Share Document PDF"))
     }
 
     fun onBackToCrop() {
-        val currentState = _uiState.value as? ScannerUiState.PreviewReady ?: return
-        onImageSelected(currentState.uri)
+        val current = _uiState.value as? ScannerUiState.PreviewReady ?: return
+        viewModelScope.launch { openCrop(current.page) }
     }
 
-    fun onResetToEmpty() {
+    fun showReview() {
+        val draft = session ?: run { _uiState.value = ScannerUiState.Empty; return }
+        updateSession(draft.copy(currentPageId = null))
+        _uiState.value = ScannerUiState.Review(requireSession(), summaries(requireSession()))
+    }
+
+    fun removePage(pageId: String) {
+        val draft = session ?: return
+        sessionStore.deletePage(draft.id, pageId)
+        val pages = draft.pages.filterNot { it.id == pageId }.mapIndexed { index, page -> page.copy(position = index) }
+        if (pages.isEmpty()) {
+            discardSession()
+        } else {
+            updateSession(draft.copy(pages = pages, currentPageId = null))
+            showReview()
+        }
+    }
+
+    fun movePage(pageId: String, direction: Int) {
+        val draft = session ?: return
+        val ordered = draft.pages.sortedBy { it.position }.toMutableList()
+        val from = ordered.indexOfFirst { it.id == pageId }
+        val to = (from + direction).coerceIn(0, ordered.lastIndex)
+        if (from < 0 || from == to) return
+        val page = ordered.removeAt(from)
+        ordered.add(to, page)
+        updateSession(draft.copy(pages = ordered.mapIndexed { index, item -> item.copy(position = index) }))
+        showReview()
+    }
+
+    fun beginFinish() {
+        val draft = session ?: return
+        if (draft.acceptedPages.isEmpty()) return
+        viewModelScope.launch {
+            val folders = runCatching { repository.observeFolders().first() }.getOrDefault(emptyList())
+            _uiState.value = ScannerUiState.SaveDocument(requireSession(), folders)
+        }
+    }
+
+    fun updateDocumentName(name: String) {
+        val draft = session ?: return
+        updateSession(draft.copy(documentName = name))
+        val current = _uiState.value as? ScannerUiState.SaveDocument ?: return
+        _uiState.value = current.copy(session = requireSession(), errorMessage = null)
+    }
+
+    fun selectFolder(folderId: FolderId?) {
+        val draft = session ?: return
+        updateSession(draft.copy(selectedFolderId = folderId?.value))
+        val current = _uiState.value as? ScannerUiState.SaveDocument ?: return
+        _uiState.value = current.copy(session = requireSession())
+    }
+
+    fun saveDocument() {
+        val current = _uiState.value as? ScannerUiState.SaveDocument ?: return
+        val draft = requireSession()
+        if (draft.documentName.isBlank()) {
+            _uiState.value = current.copy(errorMessage = "Enter a document name.")
+            return
+        }
+        viewModelScope.launch {
+            _uiState.value = current.copy(isSaving = true, errorMessage = null)
+            val accepted = draft.acceptedPages
+            runCatching {
+                repository.create(
+                    name = draft.documentName,
+                    pages = accepted.map { page ->
+                        val source = sessionFile(page.sourcePath)
+                        val processed = sessionFile(page.processedPath)
+                        val thumbnail = sessionFile(page.thumbnailPath)
+                        NewPage(
+                            original = source::inputStream,
+                            processed = processed::inputStream,
+                            thumbnail = thumbnail::inputStream,
+                            originalExtension = page.originalExtension,
+                            processedExtension = "jpg",
+                            thumbnailExtension = "jpg",
+                            width = page.outputWidth,
+                            height = page.outputHeight
+                        )
+                    },
+                    folderId = draft.selectedFolderId?.let(::FolderId)
+                )
+            }.onSuccess { documentId ->
+                sessionStore.discard(draft.id)
+                session = null
+                _uiState.value = ScannerUiState.Saved(documentId, draft.documentName.trim(), accepted.size)
+            }.onFailure { error ->
+                _uiState.value = current.copy(
+                    isSaving = false,
+                    errorMessage = if (error is com.oscan.android.data.repository.RepositoryError) {
+                        error.message
+                    } else {
+                        "The document could not be saved. Try again."
+                    }
+                )
+            }
+        }
+    }
+
+    fun discardSession() {
+        session?.let { sessionStore.discard(it.id) }
+        session = null
         _uiState.value = ScannerUiState.Empty
     }
 
     fun dismissError() {
-        val currentError = _uiState.value as? ScannerUiState.Error
-        _uiState.value = currentError?.previousState ?: ScannerUiState.Empty
+        val error = _uiState.value as? ScannerUiState.Error ?: return
+        _uiState.value = error.previousState ?: ScannerUiState.Empty
+    }
+
+    fun startAnother() {
+        session = null
+        _uiState.value = ScannerUiState.Empty
+    }
+
+    private suspend fun importAndDetect(pageId: String, uri: Uri) {
+        val sourcePath = runCatching {
+            val extension = when (contentResolver.getType(uri)?.lowercase()) {
+                "image/png" -> "png"
+                "image/webp" -> "webp"
+                "image/heic" -> "heic"
+                "image/heif" -> "heif"
+                else -> "jpg"
+            }
+            contentResolver.openInputStream(uri)?.use { input ->
+                sessionStore.importSource(requireSession().id, pageId, input, extension)
+            } ?: error("Unavailable image")
+        }.getOrElse {
+            updatePage(pageId) {
+                it.copy(status = SessionPageStatus.FAILED, failureMessage = "This image could not be imported. Choose it again or remove it.")
+            }
+            return
+        }
+        val extension = sourcePath.substringAfterLast('.', "jpg")
+        updatePage(pageId) {
+            it.copy(status = SessionPageStatus.DETECTING, sourcePath = sourcePath, originalExtension = extension, failureMessage = null)
+        }
+        detectStoredPage(pageId)
+    }
+
+    private suspend fun detectStoredPage(pageId: String) {
+        val page = requireSession().pages.first { it.id == pageId }
+        val sourcePath = page.sourcePath ?: return
+        updatePage(pageId) { it.copy(status = SessionPageStatus.DETECTING, failureMessage = null) }
+        runCatching { scannerEngine.decodeAndDetect(Uri.fromFile(sessionStore.resolve(sourcePath))) }
+            .onSuccess { result ->
+                updatePage(pageId) {
+                    it.copy(
+                        status = SessionPageStatus.CROP_REVIEW,
+                        sourceWidth = result.sourceDimensions.width,
+                        sourceHeight = result.sourceDimensions.height,
+                        corners = result.corners,
+                        initialCorners = result.corners,
+                        isAutoDetected = result.isAutoDetected,
+                        failureMessage = null
+                    )
+                }
+                result.previewBitmap.recycle()
+            }
+            .onFailure {
+                updatePage(pageId) {
+                    it.copy(status = SessionPageStatus.FAILED, failureMessage = "This image could not be prepared. Try again or remove it.")
+                }
+            }
+    }
+
+    private suspend fun openCrop(page: SessionPage) {
+        val sourcePath = page.sourcePath ?: return showReview()
+        _uiState.value = ScannerUiState.Processing(requireSession(), "Loading page…")
+        runCatching { scannerEngine.decodeAndDetect(Uri.fromFile(sessionStore.resolve(sourcePath))) }
+            .onSuccess { result ->
+                val beforeUpdate = requireSession().pages.first { it.id == page.id }
+                if (beforeUpdate.sourceWidth <= 0 || beforeUpdate.sourceHeight <= 0 || beforeUpdate.corners == null) {
+                    updatePage(page.id) {
+                        it.copy(
+                            status = SessionPageStatus.CROP_REVIEW,
+                            sourceWidth = result.sourceDimensions.width,
+                            sourceHeight = result.sourceDimensions.height,
+                            corners = it.corners ?: result.corners,
+                            initialCorners = it.initialCorners ?: result.corners,
+                            isAutoDetected = result.isAutoDetected
+                        )
+                    }
+                }
+                val latest = requireSession().pages.first { it.id == page.id }
+                val corners = latest.corners ?: result.corners
+                val initial = latest.initialCorners ?: result.corners
+                val dimensions = ImageDimensions(latest.sourceWidth, latest.sourceHeight)
+                _uiState.value = ScannerUiState.CropReady(
+                    session = requireSession(), page = latest, previewBitmap = result.previewBitmap,
+                    corners = corners, initialDetectedCorners = initial,
+                    isValidGeometry = CornerValidator.isValidQuadrilateral(corners.toArray(), dimensions)
+                )
+            }.onFailure {
+                updatePage(page.id) { it.copy(status = SessionPageStatus.FAILED, failureMessage = "This image could not be opened. Try again or remove it.") }
+                showReview()
+            }
+    }
+
+    private fun openAcceptedPage(page: SessionPage) {
+        val bitmap = page.processedPath?.let(sessionStore::readBitmap)
+        if (bitmap == null) {
+            updatePage(page.id) { it.copy(status = SessionPageStatus.CROP_REVIEW, processedPath = null, thumbnailPath = null) }
+            viewModelScope.launch { openCrop(requireSession().pages.first { it.id == page.id }) }
+            return
+        }
+        _uiState.value = ScannerUiState.PreviewReady(requireSession(), page, page.filter, bitmap)
+    }
+
+    private suspend fun recreateTreatmentPreview(page: SessionPage) {
+        val corners = page.corners ?: return openCrop(page)
+        _uiState.value = ScannerUiState.Processing(requireSession(), "Restoring page…")
+        runCatching { scannerEngine.cropAndFilter(sourceUri(page), corners, page.filter) }
+            .onSuccess { _uiState.value = ScannerUiState.PreviewReady(requireSession(), page, page.filter, it) }
+            .onFailure { openCrop(page) }
+    }
+
+    private fun summaries(draft: ScanSession): List<SessionPageSummary> = draft.pages.sortedBy { it.position }.map { page ->
+        SessionPageSummary(
+            id = page.id,
+            position = page.position,
+            status = page.status,
+            thumbnail = page.thumbnailPath?.let(sessionStore::readBitmap),
+            message = page.failureMessage,
+            canRetryDirectly = page.sourcePath != null
+        )
+    }
+
+    private fun updatePage(pageId: String, transform: (SessionPage) -> SessionPage) {
+        val draft = requireSession()
+        updateSession(draft.copy(pages = draft.pages.map { if (it.id == pageId) transform(it) else it }))
+    }
+
+    private fun updateSession(updated: ScanSession) {
+        val timestamped = updated.copy(updatedAtEpochMillis = System.currentTimeMillis())
+        sessionStore.save(timestamped)
+        session = timestamped
+    }
+
+    private fun requireSession(): ScanSession = checkNotNull(session)
+    private fun sourceUri(page: SessionPage): Uri = Uri.fromFile(sessionFile(page.sourcePath))
+    private fun sessionFile(path: String?): File = sessionStore.resolve(checkNotNull(path))
+
+    private fun createThumbnail(bitmap: Bitmap): Bitmap {
+        val maxSize = 360
+        if (bitmap.width <= maxSize && bitmap.height <= maxSize) return bitmap
+        val scale = minOf(maxSize.toFloat() / bitmap.width, maxSize.toFloat() / bitmap.height)
+        return Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
     }
 }

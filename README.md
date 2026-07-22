@@ -10,6 +10,9 @@ All document detection and image processing run locally on-device using OpenCV a
 - **Interactive Jetpack Compose UI**: 4 draggable corner handles clamped to image bounds, live polygon rendering, and corner geometry validation.
 - **Perspective Correction**: Precise 4-point perspective warp from confirmed corners.
 - **Magic Enhancement Filter**: Grayscale + CLAHE + adaptive thresholding for clear background whitening and legible text.
+- **Recoverable Multi-page Imports**: Ordered image import, per-page review and retry, reordering, and durable local document saving.
+- **Local Document Library**: Recent and All documents collections, persistent grid/list and sort preferences, document metadata, rename, favorites, folder moves, and Trash moves.
+- **Document Inspection**: Multi-page detail grids and an edge-to-edge page viewer with zoom, pan, double-tap zoom, and accessible page navigation.
 - **Single-page PDF Export**: SAF (Storage Access Framework) saving and Android content URI sharing via system share sheet.
 - **Desktop Tester**: Desktop batch harness (`:desktop-tester`) preserving desktop visual regression testing.
 
@@ -58,7 +61,8 @@ Output artifacts (boundary overlay, crop, magic filter, PDF) will be written to 
 
 ## Documentation
 
-- [Design specification](docs/design_doc.md)
+- [Product design specification](docs/DESIGN.md)
+- [Feature backlog and status](docs/FEATURES.md)
 - [Phase 1 testing guide](docs/testing_guide.md)
 - [Android Studio run and testing guide](docs/android_testing_guide.md)
 - [Phase 2 Android implementation instructions](docs/phase2_instructions.md)
@@ -67,7 +71,7 @@ Output artifacts (boundary overlay, crop, magic filter, PDF) will be written to 
 
 - Kotlin 1.9.22 & Java 17
 - Jetpack Compose & Material 3
-- OpenCV for Android (`com.quickbirdstudios:opencv-android`) / Desktop OpenPnP OpenCV 4.9
+- Official OpenCV Android AAR 4.12.0 / Desktop OpenPnP OpenCV 4.9
 - ONNX Runtime for Android 1.22.0 / JVM 1.24.1
 - Android Platform `PdfDocument` / Desktop Apache PDFBox
 - Gradle 8.7 and Android Gradle Plugin 8.5.2

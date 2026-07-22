@@ -2,6 +2,21 @@
 
 This guide explains how to import, run, and manually test the Phase 2 Android app. The Android application module is `:android-app`, its application ID is `com.oscan.android`, and it requires Android API 26 or newer.
 
+Use Android Studio's bundled JDK (JDK 21 is verified) when running Robolectric tests. Java 24 is not compatible with the current Robolectric 4.11.1 dependency.
+
+## Milestone 3 library checks
+
+After saving at least two multi-page documents:
+
+1. Restart the app and verify both documents appear under **Recent** and **All documents**.
+2. Switch between grid and list, change the sort order, restart, and verify both choices persist.
+3. Open a document and verify its name, date, page count, optional folder, and every page thumbnail.
+4. Rename it, toggle Favorite, and move it to an existing folder; return Home and verify the updated metadata and ordering.
+5. Open a page, pinch to zoom, pan, double-tap to toggle zoom, and use Previous/Next to inspect every page.
+6. Return to Home and verify the prior scroll position is retained.
+7. Move the document to Trash and verify it disappears from Home.
+8. For resilience testing, remove a managed thumbnail or processed page asset from app-private storage in a debug environment and verify OScan shows an unavailable-image state without crashing.
+
 ## Fixing the “Module not specified” configuration
 
 If the Run/Debug Configurations window shows `<no module>` and `Error: Module not specified`, do not save that configuration yet. Android Studio has not imported the new `:android-app` module into its Gradle project model.
@@ -183,9 +198,11 @@ Confirm the configuration uses **Default Activity** and the `android-app` module
 
 Capture the complete Logcat stack trace and note the device model, Android version, and CPU architecture. Also confirm that the error occurs in the debug APK produced from the current checkout.
 
+If the app reports **Failed to initialize OpenCV native libraries**, first sync Gradle and rebuild the app. The Android module must resolve `org.opencv:opencv:4.12.0`; `org.openpnp:opencv` is the desktop-only dependency used by `core-engine` and must remain excluded from the Android runtime. In **Build → Analyze APK**, confirm that `lib/<device-abi>/libopencv_java4.so` is present.
+
 ### Android reports that the app is not 16 KB compatible
 
-Do not dismiss this warning for a release build. OScan uses native OpenCV and ONNX Runtime libraries, so every packaged `.so` must have 16 KB-aligned ELF load segments and the APK must package uncompressed native libraries on 16 KB boundaries. The project uses Android Gradle Plugin 8.5.2, Gradle 8.7, and ONNX Runtime Android 1.22.0 to meet those requirements. Rebuild the APK instead of testing an older installed build, then use **Build → Analyze APK** and inspect the Alignment column under `lib/`.
+Do not dismiss this warning for a release build. OScan uses native OpenCV and ONNX Runtime libraries, so every packaged `.so` must have 16 KB-aligned ELF load segments and the APK must package uncompressed native libraries on 16 KB boundaries. The project uses Android Gradle Plugin 8.5.2, Gradle 8.7, ONNX Runtime Android 1.22.0, and the official OpenCV Android AAR 4.12.0 to meet those requirements. Rebuild the APK instead of testing an older installed build, then use **Build → Analyze APK** and inspect the Alignment column under `lib/`.
 
 ### PDF saves but cannot be shared
 
