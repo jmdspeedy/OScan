@@ -1,5 +1,7 @@
 # OScan
 
+[![Build APK](https://github.com/jmdspeedy/OScan/actions/workflows/build-apk.yml/badge.svg)](https://github.com/jmdspeedy/OScan/actions/workflows/build-apk.yml)
+
 OScan is a privacy-first, offline document-scanning app written in Kotlin.
 
 All document detection and image processing run locally on-device using OpenCV and ONNX Runtime. Images and telemetry are never sent to a remote service.
