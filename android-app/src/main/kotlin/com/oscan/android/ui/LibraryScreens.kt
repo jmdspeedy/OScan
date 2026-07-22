@@ -45,10 +45,12 @@ import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.automirrored.filled.NavigateBefore
 import androidx.compose.material.icons.automirrored.filled.NavigateNext
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Description
@@ -58,6 +60,8 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.RotateLeft
+import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -110,6 +114,7 @@ import com.oscan.android.data.model.DocumentId
 import com.oscan.android.data.model.Folder
 import com.oscan.android.data.model.FolderId
 import com.oscan.android.data.model.Page
+import com.oscan.android.data.model.PageId
 import com.oscan.android.data.preferences.LibraryPresentation
 import com.oscan.android.data.storage.DocumentFileStore
 import com.oscan.android.ui.theme.OScanTheme
@@ -864,13 +869,19 @@ fun DocumentDetailScreen(
     onTrash: () -> Unit,
     onSavePdf: (Context, Document, Uri) -> Unit,
     onSharePdf: (Context, Document) -> Unit,
-    onOpenPage: (Int) -> Unit
+    onOpenPage: (Int) -> Unit,
+    onReorderPages: (List<PageId>) -> Unit = {},
+    onRotatePage: (PageId, Int) -> Unit = { _, _ -> },
+    onDeletePage: (PageId) -> Unit = {},
+    onAddPages: () -> Unit = {},
+    onEditPage: (Page) -> Unit = {}
 ) {
     val context = LocalContext.current
     var overflowOpen by remember { mutableStateOf(false) }
     var renameOpen by rememberSaveable { mutableStateOf(false) }
     var moveOpen by rememberSaveable { mutableStateOf(false) }
     var trashOpen by rememberSaveable { mutableStateOf(false) }
+    var pageToDelete by remember { mutableStateOf<Page?>(null) }
 
     val createDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/pdf")
@@ -887,6 +898,9 @@ fun DocumentDetailScreen(
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
                 actions = {
                     if (document != null) {
+                        IconButton(onClick = onAddPages) {
+                            Icon(Icons.Default.AddPhotoAlternate, "Add pages")
+                        }
                         IconButton(
                             onClick = { onSharePdf(context, document) },
                             enabled = !isExporting
@@ -905,6 +919,11 @@ fun DocumentDetailScreen(
                         Box {
                             IconButton(onClick = { overflowOpen = true }) { Icon(Icons.Default.MoreVert, "Document actions") }
                             DropdownMenu(expanded = overflowOpen, onDismissRequest = { overflowOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("Add pages") },
+                                    leadingIcon = { Icon(Icons.Default.AddPhotoAlternate, null) },
+                                    onClick = { overflowOpen = false; onAddPages() }
+                                )
                                 DropdownMenuItem(
                                     text = { Text("Save PDF") },
                                     leadingIcon = { Icon(Icons.Default.PictureAsPdf, null) },
@@ -935,7 +954,7 @@ fun DocumentDetailScreen(
                 !requestedDocumentExists -> MissingDocument(Modifier, onBack)
                 document == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 else -> LazyVerticalGrid(
-                    columns = GridCells.Adaptive(144.dp),
+                    columns = GridCells.Adaptive(160.dp),
                     contentPadding = PaddingValues(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -946,7 +965,14 @@ fun DocumentDetailScreen(
                             Text(document.metadataLine(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             document.folder?.let { Text("Folder: ${it.name}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                             Spacer(Modifier.height(8.dp))
-                            Text("Pages", style = MaterialTheme.typography.titleMedium)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Pages", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                                TextButton(onClick = onAddPages) {
+                                    Icon(Icons.Default.AddPhotoAlternate, null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Add page")
+                                }
+                            }
                         }
                     }
                     items(document.pages, key = { it.id.value }) { page ->
@@ -954,11 +980,98 @@ fun DocumentDetailScreen(
                         Surface(
                             shape = MaterialTheme.shapes.medium,
                             tonalElevation = 1.dp,
-                            modifier = Modifier.clickable { onOpenPage(position) }
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Column {
-                                Thumbnail(page.thumbnailAsset, fileStore, "Page ${position + 1}", Modifier.fillMaxWidth().aspectRatio(page.safeAspectRatio()))
-                                Text("Page ${position + 1}", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(12.dp))
+                                Box {
+                                    Thumbnail(
+                                        path = page.thumbnailAsset,
+                                        fileStore = fileStore,
+                                        description = "Page ${position + 1}",
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .aspectRatio(page.safeAspectRatio())
+                                            .clickable { onOpenPage(position) },
+                                        rotationDegrees = page.rotationDegrees
+                                    )
+                                    var pageMenuOpen by remember { mutableStateOf(false) }
+                                    IconButton(
+                                        onClick = { pageMenuOpen = true },
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(4.dp)
+                                            .background(
+                                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
+                                                shape = RoundedCornerShape(20.dp)
+                                            )
+                                    ) {
+                                        Icon(Icons.Default.MoreVert, "Page options")
+                                    }
+                                    DropdownMenu(expanded = pageMenuOpen, onDismissRequest = { pageMenuOpen = false }) {
+                                        DropdownMenuItem(
+                                            text = { Text("Rotate left") },
+                                            leadingIcon = { Icon(Icons.Default.RotateLeft, null) },
+                                            onClick = { pageMenuOpen = false; onRotatePage(page.id, -90) }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Rotate right") },
+                                            leadingIcon = { Icon(Icons.Default.RotateRight, null) },
+                                            onClick = { pageMenuOpen = false; onRotatePage(page.id, 90) }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Re-crop & treatment") },
+                                            leadingIcon = { Icon(Icons.Default.Crop, null) },
+                                            onClick = { pageMenuOpen = false; onEditPage(page) }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Remove page") },
+                                            leadingIcon = { Icon(Icons.Default.Delete, null) },
+                                            onClick = { pageMenuOpen = false; pageToDelete = page }
+                                        )
+                                    }
+                                }
+                                Row(
+                                    Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "Page ${position + 1}",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        modifier = Modifier.weight(1f).padding(start = 4.dp)
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            val pageIds = document.pages.map { it.id }.toMutableList()
+                                            val idx = position
+                                            if (idx > 0) {
+                                                val tmp = pageIds[idx]
+                                                pageIds[idx] = pageIds[idx - 1]
+                                                pageIds[idx - 1] = tmp
+                                                onReorderPages(pageIds)
+                                            }
+                                        },
+                                        enabled = position > 0,
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(Icons.AutoMirrored.Filled.NavigateBefore, "Move page ${position + 1} left")
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            val pageIds = document.pages.map { it.id }.toMutableList()
+                                            val idx = position
+                                            if (idx < document.pages.lastIndex) {
+                                                val tmp = pageIds[idx]
+                                                pageIds[idx] = pageIds[idx + 1]
+                                                pageIds[idx + 1] = tmp
+                                                onReorderPages(pageIds)
+                                            }
+                                        },
+                                        enabled = position < document.pages.lastIndex,
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(Icons.AutoMirrored.Filled.NavigateNext, "Move page ${position + 1} right")
+                                    }
+                                }
                             }
                         }
                     }
@@ -991,6 +1104,36 @@ fun DocumentDetailScreen(
         confirmButton = { TextButton(onClick = { trashOpen = false; onTrash() }) { Text("Move to Trash") } },
         dismissButton = { TextButton(onClick = { trashOpen = false }) { Text("Cancel") } }
     )
+
+    pageToDelete?.let { targetPage ->
+        val isFinalPage = document != null && document.pages.size == 1
+        AlertDialog(
+            onDismissRequest = { pageToDelete = null },
+            title = { Text(if (isFinalPage) "Delete final page?" else "Remove page ${targetPage.position + 1}?") },
+            text = {
+                Text(
+                    if (isFinalPage) "Removing the last remaining page will move the document to local Trash."
+                    else "This page will be removed from the document."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val targetId = targetPage.id
+                        pageToDelete = null
+                        onDeletePage(targetId)
+                    }
+                ) {
+                    Text(if (isFinalPage) "Move to Trash" else "Remove", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pageToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -1059,7 +1202,7 @@ fun PageViewerScreen(
         scale = nextScale
         offset = if (nextScale == 1f) Offset.Zero else offset + panChange
     }
-    val bitmapState by rememberManagedBitmap(fileStore, page.processedAsset, 2560)
+    val bitmapState by rememberManagedBitmap(fileStore, page.processedAsset, 2560, page.rotationDegrees)
 
     Box(Modifier.fillMaxSize().background(OScanTheme.colors.workspace)) {
         when (val image = bitmapState) {
@@ -1111,8 +1254,14 @@ private sealed interface ManagedBitmap {
 }
 
 @Composable
-private fun Thumbnail(path: String?, fileStore: DocumentFileStore, description: String, modifier: Modifier) {
-    val bitmapState by rememberManagedBitmap(fileStore, path, 720)
+private fun Thumbnail(
+    path: String?,
+    fileStore: DocumentFileStore,
+    description: String,
+    modifier: Modifier,
+    rotationDegrees: Int = 0
+) {
+    val bitmapState by rememberManagedBitmap(fileStore, path, 720, rotationDegrees)
     Box(modifier.background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
         when (val image = bitmapState) {
             ManagedBitmap.Loading -> CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
@@ -1129,8 +1278,13 @@ private fun rememberManagedBitmap(fileStore: DocumentFileStore, maxDimension: In
     }
 
 @Composable
-private fun rememberManagedBitmap(fileStore: DocumentFileStore, path: String?, maxDimension: Int) =
-    produceState<ManagedBitmap>(initialValue = ManagedBitmap.Loading, path, maxDimension) {
+private fun rememberManagedBitmap(
+    fileStore: DocumentFileStore,
+    path: String?,
+    maxDimension: Int,
+    rotationDegrees: Int = 0
+) =
+    produceState<ManagedBitmap>(initialValue = ManagedBitmap.Loading, path, maxDimension, rotationDegrees) {
         value = withContext(Dispatchers.IO) {
             if (path == null) return@withContext ManagedBitmap.Missing
             runCatching {
@@ -1140,7 +1294,16 @@ private fun rememberManagedBitmap(fileStore: DocumentFileStore, path: String?, m
                 BitmapFactory.decodeFile(file.path, bounds)
                 var sample = 1
                 while (bounds.outWidth / sample > maxDimension || bounds.outHeight / sample > maxDimension) sample *= 2
-                BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inSampleSize = sample })
+                val decoded = BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inSampleSize = sample })
+                    ?: return@runCatching null
+                val normalizedRotation = (rotationDegrees % 360 + 360) % 360
+                if (normalizedRotation == 0) decoded
+                else {
+                    val matrix = android.graphics.Matrix().apply { postRotate(normalizedRotation.toFloat()) }
+                    val rotated = Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
+                    if (rotated !== decoded) decoded.recycle()
+                    rotated
+                }
             }.getOrNull()?.let(ManagedBitmap::Ready) ?: ManagedBitmap.Missing
         }
     }

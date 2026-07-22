@@ -16,8 +16,10 @@ import kotlin.test.assertTrue
 import org.junit.runner.RunWith
 import org.opencv.core.Point
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class ScanSessionStoreTest {
     private lateinit var store: ScanSessionStore
     private val ids = ArrayDeque(listOf("session_test", "page_one"))

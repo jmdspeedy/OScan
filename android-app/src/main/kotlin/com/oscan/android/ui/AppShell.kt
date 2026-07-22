@@ -19,25 +19,36 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
@@ -55,6 +66,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -75,7 +87,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.oscan.android.data.model.DocumentId
 import com.oscan.android.data.model.FolderId
+import com.oscan.android.data.model.Page
+import com.oscan.android.data.model.PageId
 import com.oscan.android.data.preferences.DocumentSort
 import com.oscan.android.data.preferences.LibraryPresentation
 import com.oscan.android.data.storage.DocumentFileStore
@@ -89,6 +104,9 @@ private enum class AppDestination(val label: String, val selectedIcon: ImageVect
 @Composable
 fun OScanAppShell(
     libraryViewModel: LibraryViewModel,
+    scannerViewModel: ScannerViewModel? = null,
+    scannerEngine: com.oscan.android.engine.ScannerEngine? = null,
+    repository: com.oscan.android.data.repository.DocumentRepository? = null,
     fileStore: DocumentFileStore,
     onImportImages: () -> Unit,
     onOpenCamera: () -> Unit
@@ -96,8 +114,11 @@ fun OScanAppShell(
     val state by libraryViewModel.uiState.collectAsState()
     var destination by rememberSaveable { mutableStateOf(AppDestination.Home) }
     var viewerPage by rememberSaveable { mutableStateOf<Int?>(null) }
+    var editingPage by remember { mutableStateOf<com.oscan.android.data.model.Page?>(null) }
+    var addPagesDialogOpen by remember { mutableStateOf(false) }
     var isViewingFolders by rememberSaveable { mutableStateOf(false) }
     var createFolderDialogOpen by remember { mutableStateOf(false) }
+    var activeSubRoute by rememberSaveable { mutableStateOf(SettingsSubRoute.NONE) }
 
     val gridState = rememberLazyGridState()
     val listState = rememberLazyListState()
@@ -108,6 +129,61 @@ fun OScanAppShell(
             snackbarHostState.showSnackbar(it)
             libraryViewModel.clearMessage()
         }
+    }
+
+    if (activeSubRoute != SettingsSubRoute.NONE) {
+        BackHandler { activeSubRoute = SettingsSubRoute.NONE }
+        val context = androidx.compose.ui.platform.LocalContext.current
+        when (activeSubRoute) {
+            SettingsSubRoute.CAPTURE -> CaptureSettingsScreen(
+                preferences = state.userPreferences,
+                onAutoCaptureChanged = libraryViewModel::setAutoCaptureDefault,
+                onShutterFeedbackChanged = libraryViewModel::setShutterFeedback,
+                onCameraLensChanged = libraryViewModel::setCameraLensPreference,
+                onBack = { activeSubRoute = SettingsSubRoute.NONE }
+            )
+            SettingsSubRoute.ENHANCEMENT -> EnhancementSettingsScreen(
+                preferences = state.userPreferences,
+                onDefaultTreatmentChanged = libraryViewModel::setDefaultTreatment,
+                onBack = { activeSubRoute = SettingsSubRoute.NONE }
+            )
+            SettingsSubRoute.EXPORT -> ExportSettingsScreen(
+                preferences = state.userPreferences,
+                onFilenamePatternChanged = libraryViewModel::setDefaultExportFilenamePattern,
+                onPageSizeChanged = libraryViewModel::setDefaultPageSize,
+                onJpegQualityChanged = libraryViewModel::setDefaultJpegQuality,
+                onBack = { activeSubRoute = SettingsSubRoute.NONE }
+            )
+            SettingsSubRoute.APPEARANCE -> AppearanceSettingsScreen(
+                themeChoice = state.userPreferences.themeChoice,
+                onThemeChoiceSelected = libraryViewModel::setThemeChoice,
+                onBack = { activeSubRoute = SettingsSubRoute.NONE }
+            )
+            SettingsSubRoute.STORAGE -> StorageSettingsScreen(
+                fileStore = fileStore,
+                onCleanCache = { libraryViewModel.cleanCache(context, fileStore) },
+                onBack = { activeSubRoute = SettingsSubRoute.NONE }
+            )
+            SettingsSubRoute.PRIVACY -> PrivacyScreen(onBack = { activeSubRoute = SettingsSubRoute.NONE })
+            SettingsSubRoute.HELP -> HelpScreen(onBack = { activeSubRoute = SettingsSubRoute.NONE })
+            SettingsSubRoute.ABOUT -> AboutScreen(onBack = { activeSubRoute = SettingsSubRoute.NONE })
+            SettingsSubRoute.NONE -> Unit
+        }
+        return
+    }
+
+    if (editingPage != null && state.selectedDocumentId != null && scannerEngine != null && repository != null) {
+        val targetDocId = state.selectedDocumentId!!
+        val targetPage = editingPage!!
+        val pageEditorViewModel = remember(targetPage.id.value) {
+            PageEditorViewModel(targetDocId, targetPage, fileStore, scannerEngine, repository)
+        }
+        BackHandler { editingPage = null }
+        PageEditorScreen(
+            viewModel = pageEditorViewModel,
+            onDismiss = { editingPage = null }
+        )
+        return
     }
 
     if (viewerPage != null && state.selectedDocument != null) {
@@ -133,8 +209,41 @@ fun OScanAppShell(
             onTrash = libraryViewModel::moveToTrash,
             onSavePdf = { ctx, doc, uri -> libraryViewModel.exportDocumentPdfToUri(ctx, doc, fileStore, uri) },
             onSharePdf = { ctx, doc -> libraryViewModel.shareDocumentPdf(ctx, doc, fileStore, context::startActivity) },
-            onOpenPage = { viewerPage = it }
+            onOpenPage = { viewerPage = it },
+            onReorderPages = { pageIds: List<PageId> -> state.selectedDocumentId?.let { libraryViewModel.reorderPages(it, pageIds) } },
+            onRotatePage = { pageId: PageId, delta: Int -> state.selectedDocumentId?.let { libraryViewModel.rotatePage(it, pageId, delta) } },
+            onDeletePage = { pageId: PageId -> state.selectedDocumentId?.let { libraryViewModel.deletePage(it, pageId) } },
+            onAddPages = { addPagesDialogOpen = true },
+            onEditPage = { page: Page -> editingPage = page }
         )
+
+        if (addPagesDialogOpen && state.selectedDocument != null && scannerViewModel != null) {
+            val doc = state.selectedDocument!!
+            AlertDialog(
+                onDismissRequest = { addPagesDialogOpen = false },
+                title = { Text("Add pages to \"${doc.name}\"") },
+                text = { Text("Choose how you want to add pages to this document.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        addPagesDialogOpen = false
+                        scannerViewModel.prepareAddPagesToDocument(doc.id, doc.name)
+                        onOpenCamera()
+                    }) {
+                        Text("Open camera")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        addPagesDialogOpen = false
+                        scannerViewModel.prepareAddPagesToDocument(doc.id, doc.name)
+                        onImportImages()
+                    }) {
+                        Text("Import images")
+                    }
+                }
+            )
+        }
+
         return
     }
 
@@ -211,6 +320,7 @@ fun OScanAppShell(
                     onImportImages = onImportImages,
                     onOpenCamera = onOpenCamera,
                     onOpenFolders = { isViewingFolders = true },
+                    onOpenSubRoute = { activeSubRoute = it },
                     libraryViewModel = libraryViewModel,
                     modifier = Modifier.weight(1f)
                 )
@@ -227,6 +337,7 @@ fun OScanAppShell(
                 onImportImages = onImportImages,
                 onOpenCamera = onOpenCamera,
                 onOpenFolders = { isViewingFolders = true },
+                onOpenSubRoute = { activeSubRoute = it },
                 libraryViewModel = libraryViewModel,
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
@@ -274,6 +385,7 @@ private fun DestinationScaffold(
     onImportImages: () -> Unit,
     onOpenCamera: () -> Unit,
     onOpenFolders: () -> Unit,
+    onOpenSubRoute: (SettingsSubRoute) -> Unit,
     libraryViewModel: LibraryViewModel,
     modifier: Modifier,
     bottomBar: @Composable () -> Unit = {}
@@ -369,10 +481,14 @@ private fun DestinationScaffold(
                 ) { EmptyHomeScreen({ onDestinationSelected(AppDestination.Scan) }, onImportImages) }
                 AppDestination.Scan -> ScanEntryScreen(onOpenCamera, onImportImages)
                 AppDestination.Me -> MeScreen(
+                    userPreferences = state.userPreferences,
                     trashCount = state.trashDocuments.size,
                     foldersCount = state.folders.size,
                     onOpenFolders = onOpenFolders,
-                    onOpenTrash = libraryViewModel::openTrash
+                    onOpenTrash = libraryViewModel::openTrash,
+                    onOpenSubRoute = onOpenSubRoute,
+                    onUpdateDisplayName = libraryViewModel::setDisplayName,
+                    onUpdateAvatarPreset = libraryViewModel::setAvatarPreset
                 )
             }
         }
@@ -417,6 +533,10 @@ private fun DestinationScaffold(
             }
         )
     }
+}
+
+private enum class SettingsSubRoute {
+    NONE, CAPTURE, ENHANCEMENT, EXPORT, APPEARANCE, STORAGE, PRIVACY, HELP, ABOUT
 }
 
 private fun DocumentSort.label(): String = when (this) {
@@ -472,31 +592,84 @@ private fun ScanEntryScreen(onOpenCamera: () -> Unit, onImportImages: () -> Unit
 
 @Composable
 private fun MeScreen(
+    userPreferences: com.oscan.android.data.preferences.UserPreferences,
     trashCount: Int,
     foldersCount: Int,
     onOpenFolders: () -> Unit,
-    onOpenTrash: () -> Unit
+    onOpenTrash: () -> Unit,
+    onOpenSubRoute: (SettingsSubRoute) -> Unit,
+    onUpdateDisplayName: (String) -> Unit,
+    onUpdateAvatarPreset: (String) -> Unit
 ) {
+    var editNameDialogOpen by remember { mutableStateOf(false) }
+    var editAvatarDialogOpen by remember { mutableStateOf(false) }
+
+    val avatarBgColor = when (userPreferences.avatarPreset) {
+        "INDIGO" -> androidx.compose.ui.graphics.Color(0xFF3F51B5)
+        "AMBER" -> androidx.compose.ui.graphics.Color(0xFFFFB300)
+        "GREEN" -> androidx.compose.ui.graphics.Color(0xFF4CAF50)
+        "PURPLE" -> androidx.compose.ui.graphics.Color(0xFF9C27B0)
+        else -> MaterialTheme.colorScheme.primaryContainer
+    }
+
+    val avatarFgColor = when (userPreferences.avatarPreset) {
+        "TEAL", "DEFAULT" -> MaterialTheme.colorScheme.onPrimaryContainer
+        else -> androidx.compose.ui.graphics.Color.White
+    }
+
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 20.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(androidx.compose.foundation.rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(28.dp), modifier = Modifier.size(72.dp)) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(36.dp))
+        Box(contentAlignment = Alignment.BottomEnd) {
+            Surface(
+                color = avatarBgColor,
+                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier
+                    .size(80.dp)
+                    .clickable { editAvatarDialogOpen = true }
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = "Avatar",
+                        tint = avatarFgColor,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
             }
         }
-        Spacer(Modifier.height(16.dp))
-        Text("Your local workspace", style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(6.dp))
-        Text("No account needed", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(24.dp))
 
-        // Folders row
+        Spacer(Modifier.height(12.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(userPreferences.displayName, style = MaterialTheme.typography.titleLarge)
+            IconButton(onClick = { editNameDialogOpen = true }, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit name",
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        Text("Local workspace • No account needed", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+        Spacer(Modifier.height(20.dp))
+
+        // Quick Navigation Section
         Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
             shape = MaterialTheme.shapes.medium,
-            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenFolders)
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onOpenFolders)
         ) {
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Folder, null, tint = MaterialTheme.colorScheme.primary)
@@ -508,13 +681,14 @@ private fun MeScreen(
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
 
-        // Trash row
         Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
             shape = MaterialTheme.shapes.medium,
-            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenTrash)
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onOpenTrash)
         ) {
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error)
@@ -528,16 +702,123 @@ private fun MeScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        Surface(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
-                Icon(Icons.Default.PrivacyTip, null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(16.dp))
-                Column {
-                    Text("Private by design", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(4.dp))
-                    Text("Documents and image processing stay on this device. Sharing is always an explicit action.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        // Settings Section
+        Column(Modifier.fillMaxWidth()) {
+            Text("Settings", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(8.dp))
+
+            MeSettingRow("Capture", "Auto-capture default, shutter feedback", Icons.Default.CameraAlt) { onOpenSubRoute(SettingsSubRoute.CAPTURE) }
+            MeSettingRow("Enhancement", "Default treatment (Magic / Original)", Icons.Default.AutoAwesome) { onOpenSubRoute(SettingsSubRoute.ENHANCEMENT) }
+            MeSettingRow("Export", "Filename pattern, PDF page size & quality", Icons.Default.PictureAsPdf) { onOpenSubRoute(SettingsSubRoute.EXPORT) }
+            MeSettingRow("Appearance", "System, Light, Dark theme", Icons.Default.Palette) { onOpenSubRoute(SettingsSubRoute.APPEARANCE) }
+            MeSettingRow("Storage", "Local usage summary & cache cleanup", Icons.Default.Storage) { onOpenSubRoute(SettingsSubRoute.STORAGE) }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        // Product Info Section
+        Column(Modifier.fillMaxWidth()) {
+            Text("Product Information", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(8.dp))
+
+            MeSettingRow("Privacy Policy", "100% local, no telemetry or accounts", Icons.Default.PrivacyTip) { onOpenSubRoute(SettingsSubRoute.PRIVACY) }
+            MeSettingRow("Help & User Guide", "Scanning, crop adjustments, multi-page editing", Icons.Default.HelpOutline) { onOpenSubRoute(SettingsSubRoute.HELP) }
+            MeSettingRow("About OScan", "Version 1.0.0, open-source notices", Icons.Default.Info) { onOpenSubRoute(SettingsSubRoute.ABOUT) }
+        }
+    }
+
+    if (editNameDialogOpen) {
+        var tempName by remember { mutableStateOf(userPreferences.displayName) }
+        AlertDialog(
+            onDismissRequest = { editNameDialogOpen = false },
+            title = { Text("Edit display name") },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = tempName,
+                    onValueChange = { tempName = it },
+                    label = { Text("Local display name") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (tempName.isNotBlank()) onUpdateDisplayName(tempName.trim())
+                    editNameDialogOpen = false
+                }) {
+                    Text("Save")
                 }
+            },
+            dismissButton = { TextButton(onClick = { editNameDialogOpen = false }) { Text("Cancel") } }
+        )
+    }
+
+    if (editAvatarDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { editAvatarDialogOpen = false },
+            title = { Text("Choose Avatar Color") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(
+                        "TEAL" to "Teal (Default)",
+                        "INDIGO" to "Indigo",
+                        "AMBER" to "Amber",
+                        "GREEN" to "Green",
+                        "PURPLE" to "Purple"
+                    ).forEach { (presetKey, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onUpdateAvatarPreset(presetKey)
+                                    editAvatarDialogOpen = false
+                                }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = userPreferences.avatarPreset == presetKey,
+                                onClick = {
+                                    onUpdateAvatarPreset(presetKey)
+                                    editAvatarDialogOpen = false
+                                }
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(label, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { editAvatarDialogOpen = false }) { Text("Close") } }
+        )
+    }
+}
+
+@Composable
+private fun MeSettingRow(
+    title: String,
+    subtitle: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

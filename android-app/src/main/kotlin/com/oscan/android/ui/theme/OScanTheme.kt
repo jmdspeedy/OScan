@@ -149,7 +149,12 @@ private val OScanShapes = Shapes(
 
 @Composable
 fun OScanTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeChoice: com.oscan.android.data.preferences.ThemeChoice = com.oscan.android.data.preferences.ThemeChoice.SYSTEM,
+    darkTheme: Boolean = when (themeChoice) {
+        com.oscan.android.data.preferences.ThemeChoice.SYSTEM -> isSystemInDarkTheme()
+        com.oscan.android.data.preferences.ThemeChoice.LIGHT -> false
+        com.oscan.android.data.preferences.ThemeChoice.DARK -> true
+    },
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) OScanDarkColorScheme else OScanLightColorScheme

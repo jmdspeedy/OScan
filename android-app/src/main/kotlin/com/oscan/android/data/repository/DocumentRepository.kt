@@ -67,6 +67,11 @@ interface DocumentRepository {
     suspend fun restoreMultiple(ids: List<DocumentId>)
     suspend fun permanentlyDeleteMultiple(ids: List<DocumentId>)
     suspend fun emptyTrash()
+    suspend fun addPages(id: DocumentId, pages: List<NewPage>): List<PageId>
+    suspend fun reorderPages(id: DocumentId, pageIdsInOrder: List<PageId>)
+    suspend fun rotatePage(id: DocumentId, pageId: PageId, deltaDegrees: Int)
+    suspend fun updatePageAssets(id: DocumentId, pageId: PageId, processedStream: () -> InputStream, thumbnailStream: () -> InputStream, width: Int, height: Int)
+    suspend fun deletePage(id: DocumentId, pageId: PageId)
 }
 
 class LocalDocumentRepository(
@@ -250,6 +255,152 @@ class LocalDocumentRepository(
             database.withTransaction { dao.deleteDocument(document.document) }
             fileStore.deleteDocument(document.document.id)
         }
+    }
+
+    override suspend fun addPages(id: DocumentId, pages: List<NewPage>): List<PageId> {
+        val documentAggregate = dao.getDocument(id.value) ?: throw RepositoryError.NotFound()
+        if (pages.isEmpty()) throw RepositoryError.EmptyDocument()
+
+        val startPosition = documentAggregate.pages.size
+        val now = clock.millis()
+        val pageEntities = mutableListOf<PageEntity>()
+        val pageIds = mutableListOf<PageId>()
+
+        try {
+            pages.forEachIndexed { index, page ->
+                require(page.width > 0 && page.height > 0)
+                val pageId = newId()
+                val original = page.original().use {
+                    fileStore.write(id.value, pageId, AssetKind.ORIGINAL, page.originalExtension, it)
+                }
+                val processed = page.processed().use {
+                    fileStore.write(id.value, pageId, AssetKind.PROCESSED, page.processedExtension, it)
+                }
+                val thumbnail = page.thumbnail().use {
+                    fileStore.write(id.value, pageId, AssetKind.THUMBNAIL, page.thumbnailExtension, it)
+                }
+                pageEntities += PageEntity(
+                    id = pageId,
+                    documentId = id.value,
+                    position = startPosition + index,
+                    originalAsset = original,
+                    processedAsset = processed,
+                    thumbnailAsset = thumbnail,
+                    width = page.width,
+                    height = page.height
+                )
+                pageIds += PageId(pageId)
+            }
+        } catch (error: Throwable) {
+            pageEntities.forEach { page ->
+                fileStore.deleteAsset(page.originalAsset)
+                fileStore.deleteAsset(page.processedAsset)
+                fileStore.deleteAsset(page.thumbnailAsset)
+            }
+            throw RepositoryError.AssetWrite(error)
+        }
+
+        try {
+            database.withTransaction {
+                dao.insertPages(pageEntities)
+                dao.touchDocument(id.value, now)
+            }
+        } catch (error: Throwable) {
+            pageEntities.forEach { page ->
+                fileStore.deleteAsset(page.originalAsset)
+                fileStore.deleteAsset(page.processedAsset)
+                fileStore.deleteAsset(page.thumbnailAsset)
+            }
+            throw RepositoryError.DatabaseWrite(error)
+        }
+
+        return pageIds
+    }
+
+    override suspend fun reorderPages(id: DocumentId, pageIdsInOrder: List<PageId>) {
+        val documentAggregate = dao.getDocument(id.value) ?: throw RepositoryError.NotFound()
+        val existingIds = documentAggregate.pages.map { it.id }.toSet()
+        val requestedIds = pageIdsInOrder.map { it.value }
+        if (existingIds != requestedIds.toSet()) throw RepositoryError.NotFound()
+
+        val now = clock.millis()
+        database.withTransaction {
+            requestedIds.forEachIndexed { index, pageId ->
+                dao.updatePagePosition(pageId, -1000 - index)
+            }
+            requestedIds.forEachIndexed { index, pageId ->
+                dao.updatePagePosition(pageId, index)
+            }
+            dao.touchDocument(id.value, now)
+        }
+    }
+
+    override suspend fun rotatePage(id: DocumentId, pageId: PageId, deltaDegrees: Int) {
+        val page = dao.getPage(pageId.value) ?: throw RepositoryError.NotFound()
+        if (page.documentId != id.value) throw RepositoryError.NotFound()
+
+        val newRotation = (page.rotationDegrees + deltaDegrees % 360 + 360) % 360
+        val is90or270 = ((deltaDegrees % 180) + 180) % 180 == 90
+        val newWidth = if (is90or270) page.height else page.width
+        val newHeight = if (is90or270) page.width else page.height
+
+        val now = clock.millis()
+        database.withTransaction {
+            dao.updatePageRotation(page.id, newRotation, newWidth, newHeight)
+            dao.touchDocument(id.value, now)
+        }
+    }
+
+    override suspend fun updatePageAssets(
+        id: DocumentId,
+        pageId: PageId,
+        processedStream: () -> InputStream,
+        thumbnailStream: () -> InputStream,
+        width: Int,
+        height: Int
+    ) {
+        val page = dao.getPage(pageId.value) ?: throw RepositoryError.NotFound()
+        if (page.documentId != id.value) throw RepositoryError.NotFound()
+
+        val now = clock.millis()
+        processedStream().use {
+            fileStore.write(id.value, pageId.value, AssetKind.PROCESSED, "jpg", it)
+        }
+        thumbnailStream().use {
+            fileStore.write(id.value, pageId.value, AssetKind.THUMBNAIL, "jpg", it)
+        }
+
+        database.withTransaction {
+            dao.updatePageDimensions(page.id, width, height)
+            dao.touchDocument(id.value, now)
+        }
+    }
+
+    override suspend fun deletePage(id: DocumentId, pageId: PageId) {
+        val documentAggregate = dao.getDocument(id.value) ?: throw RepositoryError.NotFound()
+        val pageToDelete = documentAggregate.pages.find { it.id == pageId.value } ?: throw RepositoryError.NotFound()
+        val remainingPages = documentAggregate.pages.filterNot { it.id == pageId.value }.sortedBy { it.position }
+
+        if (remainingPages.isEmpty()) {
+            moveToTrash(id)
+            return
+        }
+
+        val now = clock.millis()
+        database.withTransaction {
+            dao.deletePage(pageId.value)
+            remainingPages.forEachIndexed { index, p ->
+                dao.updatePagePosition(p.id, -1000 - index)
+            }
+            remainingPages.forEachIndexed { index, p ->
+                dao.updatePagePosition(p.id, index)
+            }
+            dao.touchDocument(id.value, now)
+        }
+
+        fileStore.deleteAsset(pageToDelete.originalAsset)
+        fileStore.deleteAsset(pageToDelete.processedAsset)
+        fileStore.deleteAsset(pageToDelete.thumbnailAsset)
     }
 
     private fun DocumentAggregate.toModel(): Document {

@@ -344,12 +344,27 @@ class ScannerViewModel(
         showReview()
     }
 
+    private var targetDocumentId: DocumentId? = null
+
+    fun prepareAddPagesToDocument(documentId: DocumentId, existingName: String) {
+        targetDocumentId = documentId
+        val draft = sessionStore.create().copy(documentName = existingName)
+        session = draft
+        sessionStore.save(draft)
+        _uiState.value = ScannerUiState.Empty
+    }
+
     fun beginFinish() {
         val draft = session ?: return
         if (draft.acceptedPages.isEmpty()) return
-        viewModelScope.launch {
-            val folders = runCatching { repository.observeFolders().first() }.getOrDefault(emptyList())
-            _uiState.value = ScannerUiState.SaveDocument(requireSession(), folders)
+        val target = targetDocumentId
+        if (target != null) {
+            saveDocument()
+        } else {
+            viewModelScope.launch {
+                val folders = runCatching { repository.observeFolders().first() }.getOrDefault(emptyList())
+                _uiState.value = ScannerUiState.SaveDocument(requireSession(), folders)
+            }
         }
     }
 
@@ -368,48 +383,72 @@ class ScannerViewModel(
     }
 
     fun saveDocument() {
-        val current = _uiState.value as? ScannerUiState.SaveDocument ?: return
         val draft = requireSession()
-        if (draft.documentName.isBlank()) {
-            _uiState.value = current.copy(errorMessage = "Enter a document name.")
+        if (targetDocumentId == null && draft.documentName.isBlank()) {
+            val current = _uiState.value as? ScannerUiState.SaveDocument
+            if (current != null) _uiState.value = current.copy(errorMessage = "Enter a document name.")
             return
         }
         viewModelScope.launch {
-            _uiState.value = current.copy(isSaving = true, errorMessage = null)
+            val saveState = _uiState.value as? ScannerUiState.SaveDocument
+            if (saveState != null) _uiState.value = saveState.copy(isSaving = true, errorMessage = null)
             val accepted = draft.acceptedPages
-            runCatching {
-                repository.create(
-                    name = draft.documentName,
-                    pages = accepted.map { page ->
-                        val source = sessionFile(page.sourcePath)
-                        val processed = sessionFile(page.processedPath)
-                        val thumbnail = sessionFile(page.thumbnailPath)
-                        NewPage(
-                            original = source::inputStream,
-                            processed = processed::inputStream,
-                            thumbnail = thumbnail::inputStream,
-                            originalExtension = page.originalExtension,
-                            processedExtension = "jpg",
-                            thumbnailExtension = "jpg",
-                            width = page.outputWidth,
-                            height = page.outputHeight
+            val newPages = accepted.map { page ->
+                val source = sessionFile(page.sourcePath)
+                val processed = sessionFile(page.processedPath)
+                val thumbnail = sessionFile(page.thumbnailPath)
+                NewPage(
+                    original = source::inputStream,
+                    processed = processed::inputStream,
+                    thumbnail = thumbnail::inputStream,
+                    originalExtension = page.originalExtension,
+                    processedExtension = "jpg",
+                    thumbnailExtension = "jpg",
+                    width = page.outputWidth,
+                    height = page.outputHeight
+                )
+            }
+
+            val targetId = targetDocumentId
+            if (targetId != null) {
+                runCatching {
+                    repository.addPages(targetId, newPages)
+                }.onSuccess {
+                    sessionStore.discard(draft.id)
+                    session = null
+                    targetDocumentId = null
+                    _uiState.value = ScannerUiState.Saved(targetId, draft.documentName.trim(), accepted.size)
+                }.onFailure { error ->
+                    _uiState.value = ScannerUiState.Error(
+                        if (error is com.oscan.android.data.repository.RepositoryError) error.message ?: "Could not add pages."
+                        else "Pages could not be added to the document. Try again.",
+                        _uiState.value
+                    )
+                }
+            } else {
+                runCatching {
+                    repository.create(
+                        name = draft.documentName,
+                        pages = newPages,
+                        folderId = draft.selectedFolderId?.let(::FolderId)
+                    )
+                }.onSuccess { documentId ->
+                    sessionStore.discard(draft.id)
+                    session = null
+                    _uiState.value = ScannerUiState.Saved(documentId, draft.documentName.trim(), accepted.size)
+                }.onFailure { error ->
+                    val current = _uiState.value as? ScannerUiState.SaveDocument
+                    if (current != null) {
+                        _uiState.value = current.copy(
+                            isSaving = false,
+                            errorMessage = if (error is com.oscan.android.data.repository.RepositoryError) {
+                                error.message
+                            } else {
+                                "The document could not be saved. Try again."
+                            }
                         )
-                    },
-                    folderId = draft.selectedFolderId?.let(::FolderId)
-                )
-            }.onSuccess { documentId ->
-                sessionStore.discard(draft.id)
-                session = null
-                _uiState.value = ScannerUiState.Saved(documentId, draft.documentName.trim(), accepted.size)
-            }.onFailure { error ->
-                _uiState.value = current.copy(
-                    isSaving = false,
-                    errorMessage = if (error is com.oscan.android.data.repository.RepositoryError) {
-                        error.message
-                    } else {
-                        "The document could not be saved. Try again."
                     }
-                )
+                }
             }
         }
     }

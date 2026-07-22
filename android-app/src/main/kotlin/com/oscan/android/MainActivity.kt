@@ -13,6 +13,8 @@ import com.oscan.android.ui.ScannerViewModel
 import com.oscan.android.ui.LibraryViewModel
 import com.oscan.android.ui.CameraViewModel
 import com.oscan.android.ui.theme.OScanTheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 
 class MainActivity : ComponentActivity() {
 
@@ -56,13 +58,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            OScanTheme {
+            val uiState by libraryViewModel.uiState.collectAsState()
+            OScanTheme(themeChoice = uiState.userPreferences.themeChoice) {
                 Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.background) {
                     ScannerApp(
                         viewModel = viewModel,
                         cameraViewModel = cameraViewModel,
                         libraryViewModel = libraryViewModel,
-                        fileStore = container.fileStore
+                        fileStore = container.fileStore,
+                        scannerEngine = scannerEngine,
+                        repository = container.documentRepository
                     )
                 }
             }

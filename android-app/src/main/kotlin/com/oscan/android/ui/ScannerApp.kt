@@ -65,7 +65,9 @@ fun ScannerApp(
     viewModel: ScannerViewModel,
     cameraViewModel: CameraViewModel,
     libraryViewModel: LibraryViewModel,
-    fileStore: DocumentFileStore
+    fileStore: DocumentFileStore,
+    scannerEngine: com.oscan.android.engine.ScannerEngine? = null,
+    repository: com.oscan.android.data.repository.DocumentRepository? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var replacementPageId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -109,6 +111,9 @@ fun ScannerApp(
         }
         OScanAppShell(
             libraryViewModel = libraryViewModel,
+            scannerViewModel = viewModel,
+            scannerEngine = scannerEngine,
+            repository = repository,
             fileStore = fileStore,
             onImportImages = launchMultiplePicker,
             onOpenCamera = { showCamera = true }

@@ -55,6 +55,21 @@ class DocumentFileStore(context: Context) {
 
     fun deleteAsset(relativePath: String): Boolean = resolve(relativePath).let { !it.exists() || it.delete() }
 
+    val rootDir: File get() = root
+
+    fun getStorageSize(): Long {
+        if (!root.exists()) return 0L
+        return root.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+    }
+
+    fun clearTempFiles() {
+        clearInterruptedWrites()
+        if (!root.exists()) return
+        root.walkTopDown()
+            .filter { it.isFile && (it.name.endsWith(".tmp") || it.name.endsWith(".writing") || it.parentFile?.name == "sessions") }
+            .forEach(File::delete)
+    }
+
     fun clearInterruptedWrites() {
         if (!root.exists()) return
         root.walkTopDown()

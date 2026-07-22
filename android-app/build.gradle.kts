@@ -62,7 +62,22 @@ android {
         }
     }
 
-
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            all { test ->
+                test.jvmArgs(
+                    "-Djdk.attach.allowAttachSelf=true",
+                    "-Dnet.bytebuddy.experimental=true",
+                    "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                    "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+                    "--add-opens=java.base/java.io=ALL-UNNAMED",
+                    "--add-opens=java.base/java.util=ALL-UNNAMED",
+                    "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"
+                )
+            }
+        }
+    }
 }
 
 dependencies {
@@ -103,7 +118,7 @@ dependencies {
     // Testing
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.robolectric:robolectric:4.11.1")
+    testImplementation("org.robolectric:robolectric:4.14.1")
     testImplementation("androidx.room:room-testing:2.6.1")
     testImplementation("androidx.test:core:1.5.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")

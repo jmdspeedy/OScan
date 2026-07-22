@@ -32,8 +32,10 @@ import kotlinx.coroutines.test.setMain
 import org.junit.runner.RunWith
 import org.opencv.core.Point
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class MultiPageScannerViewModelTest {
     private val dispatcher = UnconfinedTestDispatcher()
@@ -106,5 +108,27 @@ class MultiPageScannerViewModelTest {
         override suspend fun moveToTrash(id: DocumentId) = Unit
         override suspend fun restore(id: DocumentId) = Unit
         override suspend fun permanentlyDelete(id: DocumentId) = Unit
+        override suspend fun createFolder(name: String): FolderId = FolderId("folder")
+        override suspend fun renameFolder(id: FolderId, name: String) = Unit
+        override suspend fun deleteFolder(id: FolderId) = Unit
+        override suspend fun bulkMoveToTrash(ids: List<DocumentId>) = Unit
+        override suspend fun bulkMoveToFolder(ids: List<DocumentId>, folderId: FolderId?) = Unit
+        override suspend fun bulkSetFavorite(ids: List<DocumentId>, favorite: Boolean) = Unit
+        override suspend fun restoreMultiple(ids: List<DocumentId>) = Unit
+        override suspend fun permanentlyDeleteMultiple(ids: List<DocumentId>) = Unit
+        override suspend fun emptyTrash() = Unit
+        override suspend fun addPages(id: DocumentId, pages: List<NewPage>): List<com.oscan.android.data.model.PageId> =
+            pages.mapIndexed { index, _ -> com.oscan.android.data.model.PageId("page_$index") }
+        override suspend fun reorderPages(id: DocumentId, pageIdsInOrder: List<com.oscan.android.data.model.PageId>) = Unit
+        override suspend fun rotatePage(id: DocumentId, pageId: com.oscan.android.data.model.PageId, deltaDegrees: Int) = Unit
+        override suspend fun updatePageAssets(
+            id: DocumentId,
+            pageId: com.oscan.android.data.model.PageId,
+            processedStream: () -> java.io.InputStream,
+            thumbnailStream: () -> java.io.InputStream,
+            width: Int,
+            height: Int
+        ) = Unit
+        override suspend fun deletePage(id: DocumentId, pageId: com.oscan.android.data.model.PageId) = Unit
     }
 }

@@ -77,6 +77,24 @@ interface LibraryDao {
     @Delete
     suspend fun deleteDocument(document: DocumentEntity)
 
+    @Query("SELECT * FROM pages WHERE id = :id LIMIT 1")
+    suspend fun getPage(id: String): PageEntity?
+
+    @Query("SELECT * FROM pages WHERE documentId = :documentId ORDER BY position ASC")
+    suspend fun getPagesForDocument(documentId: String): List<PageEntity>
+
+    @Query("UPDATE pages SET position = :position WHERE id = :id")
+    suspend fun updatePagePosition(id: String, position: Int)
+
+    @Query("UPDATE pages SET rotationDegrees = :rotationDegrees, width = :width, height = :height WHERE id = :id")
+    suspend fun updatePageRotation(id: String, rotationDegrees: Int, width: Int, height: Int)
+
+    @Query("UPDATE pages SET width = :width, height = :height WHERE id = :id")
+    suspend fun updatePageDimensions(id: String, width: Int, height: Int)
+
+    @Query("DELETE FROM pages WHERE id = :id")
+    suspend fun deletePage(id: String)
+
     @Transaction
     suspend fun insertDocumentGraph(
         document: DocumentEntity,

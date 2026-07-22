@@ -10,6 +10,8 @@ import com.oscan.android.data.model.Document
 import com.oscan.android.data.model.DocumentId
 import com.oscan.android.data.model.Folder
 import com.oscan.android.data.model.FolderId
+import com.oscan.android.data.model.Page
+import com.oscan.android.data.model.PageId
 import com.oscan.android.data.preferences.DocumentSort
 import com.oscan.android.data.preferences.LibraryPresentation
 import com.oscan.android.data.preferences.UserPreferences
@@ -50,7 +52,8 @@ data class LibraryUiState(
     val presentation: LibraryPresentation = LibraryPresentation.GRID,
     val sort: DocumentSort = DocumentSort.MODIFIED_DESC,
     val isExporting: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    val userPreferences: UserPreferences = UserPreferences()
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -146,7 +149,8 @@ class LibraryViewModel(
             presentation = preferences.libraryPresentation,
             sort = preferences.documentSort,
             isExporting = exporting,
-            message = currentMessage
+            message = currentMessage,
+            userPreferences = preferences
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryUiState())
 
@@ -194,6 +198,62 @@ class LibraryViewModel(
 
     fun setSort(sort: DocumentSort) {
         viewModelScope.launch { preferencesStore.setDocumentSort(sort) }
+    }
+
+    fun setDisplayName(name: String) {
+        viewModelScope.launch { preferencesStore.setDisplayName(name) }
+    }
+
+    fun setAvatarPreset(preset: String) {
+        viewModelScope.launch { preferencesStore.setAvatarPreset(preset) }
+    }
+
+    fun setAutoCaptureDefault(enabled: Boolean) {
+        viewModelScope.launch { preferencesStore.setAutoCaptureDefault(enabled) }
+    }
+
+    fun setShutterFeedback(enabled: Boolean) {
+        viewModelScope.launch { preferencesStore.setShutterFeedback(enabled) }
+    }
+
+    fun setCameraLensPreference(preference: com.oscan.android.data.preferences.CameraLensPreference) {
+        viewModelScope.launch { preferencesStore.setCameraLensPreference(preference) }
+    }
+
+    fun setDefaultTreatment(treatment: String) {
+        viewModelScope.launch { preferencesStore.setDefaultTreatment(treatment) }
+    }
+
+    fun setDefaultExportFilenamePattern(pattern: String) {
+        viewModelScope.launch { preferencesStore.setDefaultExportFilenamePattern(pattern) }
+    }
+
+    fun setDefaultPageSize(pageSize: com.oscan.android.data.preferences.PdfPageSize) {
+        viewModelScope.launch { preferencesStore.setDefaultPageSize(pageSize) }
+    }
+
+    fun setDefaultJpegQuality(quality: com.oscan.android.data.preferences.JpegQuality) {
+        viewModelScope.launch { preferencesStore.setDefaultJpegQuality(quality) }
+    }
+
+    fun setThemeChoice(themeChoice: com.oscan.android.data.preferences.ThemeChoice) {
+        viewModelScope.launch { preferencesStore.setThemeChoice(themeChoice) }
+    }
+
+    fun cleanCache(context: Context, fileStore: DocumentFileStore) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    fileStore.clearTempFiles()
+                    context.cacheDir.listFiles()?.forEach { file ->
+                        if (file.name.endsWith(".tmp") || file.name.endsWith(".jpg") || file.name.endsWith(".png") || (file.isDirectory && file.name == "pdfs")) {
+                            file.deleteRecursively()
+                        }
+                    }
+                }
+            }
+            message.value = "Cache cleaned"
+        }
     }
 
     fun rename(name: String) = mutateSelected { repository.rename(it, name) }
@@ -364,6 +424,28 @@ class LibraryViewModel(
         }
     }
 
+    fun reorderPages(documentId: DocumentId, pageIdsInOrder: List<PageId>) {
+        viewModelScope.launch {
+            runCatching { repository.reorderPages(documentId, pageIdsInOrder) }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
+    fun rotatePage(documentId: DocumentId, pageId: PageId, deltaDegrees: Int) {
+        viewModelScope.launch {
+            runCatching { repository.rotatePage(documentId, pageId, deltaDegrees) }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
+    fun deletePage(documentId: DocumentId, pageId: PageId) {
+        viewModelScope.launch {
+            runCatching { repository.deletePage(documentId, pageId) }
+                .onSuccess { message.value = "Page removed" }
+                .onFailure { message.value = it.userMessage() }
+        }
+    }
+
     fun exportDocumentPdfToUri(
         context: Context,
         document: Document,
@@ -373,18 +455,25 @@ class LibraryViewModel(
         if (isExporting.value) return
         isExporting.value = true
         message.value = null
+        val currentPrefs = uiState.value.userPreferences
         viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    val pageFiles = document.pages.sortedBy { it.position }.mapNotNull { page ->
-                        fileStore.resolve(page.processedAsset).takeIf { it.isFile }
+                    val pageSpecs = document.pages.sortedBy { it.position }.mapNotNull { page ->
+                        val file = fileStore.resolve(page.processedAsset).takeIf { it.isFile }
                             ?: fileStore.resolve(page.originalAsset).takeIf { it.isFile }
+                        file?.let { com.oscan.android.engine.PdfPageSpec(it, page.rotationDegrees) }
                     }
-                    if (pageFiles.isEmpty()) {
+                    if (pageSpecs.isEmpty()) {
                         throw IllegalStateException("No page assets found for document")
                     }
                     context.contentResolver.openOutputStream(targetUri)?.use { out ->
-                        pdfExporter.exportPageFilesToPdf(pageFiles, out)
+                        pdfExporter.exportPageSpecsToPdf(
+                            pages = pageSpecs,
+                            outputStream = out,
+                            pageSize = currentPrefs.defaultPageSize,
+                            quality = currentPrefs.defaultJpegQuality
+                        )
                     } ?: throw IllegalStateException("Could not open output stream")
                 }
                 message.value = "PDF exported successfully"
@@ -405,14 +494,16 @@ class LibraryViewModel(
         if (isExporting.value) return
         isExporting.value = true
         message.value = null
+        val currentPrefs = uiState.value.userPreferences
         viewModelScope.launch {
             try {
                 val chooserIntent = withContext(Dispatchers.IO) {
-                    val pageFiles = document.pages.sortedBy { it.position }.mapNotNull { page ->
-                        fileStore.resolve(page.processedAsset).takeIf { it.isFile }
+                    val pageSpecs = document.pages.sortedBy { it.position }.mapNotNull { page ->
+                        val file = fileStore.resolve(page.processedAsset).takeIf { it.isFile }
                             ?: fileStore.resolve(page.originalAsset).takeIf { it.isFile }
+                        file?.let { com.oscan.android.engine.PdfPageSpec(it, page.rotationDegrees) }
                     }
-                    if (pageFiles.isEmpty()) {
+                    if (pageSpecs.isEmpty()) {
                         throw IllegalStateException("No page assets found for document")
                     }
                     val pdfDir = File(context.cacheDir, "pdfs")
@@ -421,7 +512,12 @@ class LibraryViewModel(
                     val safeName = document.name.replace(Regex("[^a-zA-Z0-9._-]"), "_")
                     val pdfFile = File(pdfDir, "$safeName.pdf")
                     FileOutputStream(pdfFile).use { out ->
-                        pdfExporter.exportPageFilesToPdf(pageFiles, out)
+                        pdfExporter.exportPageSpecsToPdf(
+                            pages = pageSpecs,
+                            outputStream = out,
+                            pageSize = currentPrefs.defaultPageSize,
+                            quality = currentPrefs.defaultJpegQuality
+                        )
                     }
 
                     val contentUri = FileProvider.getUriForFile(

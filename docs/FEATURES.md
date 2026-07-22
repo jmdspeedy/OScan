@@ -166,27 +166,31 @@ Replace the single-bitmap ViewModel flow with a recoverable session model.
 
 ## Milestone 7 — Page editing (P1)
 
-- [ ] **High** — Add pages from camera or picker to an existing document.
-- [ ] **Medium** — Reorder pages with an accessible alternative to drag-and-drop.
-- [ ] **Medium** — Rotate left/right and persist the result non-destructively where practical.
-- [ ] **High** — Re-crop using the stored source image and change Original/Magic treatment.
-- [ ] **Medium** — Remove pages with confirmation when removing the final page or losing edits.
+**Status:** Implemented.
+
+- [x] **High** — Add pages from camera or picker to an existing document.
+- [x] **Medium** — Reorder pages with an accessible alternative to drag-and-drop.
+- [x] **Medium** — Rotate left/right and persist the result non-destructively where practical.
+- [x] **High** — Re-crop using the stored source image and change Original/Magic treatment.
+- [x] **Medium** — Remove pages with confirmation when removing the final page or losing edits.
 - [ ] **Low** — Consider duplicate-page support only after reorder, rotate, re-crop, and remove are complete.
-- [ ] **Medium** — Cache treatment previews and avoid recomputing unchanged results.
+- [x] **Medium** — Cache treatment previews and avoid recomputing unchanged results.
 
 **Complete when:** the core page operations survive process restart and export reflects the latest saved page order and treatments.
 
 ## Milestone 8 — Me, settings, and product information (P1)
 
-- [ ] **Medium** — Add editable local display name and optional local avatar; no account or remote identity.
-- [ ] **High** — Add Settings routes backed by DataStore:
-  - [ ] **Medium** — Capture: auto-capture default, shutter feedback, and supported camera preferences.
-  - [ ] **Low** — Enhancement: default treatment.
-  - [ ] **Medium** — Export: filename, page-size, and quality defaults.
-  - [ ] **Low** — Appearance: System, Light, and Dark.
-  - [ ] **Medium** — Storage: local usage summary and safe cache cleanup.
-- [ ] **Medium** — Add accurate Privacy, Help, and About screens with app version and open-source notices.
-- [ ] **Low** — Keep unsupported settings hidden rather than disabled placeholders.
+**Status:** Implemented.
+
+- [x] **Medium** — Add editable local display name and optional local avatar; no account or remote identity.
+- [x] **High** — Add Settings routes backed by DataStore:
+  - [x] **Medium** — Capture: auto-capture default, shutter feedback, and supported camera preferences.
+  - [x] **Low** — Enhancement: default treatment.
+  - [x] **Medium** — Export: filename, page-size, and quality defaults.
+  - [x] **Low** — Appearance: System, Light, and Dark.
+  - [x] **Medium** — Storage: local usage summary and safe cache cleanup.
+- [x] **Medium** — Add accurate Privacy, Help, and About screens with app version and open-source notices.
+- [x] **Low** — Keep unsupported settings hidden rather than disabled placeholders.
 
 **Complete when:** every visible preference persists, immediately affects the relevant flow, and remains usable at 200% font scale.
 
@@ -212,11 +216,11 @@ This work is continuous, but the full pass is required before release.
 1. `[~]` Local document foundation.
 2. `[x]` Multi-page import and recoverable scan sessions.
 3. `[x]` Populated Home and document detail.
-4. `[ ]` Multi-page export and sharing.
+4. `[x]` Multi-page export and sharing.
 5. `[x]` Live camera capture using the same session pipeline.
 6. `[x]` Search, folders, selection, and Trash.
-7. `[ ]` Page editing.
-8. `[ ]` Me and Settings.
+7. `[x]` Page editing.
+8. `[x]` Me and Settings.
 9. `[ ]` Final accessibility, adaptive-layout, performance, and release hardening.
 
 The first meaningful product milestone is steps 1–4: import several images, review them, save a durable document, find it in Home, and export/share a multi-page PDF. Steps 1–3 are usable now; durable multi-page export is the remaining part of that product milestone. Live camera capture follows and must reuse the same persistence and session architecture.
