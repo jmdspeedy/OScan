@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -187,6 +188,17 @@ fun ScannerApp(
                             }
                         }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
                     }
+                },
+                actions = {
+                    if (state is ScannerUiState.CropReady) {
+                        IconButton(onClick = viewModel::onResetCorners) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Reset edges")
+                        }
+                        TextButton(
+                            onClick = viewModel::onCropConfirmed,
+                            enabled = state.isValidGeometry
+                        ) { Text("Done", fontWeight = FontWeight.SemiBold) }
+                    }
                 }
             )
         }
@@ -223,12 +235,8 @@ fun ScannerApp(
                         previewBitmap = state.previewBitmap,
                         sourceDimensions = com.oscan.core.model.ImageDimensions(state.page.sourceWidth, state.page.sourceHeight),
                         corners = state.corners,
-                        isAutoDetected = state.page.isAutoDetected,
                         isValidGeometry = state.isValidGeometry,
-                        onCornerMoved = viewModel::onCornerMoved,
-                        onReset = viewModel::onResetCorners,
-                        onRetake = { launchReplacement(state.page.id) },
-                        onCropConfirmed = viewModel::onCropConfirmed
+                        onCornerMoved = viewModel::onCornerMoved
                     )
                 }
                 is ScannerUiState.PreviewReady -> Column(Modifier.fillMaxSize()) {

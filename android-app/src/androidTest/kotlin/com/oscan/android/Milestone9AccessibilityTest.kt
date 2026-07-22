@@ -10,7 +10,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.oscan.android.ui.AdaptiveActionGroup
@@ -46,7 +45,7 @@ class Milestone9AccessibilityTest {
     }
 
     @Test
-    fun cropHasNonDragCornerControlsAndValidityAnnouncement() {
+    fun cropExplainsDirectManipulationAndValidity() {
         val bitmap = Bitmap.createBitmap(200, 300, Bitmap.Config.ARGB_8888)
         composeRule.setContent {
             OScanTheme {
@@ -59,18 +58,15 @@ class Milestone9AccessibilityTest {
                         bottomRight = Point(180.0, 280.0),
                         bottomLeft = Point(20.0, 280.0)
                     ),
-                    isAutoDetected = true,
                     isValidGeometry = true,
-                    onCornerMoved = { _, _, _ -> },
-                    onReset = {},
-                    onRetake = {},
-                    onCropConfirmed = {}
+                    onCornerMoved = { _, _, _ -> }
                 )
             }
         }
 
-        composeRule.onNodeWithText("Crop boundary is valid.").assertExists()
-        composeRule.onNodeWithContentDescription("Move Top left right").assertExists().performClick()
-        composeRule.onNodeWithContentDescription("Move Top left down").assertExists()
+        composeRule.onNodeWithText("Drag an edge  •  Move slowly for precision").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            "Adjustable crop boundary. Drag a corner or edge. Move slowly for precision."
+        ).assertExists()
     }
 }

@@ -47,6 +47,10 @@ fun PageEditorScreen(
                             IconButton(onClick = viewModel::onResetCorners) {
                                 Icon(Icons.Default.Refresh, "Reset corners")
                             }
+                            TextButton(
+                                onClick = viewModel::onCropConfirmed,
+                                enabled = current.isValidGeometry
+                            ) { Text("Done") }
                         }
                         is PageEditorUiState.PreviewReady -> {
                             Button(
@@ -76,12 +80,8 @@ fun PageEditorScreen(
                         previewBitmap = current.previewBitmap,
                         sourceDimensions = ImageDimensions(viewModel.page.width, viewModel.page.height),
                         corners = current.corners,
-                        isAutoDetected = true,
                         isValidGeometry = current.isValidGeometry,
-                        onCornerMoved = viewModel::onCornerMoved,
-                        onReset = viewModel::onResetCorners,
-                        onRetake = onDismiss,
-                        onCropConfirmed = viewModel::onCropConfirmed
+                        onCornerMoved = viewModel::onCornerMoved
                     )
                 }
                 is PageEditorUiState.Processing -> {
