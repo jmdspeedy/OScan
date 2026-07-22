@@ -26,7 +26,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
@@ -36,7 +35,6 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
@@ -497,16 +495,6 @@ private fun DestinationScaffold(
                                 Icon(Icons.Default.Delete, "Trash")
                             }
                             if (state.documents.isNotEmpty()) {
-                                IconButton(onClick = {
-                                    libraryViewModel.setPresentation(
-                                        if (state.presentation == LibraryPresentation.GRID) LibraryPresentation.LIST else LibraryPresentation.GRID
-                                    )
-                                }) {
-                                    Icon(
-                                        if (state.presentation == LibraryPresentation.GRID) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
-                                        if (state.presentation == LibraryPresentation.GRID) "Show list" else "Show grid"
-                                    )
-                                }
                                 Box {
                                     IconButton(onClick = { sortMenuOpen = true }) { Icon(Icons.AutoMirrored.Filled.Sort, "Sort documents") }
                                     DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { sortMenuOpen = false }) {

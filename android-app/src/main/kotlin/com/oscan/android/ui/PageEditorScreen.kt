@@ -16,7 +16,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.oscan.android.ui.theme.OScanTheme
 import com.oscan.core.model.FilterType
-import com.oscan.core.model.ImageDimensions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +77,7 @@ fun PageEditorScreen(
                 is PageEditorUiState.CropReady -> {
                     CropScreen(
                         previewBitmap = current.previewBitmap,
-                        sourceDimensions = ImageDimensions(viewModel.page.width, viewModel.page.height),
+                        sourceDimensions = current.sourceDimensions,
                         corners = current.corners,
                         isValidGeometry = current.isValidGeometry,
                         onCornerMoved = viewModel::onCornerMoved

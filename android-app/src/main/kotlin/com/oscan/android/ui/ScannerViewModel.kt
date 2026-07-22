@@ -407,7 +407,8 @@ class ScannerViewModel(
                     processedExtension = "jpg",
                     thumbnailExtension = "jpg",
                     width = page.outputWidth,
-                    height = page.outputHeight
+                    height = page.outputHeight,
+                    cropCorners = page.corners
                 )
             }
 

@@ -1,5 +1,6 @@
 package com.oscan.android.data.model
 
+import com.oscan.core.model.CornerPoints
 import java.time.Instant
 
 @JvmInline
@@ -31,7 +32,8 @@ data class Page(
     val thumbnailAsset: String,
     val width: Int,
     val height: Int,
-    val rotationDegrees: Int
+    val rotationDegrees: Int,
+    val cropCorners: CornerPoints? = null
 )
 
 data class Folder(

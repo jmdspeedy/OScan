@@ -37,7 +37,8 @@ data class PageEntity(
     val thumbnailAsset: String,
     val width: Int,
     val height: Int,
-    val rotationDegrees: Int = 0
+    val rotationDegrees: Int = 0,
+    val cropCorners: String? = null
 )
 
 @Entity(

@@ -15,6 +15,7 @@ import com.oscan.android.data.model.Page
 import com.oscan.android.data.model.PageId
 import com.oscan.android.data.storage.AssetKind
 import com.oscan.android.data.storage.DocumentFileStore
+import com.oscan.core.model.CornerPoints
 import java.io.InputStream
 import java.time.Clock
 import java.time.Instant
@@ -22,6 +23,7 @@ import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import org.opencv.core.Point
 
 sealed class RepositoryError(message: String, cause: Throwable? = null) : Exception(message, cause) {
     class InvalidName : RepositoryError("Choose a document name")
@@ -43,7 +45,8 @@ data class NewPage(
     val processedExtension: String = "jpg",
     val thumbnailExtension: String = "jpg",
     val width: Int,
-    val height: Int
+    val height: Int,
+    val cropCorners: CornerPoints? = null
 )
 
 interface DocumentRepository {
@@ -70,7 +73,7 @@ interface DocumentRepository {
     suspend fun addPages(id: DocumentId, pages: List<NewPage>): List<PageId>
     suspend fun reorderPages(id: DocumentId, pageIdsInOrder: List<PageId>)
     suspend fun rotatePage(id: DocumentId, pageId: PageId, deltaDegrees: Int)
-    suspend fun updatePageAssets(id: DocumentId, pageId: PageId, processedStream: () -> InputStream, thumbnailStream: () -> InputStream, width: Int, height: Int)
+    suspend fun updatePageAssets(id: DocumentId, pageId: PageId, processedStream: () -> InputStream, thumbnailStream: () -> InputStream, width: Int, height: Int, cropCorners: CornerPoints)
     suspend fun deletePage(id: DocumentId, pageId: PageId)
 }
 
@@ -131,7 +134,8 @@ class LocalDocumentRepository(
                     processedAsset = processed,
                     thumbnailAsset = thumbnail,
                     width = page.width,
-                    height = page.height
+                    height = page.height,
+                    cropCorners = page.cropCorners?.toStorageString()
                 )
             }
         } catch (error: Throwable) {
@@ -287,7 +291,8 @@ class LocalDocumentRepository(
                     processedAsset = processed,
                     thumbnailAsset = thumbnail,
                     width = page.width,
-                    height = page.height
+                    height = page.height,
+                    cropCorners = page.cropCorners?.toStorageString()
                 )
                 pageIds += PageId(pageId)
             }
@@ -357,7 +362,8 @@ class LocalDocumentRepository(
         processedStream: () -> InputStream,
         thumbnailStream: () -> InputStream,
         width: Int,
-        height: Int
+        height: Int,
+        cropCorners: CornerPoints
     ) {
         val page = dao.getPage(pageId.value) ?: throw RepositoryError.NotFound()
         if (page.documentId != id.value) throw RepositoryError.NotFound()
@@ -371,7 +377,7 @@ class LocalDocumentRepository(
         }
 
         database.withTransaction {
-            dao.updatePageDimensions(page.id, width, height)
+            dao.updatePageAssets(page.id, width, height, cropCorners.toStorageString())
             dao.touchDocument(id.value, now)
         }
     }
@@ -414,7 +420,7 @@ class LocalDocumentRepository(
                 Page(
                     PageId(it.id), DocumentId(it.documentId), it.position,
                     it.originalAsset, it.processedAsset, it.thumbnailAsset,
-                    it.width, it.height, it.rotationDegrees
+                    it.width, it.height, it.rotationDegrees, it.cropCorners?.toCornerPointsOrNull()
                 )
             },
             folder = folder,
@@ -425,3 +431,17 @@ class LocalDocumentRepository(
         )
     }
 }
+
+private fun CornerPoints.toStorageString(): String = toArray().joinToString(",") { point ->
+    "${point.x}:${point.y}"
+}
+
+private fun String.toCornerPointsOrNull(): CornerPoints? = runCatching {
+    val points = split(',').map { encoded ->
+        val coordinates = encoded.split(':')
+        require(coordinates.size == 2)
+        Point(coordinates[0].toDouble(), coordinates[1].toDouble())
+    }
+    require(points.size == 4)
+    CornerPoints.fromArray(points.toTypedArray())
+}.getOrNull()

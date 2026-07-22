@@ -9,11 +9,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -60,6 +62,8 @@ import com.oscan.core.util.CoordinateTransformer
 import kotlinx.coroutines.delay
 import org.opencv.core.Point
 import kotlin.math.hypot
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 private const val PRECISION_GAIN = 0.30f
@@ -106,6 +110,7 @@ fun CropScreen(
             exit = fadeOut(),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
                 .padding(bottom = 22.dp)
         ) {
             Surface(
@@ -128,6 +133,7 @@ fun CropScreen(
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
                     .padding(bottom = 22.dp)
                     .background(Color.Black.copy(alpha = .78f), RoundedCornerShape(20.dp))
                     .padding(horizontal = 14.dp, vertical = 8.dp)
@@ -254,14 +260,26 @@ private fun CropWorkspace(
                                     when (target) {
                                         is CropDragTarget.Corner -> {
                                             val base = points[target.index]
-                                            val moved = Point(base.x + dx, base.y + dy)
+                                            val moved = clampDisplayPoint(
+                                                Point(base.x + dx, base.y + dy),
+                                                transform,
+                                                sourceDimensions
+                                            )
                                             onCornerMoved(target.index, moved, containerDimensions)
                                             precisionFocus = Offset(moved.x.toFloat(), moved.y.toFloat())
                                         }
                                         is CropDragTarget.Edge -> {
                                             val (first, second) = edgeCornerIndices(target.index)
-                                            val firstPoint = Point(points[first].x + dx, points[first].y + dy)
-                                            val secondPoint = Point(points[second].x + dx, points[second].y + dy)
+                                            val firstPoint = clampDisplayPoint(
+                                                Point(points[first].x + dx, points[first].y + dy),
+                                                transform,
+                                                sourceDimensions
+                                            )
+                                            val secondPoint = clampDisplayPoint(
+                                                Point(points[second].x + dx, points[second].y + dy),
+                                                transform,
+                                                sourceDimensions
+                                            )
                                             onCornerMoved(first, firstPoint, containerDimensions)
                                             onCornerMoved(second, secondPoint, containerDimensions)
                                             precisionFocus = midpoint(firstPoint, secondPoint)
@@ -331,7 +349,6 @@ private fun CropWorkspace(
                 precisionFocus?.let { focus ->
                     PrecisionLoupe(
                         bitmap = previewBitmap,
-                        sourceDimensions = sourceDimensions,
                         containerDimensions = containerDimensions,
                         focus = focus,
                         lineColor = lineColor
@@ -343,19 +360,19 @@ private fun CropWorkspace(
 }
 
 @Composable
-private fun PrecisionLoupe(
+private fun BoxScope.PrecisionLoupe(
     bitmap: Bitmap,
-    sourceDimensions: ImageDimensions,
     containerDimensions: ImageDimensions,
     focus: Offset,
     lineColor: Color
 ) {
     val density = LocalDensity.current
-    val transform = CoordinateTransformer.computeTransform(sourceDimensions, containerDimensions)
-    val sourceFocus = CoordinateTransformer.displayToSource(
+    val previewDimensions = ImageDimensions(bitmap.width, bitmap.height)
+    val previewTransform = CoordinateTransformer.computeTransform(previewDimensions, containerDimensions)
+    val previewFocus = CoordinateTransformer.displayToSource(
         Point(focus.x.toDouble(), focus.y.toDouble()),
-        transform,
-        sourceDimensions
+        previewTransform,
+        previewDimensions
     )
     val width = 140.dp
     val imageHeight = 112.dp
@@ -363,13 +380,18 @@ private fun PrecisionLoupe(
     val widthPx = with(density) { width.toPx() }
     val heightPx = with(density) { totalHeight.toPx() }
     val marginPx = with(density) { 14.dp.toPx() }
-    val placeRight = focus.y < heightPx + marginPx * 2 && focus.x < containerDimensions.width / 2f
-    val x = if (placeRight) containerDimensions.width - widthPx - marginPx else marginPx
-    val y = marginPx
+    val topLeft = loupeTopLeft(
+        containerSize = IntSize(containerDimensions.width, containerDimensions.height),
+        focus = focus,
+        loupeWidth = widthPx,
+        loupeHeight = heightPx,
+        margin = marginPx
+    )
 
     Surface(
         modifier = Modifier
-            .offset { IntOffset(x.roundToInt(), y.roundToInt()) }
+            .align(Alignment.TopStart)
+            .offset { IntOffset(topLeft.x.roundToInt(), topLeft.y.roundToInt()) }
             .size(width, totalHeight),
         color = Color(0xEE111718),
         contentColor = Color.White,
@@ -383,20 +405,19 @@ private fun PrecisionLoupe(
                     .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
             ) {
                 Canvas(Modifier.fillMaxSize()) {
-                    val sourceWidth = (size.width / (5f * transform.scale.toFloat())).roundToInt().coerceAtLeast(8)
-                    val sourceHeight = (size.height / (5f * transform.scale.toFloat())).roundToInt().coerceAtLeast(8)
-                    val left = (sourceFocus.x - sourceWidth / 2.0)
-                        .roundToInt().coerceIn(0, (bitmap.width - sourceWidth).coerceAtLeast(0))
-                    val top = (sourceFocus.y - sourceHeight / 2.0)
-                        .roundToInt().coerceIn(0, (bitmap.height - sourceHeight).coerceAtLeast(0))
-                    val safeWidth = sourceWidth.coerceAtMost(bitmap.width - left)
-                    val safeHeight = sourceHeight.coerceAtMost(bitmap.height - top)
+                    val crop = calculateLoupeCrop(
+                        bitmapSize = IntSize(bitmap.width, bitmap.height),
+                        viewportSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+                        focus = previewFocus,
+                        previewScale = previewTransform.scale.toFloat(),
+                        zoom = 5f
+                    )
                     drawImage(
                         image = bitmap.asImageBitmap(),
-                        srcOffset = IntOffset(left, top),
-                        srcSize = IntSize(safeWidth, safeHeight),
-                        dstOffset = IntOffset.Zero,
-                        dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+                        srcOffset = crop.sourceOffset,
+                        srcSize = crop.sourceSize,
+                        dstOffset = crop.destinationOffset,
+                        dstSize = crop.destinationSize,
                         filterQuality = FilterQuality.None
                     )
                     drawLine(Color.White.copy(alpha = .9f), Offset(size.width / 2, 0f), Offset(size.width / 2, size.height), 1.dp.toPx())
@@ -498,11 +519,82 @@ private fun midpoint(first: Point, second: Point): Offset = Offset(
     ((first.y + second.y) / 2.0).toFloat()
 )
 
+private fun clampDisplayPoint(
+    point: Point,
+    transform: CoordinateTransformer.DisplayTransform,
+    sourceDimensions: ImageDimensions
+): Point = CoordinateTransformer.sourceToDisplay(
+    CoordinateTransformer.displayToSource(point, transform, sourceDimensions),
+    transform
+)
+
+internal data class LoupeCrop(
+    val sourceOffset: IntOffset,
+    val sourceSize: IntSize,
+    val destinationOffset: IntOffset,
+    val destinationSize: IntSize
+)
+
+internal fun calculateLoupeCrop(
+    bitmapSize: IntSize,
+    viewportSize: IntSize,
+    focus: Point,
+    previewScale: Float,
+    zoom: Float
+): LoupeCrop {
+    val pixelsPerBitmapPixel = (previewScale * zoom).coerceAtLeast(0.001f)
+    val requestedLeft = focus.x - viewportSize.width / (2.0 * pixelsPerBitmapPixel)
+    val requestedTop = focus.y - viewportSize.height / (2.0 * pixelsPerBitmapPixel)
+    val requestedRight = focus.x + viewportSize.width / (2.0 * pixelsPerBitmapPixel)
+    val requestedBottom = focus.y + viewportSize.height / (2.0 * pixelsPerBitmapPixel)
+
+    val sourceLeft = floor(requestedLeft.coerceAtLeast(0.0)).toInt().coerceAtMost(bitmapSize.width - 1)
+    val sourceTop = floor(requestedTop.coerceAtLeast(0.0)).toInt().coerceAtMost(bitmapSize.height - 1)
+    val sourceRight = ceil(requestedRight.coerceAtMost(bitmapSize.width.toDouble())).toInt()
+        .coerceAtLeast(sourceLeft + 1)
+    val sourceBottom = ceil(requestedBottom.coerceAtMost(bitmapSize.height.toDouble())).toInt()
+        .coerceAtLeast(sourceTop + 1)
+    val sourceWidth = (sourceRight - sourceLeft).coerceAtMost(bitmapSize.width - sourceLeft)
+    val sourceHeight = (sourceBottom - sourceTop).coerceAtMost(bitmapSize.height - sourceTop)
+
+    return LoupeCrop(
+        sourceOffset = IntOffset(sourceLeft, sourceTop),
+        sourceSize = IntSize(sourceWidth, sourceHeight),
+        destinationOffset = IntOffset(
+            ((sourceLeft - requestedLeft) * pixelsPerBitmapPixel).roundToInt(),
+            ((sourceTop - requestedTop) * pixelsPerBitmapPixel).roundToInt()
+        ),
+        destinationSize = IntSize(
+            (sourceWidth * pixelsPerBitmapPixel).roundToInt(),
+            (sourceHeight * pixelsPerBitmapPixel).roundToInt()
+        )
+    )
+}
+
+internal fun loupeTopLeft(
+    containerSize: IntSize,
+    focus: Offset,
+    loupeWidth: Float,
+    loupeHeight: Float,
+    margin: Float
+): Offset {
+    val maxX = (containerSize.width - loupeWidth).coerceAtLeast(0f)
+    val maxY = (containerSize.height - loupeHeight).coerceAtLeast(0f)
+    val preferredX = if (focus.x < containerSize.width / 2f) {
+        containerSize.width - loupeWidth - margin
+    } else {
+        margin
+    }
+    return Offset(
+        preferredX.coerceIn(0f, maxX),
+        margin.coerceIn(0f, maxY)
+    )
+}
+
 private fun loupeCenter(size: IntSize, focus: Offset, density: Float): Offset {
     val loupeWidth = 140f * density
     val loupeHeight = 170f * density
     val margin = 14f * density
-    val placeRight = focus.y < loupeHeight + margin * 2 && focus.x < size.width / 2f
-    val left = if (placeRight) size.width - loupeWidth - margin else margin
-    return Offset(left + loupeWidth / 2, margin + loupeHeight / 2)
+    val topLeft = loupeTopLeft(size, focus, loupeWidth, loupeHeight, margin)
+    return Offset(topLeft.x + loupeWidth / 2, topLeft.y + loupeHeight / 2)
 }

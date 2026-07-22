@@ -25,8 +25,10 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -39,6 +41,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
@@ -178,15 +181,6 @@ fun HomeLibraryScreen(
             }
             state.documents.isEmpty() && state.searchQuery.isNotEmpty() -> NoSearchResultsState(state.searchQuery)
             state.documents.isEmpty() -> emptyContent()
-            state.presentation == LibraryPresentation.GRID -> DocumentGrid(
-                state = state,
-                fileStore = fileStore,
-                gridState = gridState,
-                onOpenDocument = onOpenDocument,
-                onToggleSelectionMode = onToggleSelectionMode,
-                onToggleDocumentSelection = onToggleDocumentSelection,
-                onOpenFolder = onOpenFolder
-            )
             else -> DocumentList(
                 state = state,
                 fileStore = fileStore,
@@ -897,7 +891,7 @@ fun DocumentDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(document?.name ?: "Document", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = {},
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
                 actions = {
                     if (document != null) {
@@ -946,7 +940,6 @@ fun DocumentDetailScreen(
                                     leadingIcon = { Icon(if (document.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, null) },
                                     onClick = { overflowOpen = false; onFavorite(!document.isFavorite) }
                                 )
-                                DropdownMenuItem(text = { Text("Rename") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { overflowOpen = false; renameOpen = true })
                                 if (folders.isNotEmpty() || document.folder != null) {
                                     DropdownMenuItem(text = { Text("Move to folder") }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.DriveFileMove, null) }, onClick = { overflowOpen = false; moveOpen = true })
                                 }
@@ -972,6 +965,18 @@ fun DocumentDetailScreen(
                 ) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Column {
+                            Text(
+                                text = document.name,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .clickable(onClickLabel = "Rename document") { renameOpen = true }
+                                    .padding(vertical = 4.dp)
+                            )
+                            Spacer(Modifier.height(4.dp))
                             Text(document.metadataLine(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             document.folder?.let { Text("Folder: ${it.name}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                             Spacer(Modifier.height(8.dp))
@@ -1236,13 +1241,16 @@ fun PageViewerScreen(
                     }
             )
         }
-        FilledTonalIconButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart).padding(16.dp)) {
+        FilledTonalIconButton(
+            onClick = onBack,
+            modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().padding(16.dp)
+        ) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
         }
         Surface(
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
             shape = RoundedCornerShape(24.dp),
-            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(16.dp)
         ) {
             Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { pageIndex--; scale = 1f; offset = Offset.Zero }, enabled = pageIndex > 0) {

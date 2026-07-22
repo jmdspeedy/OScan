@@ -29,6 +29,7 @@ sealed interface PageEditorUiState {
     data object Loading : PageEditorUiState
     data class CropReady(
         val previewBitmap: Bitmap,
+        val sourceDimensions: ImageDimensions,
         val corners: CornerPoints,
         val initialDetectedCorners: CornerPoints,
         val isValidGeometry: Boolean
@@ -76,13 +77,17 @@ class PageEditorViewModel(
                 sourceHeight = result.sourceDimensions.height
                 result
             }.onSuccess { result ->
-                currentCorners = result.corners
+                val restoredCorners = page.cropCorners?.takeIf {
+                    CornerValidator.isValidQuadrilateral(it.toArray(), result.sourceDimensions)
+                } ?: result.corners
+                currentCorners = restoredCorners
                 _uiState.value = PageEditorUiState.CropReady(
                     previewBitmap = result.previewBitmap,
-                    corners = result.corners,
-                    initialDetectedCorners = result.corners,
+                    sourceDimensions = result.sourceDimensions,
+                    corners = restoredCorners,
+                    initialDetectedCorners = restoredCorners,
                     isValidGeometry = CornerValidator.isValidQuadrilateral(
-                        result.corners.toArray(),
+                        restoredCorners.toArray(),
                         result.sourceDimensions
                     )
                 )
@@ -191,7 +196,8 @@ class PageEditorViewModel(
                         processedStream = { ByteArrayInputStream(processedBytes) },
                         thumbnailStream = { ByteArrayInputStream(thumbnailBytes) },
                         width = bitmap.width,
-                        height = bitmap.height
+                        height = bitmap.height,
+                        cropCorners = checkNotNull(currentCorners)
                     )
                 }
             }.onSuccess {

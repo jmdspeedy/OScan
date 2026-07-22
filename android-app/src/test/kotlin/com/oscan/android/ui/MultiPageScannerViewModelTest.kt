@@ -127,7 +127,8 @@ class MultiPageScannerViewModelTest {
             processedStream: () -> java.io.InputStream,
             thumbnailStream: () -> java.io.InputStream,
             width: Int,
-            height: Int
+            height: Int,
+            cropCorners: CornerPoints
         ) = Unit
         override suspend fun deletePage(id: DocumentId, pageId: com.oscan.android.data.model.PageId) = Unit
     }

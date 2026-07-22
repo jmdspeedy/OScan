@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -60,7 +61,7 @@ fun PreviewScreen(
         val controls: @Composable (Modifier) -> Unit = { modifier ->
             Surface(tonalElevation = 2.dp, modifier = modifier) {
                 Column(
-                    Modifier.fillMaxWidth().padding(16.dp),
+                    Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text("Treatment", style = MaterialTheme.typography.titleMedium)

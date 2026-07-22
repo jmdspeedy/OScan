@@ -7,12 +7,14 @@ import com.oscan.android.data.db.OScanDatabase
 import com.oscan.android.data.db.FolderEntity
 import com.oscan.android.data.model.DocumentId
 import com.oscan.android.data.storage.DocumentFileStore
+import com.oscan.core.model.CornerPoints
 import java.io.ByteArrayInputStream
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import org.opencv.core.Point
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -65,6 +67,18 @@ class LocalDocumentRepositoryTest {
             assertTrue(fileStore.resolve(page.processedAsset).exists())
             assertTrue(fileStore.resolve(page.thumbnailAsset).exists())
         }
+    }
+
+    @Test
+    fun createPersistsCropCornersForFutureEditing() = runTest {
+        val corners = CornerPoints(
+            Point(10.0, 20.0), Point(90.0, 18.0),
+            Point(92.0, 180.0), Point(8.0, 182.0)
+        )
+
+        val id = repository.create("Receipt", listOf(page("one").copy(cropCorners = corners)))
+
+        assertEquals(corners, repository.observeDocument(id).first()!!.pages.single().cropCorners)
     }
 
     @Test

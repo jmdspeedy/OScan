@@ -89,8 +89,8 @@ interface LibraryDao {
     @Query("UPDATE pages SET rotationDegrees = :rotationDegrees, width = :width, height = :height WHERE id = :id")
     suspend fun updatePageRotation(id: String, rotationDegrees: Int, width: Int, height: Int)
 
-    @Query("UPDATE pages SET width = :width, height = :height WHERE id = :id")
-    suspend fun updatePageDimensions(id: String, width: Int, height: Int)
+    @Query("UPDATE pages SET width = :width, height = :height, cropCorners = :cropCorners WHERE id = :id")
+    suspend fun updatePageAssets(id: String, width: Int, height: Int, cropCorners: String?)
 
     @Query("DELETE FROM pages WHERE id = :id")
     suspend fun deletePage(id: String)
