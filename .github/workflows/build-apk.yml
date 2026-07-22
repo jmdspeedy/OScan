@@ -68,6 +68,7 @@ jobs:
         run: >-
           gh release create "$GITHUB_REF_NAME"
           release/android-app-debug.apk
+          --repo "$GITHUB_REPOSITORY"
           --verify-tag
           --title "OScan $GITHUB_REF_NAME"
           --generate-notes
