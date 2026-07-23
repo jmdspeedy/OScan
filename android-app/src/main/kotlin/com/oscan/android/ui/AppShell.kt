@@ -397,13 +397,22 @@ fun OScanAppShell(
                 libraryViewModel = libraryViewModel,
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
-                    NavigationBar {
+                    NavigationBar(
+                        modifier = Modifier.height(
+                            if (destination == AppDestination.Scan) 72.dp else 80.dp
+                        )
+                    ) {
                         AppDestination.entries.forEach { item ->
                             NavigationBarItem(
                                 selected = destination == item,
                                 onClick = { selectDestination(item) },
                                 icon = { Icon(if (destination == item) item.selectedIcon else item.icon, null) },
-                                label = { Text(item.label) }
+                                label = {
+                                    Text(
+                                        text = item.label,
+                                        style = MaterialTheme.typography.labelMedium
+                                    )
+                                }
                             )
                         }
                     }
@@ -598,18 +607,11 @@ private fun DestinationScaffold(
                                 captureState = captureState,
                                 onCaptured = onCaptured,
                                 onDone = onDone,
-                                onClose = {
-                                    if (captureState.capturedCount > 0) {
-                                        onDone()
-                                    } else {
-                                        onDestinationSelected(AppDestination.Home)
-                                    }
-                                },
                                 onImport = onImportImages,
                                 shutterFeedbackEnabled = state.userPreferences.shutterFeedback
                             )
                         } else {
-                            CameraTransitionPreview(captureState)
+                            CameraTransitionPreview()
                         }
                     } else {
                         ScanEntryScreen(
