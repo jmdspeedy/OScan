@@ -144,20 +144,6 @@ fun LiveCameraScreen(
         }
     }
 
-    val shutterProgress = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        shutterProgress.animateTo(
-            targetValue = 1f,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow
-            )
-        )
-    }
-    val density = LocalDensity.current
-    val shutterTranslation = with(density) {
-        (if (compactControls) 34.dp else 58.dp).toPx() * (1f - shutterProgress.value)
-    }
     LaunchedEffect(captureFeedbackEvent) {
         if (captureFeedbackEvent == 0 || accessibilitySettings.reducedMotion) return@LaunchedEffect
         captureFlashAlpha.snapTo(.16f)
@@ -244,8 +230,6 @@ fun LiveCameraScreen(
             isProcessing = captureState.isProcessing,
             isCapturing = state.isCapturing,
             captureEnabled = permissionGranted && state.isAvailable && !state.isStarting && !state.isCapturing && !captureState.isProcessing,
-            shutterProgress = shutterProgress.value,
-            shutterTranslation = shutterTranslation,
             captureFeedbackEvent = captureFeedbackEvent,
             reducedMotion = accessibilitySettings.reducedMotion,
             onCapture = {
@@ -329,8 +313,6 @@ internal fun CameraTransitionPreview(captureState: CameraCaptureState) {
             isProcessing = captureState.isProcessing,
             isCapturing = false,
             captureEnabled = false,
-            shutterProgress = 1f,
-            shutterTranslation = 0f,
             captureFeedbackEvent = 0,
             reducedMotion = true,
             onCapture = {},
@@ -441,8 +423,6 @@ private fun BoxScope.CameraControlDock(
     isProcessing: Boolean,
     isCapturing: Boolean,
     captureEnabled: Boolean,
-    shutterProgress: Float,
-    shutterTranslation: Float,
     captureFeedbackEvent: Int,
     reducedMotion: Boolean,
     onCapture: () -> Unit,
@@ -469,8 +449,6 @@ private fun BoxScope.CameraControlDock(
             isProcessing = isProcessing,
             isCapturing = isCapturing,
             captureEnabled = captureEnabled,
-            shutterProgress = shutterProgress,
-            shutterTranslation = shutterTranslation,
             captureFeedbackEvent = captureFeedbackEvent,
             reducedMotion = reducedMotion,
             onCapture = onCapture,
@@ -518,8 +496,6 @@ private fun CaptureDock(
     isProcessing: Boolean,
     isCapturing: Boolean,
     captureEnabled: Boolean,
-    shutterProgress: Float,
-    shutterTranslation: Float,
     captureFeedbackEvent: Int,
     reducedMotion: Boolean,
     onCapture: () -> Unit,
@@ -698,11 +674,6 @@ private fun CaptureDock(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .size(shutterSize)
-                .graphicsLayer {
-                    translationY = shutterTranslation
-                    scaleX = .55f + shutterProgress * .45f
-                    scaleY = .55f + shutterProgress * .45f
-                }
                 .semantics {
                     contentDescription = "Capture page"
                     stateDescription = when {
