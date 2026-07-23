@@ -3,6 +3,7 @@ package com.oscan.android.ui
 import java.io.File
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,6 +20,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -81,6 +85,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -98,6 +103,7 @@ import com.oscan.android.data.model.PageId
 import com.oscan.android.data.preferences.DocumentSort
 import com.oscan.android.data.preferences.LibraryPresentation
 import com.oscan.android.data.storage.DocumentFileStore
+import kotlinx.coroutines.launch
 
 private enum class AppDestination(val label: String, val selectedIcon: ImageVector, val icon: ImageVector) {
     Home("Home", Icons.Filled.Home, Icons.Outlined.Home),
@@ -105,6 +111,7 @@ private enum class AppDestination(val label: String, val selectedIcon: ImageVect
     Me("Me", Icons.Filled.Person, Icons.Outlined.Person)
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OScanAppShell(
     libraryViewModel: LibraryViewModel,
@@ -120,6 +127,18 @@ fun OScanAppShell(
 ) {
     val state by libraryViewModel.uiState.collectAsState()
     var destination by rememberSaveable { mutableStateOf(AppDestination.Home) }
+    val destinationPagerState = rememberPagerState(
+        initialPage = destination.ordinal,
+        pageCount = { AppDestination.entries.size }
+    )
+    val navigationScope = rememberCoroutineScope()
+    val selectDestination: (AppDestination) -> Unit = { target ->
+        destination = target
+        navigationScope.launch { destinationPagerState.animateScrollToPage(target.ordinal) }
+    }
+    LaunchedEffect(destinationPagerState.settledPage) {
+        destination = AppDestination.entries[destinationPagerState.settledPage]
+    }
     var viewerPage by rememberSaveable { mutableStateOf<Int?>(null) }
     var editingPage by remember { mutableStateOf<com.oscan.android.data.model.Page?>(null) }
     var addPagesDialogOpen by remember { mutableStateOf(false) }
@@ -336,15 +355,16 @@ fun OScanAppShell(
         val useRail = maxWidth >= 600.dp
         if (useRail) {
             Row(Modifier.fillMaxSize()) {
-                OScanNavigationRail(destination) { destination = it }
+                OScanNavigationRail(destination, selectDestination)
                 DestinationScaffold(
                     destination = destination,
+                    pagerState = destinationPagerState,
                     state = state,
                     fileStore = fileStore,
                     gridState = gridState,
                     listState = listState,
                     snackbarHostState = snackbarHostState,
-                    onDestinationSelected = { destination = it },
+                    onDestinationSelected = selectDestination,
                     onImportImages = onImportImages,
                     cameraViewModel = cameraViewModel,
                     captureState = captureState,
@@ -359,12 +379,13 @@ fun OScanAppShell(
         } else {
             DestinationScaffold(
                 destination = destination,
+                pagerState = destinationPagerState,
                 state = state,
                 fileStore = fileStore,
                 gridState = gridState,
                 listState = listState,
                 snackbarHostState = snackbarHostState,
-                onDestinationSelected = { destination = it },
+                onDestinationSelected = selectDestination,
                 onImportImages = onImportImages,
                 cameraViewModel = cameraViewModel,
                 captureState = captureState,
@@ -379,7 +400,7 @@ fun OScanAppShell(
                         AppDestination.entries.forEach { item ->
                             NavigationBarItem(
                                 selected = destination == item,
-                                onClick = { destination = item },
+                                onClick = { selectDestination(item) },
                                 icon = { Icon(if (destination == item) item.selectedIcon else item.icon, null) },
                                 label = { Text(item.label) }
                             )
@@ -443,10 +464,11 @@ private fun OScanNavigationRail(selected: AppDestination, onDestinationSelected:
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun DestinationScaffold(
     destination: AppDestination,
+    pagerState: PagerState,
     state: LibraryUiState,
     fileStore: DocumentFileStore,
     gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
@@ -472,7 +494,7 @@ private fun DestinationScaffold(
     Scaffold(
         modifier = modifier,
         topBar = {
-            if (destination != AppDestination.Scan) {
+            if (destination != AppDestination.Scan && destination != AppDestination.Me) {
                 if (state.selectionMode && destination == AppDestination.Home) {
                     TopAppBar(
                         title = {
@@ -535,8 +557,18 @@ private fun DestinationScaffold(
         bottomBar = bottomBar,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
-            when (destination) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize().padding(padding),
+            beyondBoundsPageCount = 1,
+            userScrollEnabled = !sortMenuOpen && !bulkMoveDialogOpen &&
+                !bulkTrashConfirmOpen && !createFolderDialogOpen
+        ) { pageIndex ->
+            val pageDestination = AppDestination.entries[pageIndex]
+            val cameraIsSettled = pagerState.settledPage == AppDestination.Scan.ordinal &&
+                !pagerState.isScrollInProgress
+            Box(Modifier.fillMaxSize()) {
+            when (pageDestination) {
                 AppDestination.Home -> HomeLibraryScreen(
                     state = state,
                     fileStore = fileStore,
@@ -549,31 +581,35 @@ private fun DestinationScaffold(
                     onToggleDocumentSelection = libraryViewModel::toggleDocumentSelection,
                     onOpenFolder = libraryViewModel::openFolder,
                     onCreateFolderRequested = { createFolderDialogOpen = true }
-                ) { EmptyHomeScreen({ onDestinationSelected(AppDestination.Scan) }, onImportImages) }
+                ) { EmptyHomeScreen { onDestinationSelected(AppDestination.Scan) } }
                 AppDestination.Scan -> {
                     if (cameraViewModel != null && captureState != null && onCaptured != null && onDone != null) {
-                        BackHandler(enabled = destination == AppDestination.Scan) {
+                        BackHandler(enabled = cameraIsSettled) {
                             if (captureState.capturedCount > 0) {
                                 onDone()
                             } else {
                                 onDestinationSelected(AppDestination.Home)
                             }
                         }
-                        LiveCameraScreen(
-                            cameraViewModel = cameraViewModel,
-                            captureState = captureState,
-                            onCaptured = onCaptured,
-                            onDone = onDone,
-                            onClose = {
-                                if (captureState.capturedCount > 0) {
-                                    onDone()
-                                } else {
-                                    onDestinationSelected(AppDestination.Home)
-                                }
-                            },
-                            onImport = onImportImages,
-                            shutterFeedbackEnabled = state.userPreferences.shutterFeedback
-                        )
+                        if (cameraIsSettled) {
+                            LiveCameraScreen(
+                                cameraViewModel = cameraViewModel,
+                                captureState = captureState,
+                                onCaptured = onCaptured,
+                                onDone = onDone,
+                                onClose = {
+                                    if (captureState.capturedCount > 0) {
+                                        onDone()
+                                    } else {
+                                        onDestinationSelected(AppDestination.Home)
+                                    }
+                                },
+                                onImport = onImportImages,
+                                shutterFeedbackEnabled = state.userPreferences.shutterFeedback
+                            )
+                        } else {
+                            CameraTransitionPreview(captureState)
+                        }
                     } else {
                         ScanEntryScreen(
                             onOpenCamera = { onDestinationSelected(AppDestination.Scan) },
@@ -591,6 +627,7 @@ private fun DestinationScaffold(
                     onUpdateDisplayName = libraryViewModel::setDisplayName,
                     onUpdateAvatarPreset = libraryViewModel::setAvatarPreset
                 )
+            }
             }
         }
     }
@@ -650,22 +687,16 @@ private fun DocumentSort.label(): String = when (this) {
 }
 
 @Composable
-private fun EmptyHomeScreen(onScanDocument: () -> Unit, onImportImages: () -> Unit) {
+private fun EmptyHomeScreen(onScanDocument: () -> Unit) {
     EmptyStateLayout(
         icon = Icons.Default.Description,
         title = "Your documents will appear here",
-        supportingText = "Scan with the camera or import images. Everything stays on this device."
+        supportingText = "Scan with the camera. Everything stays on this device."
     ) {
         Button(onClick = onScanDocument, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.PhotoCamera, null)
             Spacer(Modifier.width(8.dp))
             Text("Scan document")
-        }
-        Spacer(Modifier.height(12.dp))
-        OutlinedButton(onClick = onImportImages, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.PhotoLibrary, null)
-            Spacer(Modifier.width(8.dp))
-            Text("Import images")
         }
     }
 }
@@ -759,8 +790,7 @@ private fun MeScreen(
                 )
             }
         }
-        Spacer(Modifier.height(4.dp))
-        Text("Local workspace • No account needed", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
 
         Spacer(Modifier.height(20.dp))
 

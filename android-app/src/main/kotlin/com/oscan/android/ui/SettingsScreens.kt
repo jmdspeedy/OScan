@@ -17,17 +17,21 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -41,6 +45,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -56,7 +61,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
@@ -903,9 +910,76 @@ private fun HelpTopic(title: String, body: String) {
     }
 }
 
+private data class OpenSourceLibrary(
+    val name: String,
+    val description: String,
+    val repoUrl: String,
+    val icon: ImageVector
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+
+    val (versionName, versionCode) = remember(context) {
+        try {
+            val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            val name = pInfo.versionName ?: "0.5.0"
+            val code = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                pInfo.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                pInfo.versionCode.toLong()
+            }
+            name to code
+        } catch (e: Exception) {
+            "0.5.0" to 5L
+        }
+    }
+
+    val libraries = remember {
+        listOf(
+            OpenSourceLibrary(
+                name = "Android Jetpack Compose & Material 3",
+                description = "Modern declarative UI framework & Material 3 design system",
+                repoUrl = "https://github.com/androidx/androidx",
+                icon = Icons.Default.Palette
+            ),
+            OpenSourceLibrary(
+                name = "Room Persistence Library (SQLite)",
+                description = "Robust local SQLite database object mapping & async reactive queries",
+                repoUrl = "https://github.com/androidx/androidx",
+                icon = Icons.Default.Storage
+            ),
+            OpenSourceLibrary(
+                name = "OpenCV Android Native Library",
+                description = "Computer vision engine for document edge detection & perspective transformation",
+                repoUrl = "https://github.com/opencv/opencv",
+                icon = Icons.Default.AutoAwesome
+            ),
+            OpenSourceLibrary(
+                name = "Microsoft ONNX Runtime Android",
+                description = "On-device ML inference engine for document boundary prediction",
+                repoUrl = "https://github.com/microsoft/onnxruntime",
+                icon = Icons.Default.Psychology
+            ),
+            OpenSourceLibrary(
+                name = "AndroidX CameraX & DataStore",
+                description = "Hardware camera stream integration & reactive preference storage",
+                repoUrl = "https://github.com/androidx/androidx",
+                icon = Icons.Default.CameraAlt
+            ),
+            OpenSourceLibrary(
+                name = "Apache PDFBox",
+                description = "High performance PDF rendering & document creation library",
+                repoUrl = "https://github.com/apache/pdfbox",
+                icon = Icons.Default.PictureAsPdf
+            )
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -923,33 +997,191 @@ fun AboutScreen(onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(8.dp))
-            Surface(
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = CircleShape,
-                modifier = Modifier.size(72.dp)
+            // App Header Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                ),
+                shape = RoundedCornerShape(24.dp)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(36.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = CircleShape,
+                        modifier = Modifier.size(76.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "OScan",
+                        style = MaterialTheme.typography.headlineLarge
+                    )
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            text = "Version $versionName (Build $versionCode)",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+
+                    Text(
+                        text = "Local-first document manager for Android",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    Button(
+                        onClick = {
+                            try {
+                                uriHandler.openUri("https://github.com/jmdspeedy/OScan")
+                            } catch (_: Exception) {}
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Code,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("View App Repository (GitHub)")
+                    }
                 }
             }
-            Text("OScan", style = MaterialTheme.typography.headlineMedium)
-            Text("Version 1.0.0 (Build 1)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Local-first document manager for Android", style = MaterialTheme.typography.bodyLarge)
 
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+            // Open Source Libraries & Notices Section
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Open-Source Libraries & Notices",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "OScan is built using open-source software and frameworks.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Open-Source Libraries & Notices", style = MaterialTheme.typography.titleMedium)
-                Text("• Android Jetpack Compose & Material 3", style = MaterialTheme.typography.bodyMedium)
-                Text("• Room Persistence Library (SQLite)", style = MaterialTheme.typography.bodyMedium)
-                Text("• OpenCV Android Native Library", style = MaterialTheme.typography.bodyMedium)
-                Text("• Microsoft ONNX Runtime Android", style = MaterialTheme.typography.bodyMedium)
-                Text("• AndroidX CameraX & DataStore", style = MaterialTheme.typography.bodyMedium)
+                libraries.forEach { lib ->
+                    LibraryCard(
+                        library = lib,
+                        onOpenRepo = {
+                            try {
+                                uriHandler.openUri(lib.repoUrl)
+                            } catch (_: Exception) {}
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryCard(
+    library: OpenSourceLibrary,
+    onOpenRepo: () -> Unit
+) {
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = library.icon,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = library.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            Text(
+                text = library.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = onOpenRepo,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Repository",
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
             }
         }
     }
