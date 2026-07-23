@@ -58,8 +58,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipPath
 import com.oscan.android.data.preferences.AccentTheme
 import com.oscan.android.data.preferences.CameraLensPreference
 import com.oscan.android.data.preferences.JpegQuality
@@ -352,47 +358,283 @@ fun AppearanceSettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(28.dp)
         ) {
-            Text("Primary theme mode", style = MaterialTheme.typography.titleLarge)
-            
-            ThemeChoiceOption(
-                title = "Light theme",
-                subtitle = "Clean light background and bright surfaces",
-                selected = themeChoice == ThemeChoice.LIGHT,
-                onSelect = { onThemeChoiceSelected(ThemeChoice.LIGHT) }
-            )
-            ThemeChoiceOption(
-                title = "Dark theme",
-                subtitle = "Cool dark charcoal background and dark surfaces",
-                selected = themeChoice == ThemeChoice.DARK,
-                onSelect = { onThemeChoiceSelected(ThemeChoice.DARK) }
-            )
-            ThemeChoiceOption(
-                title = "System default",
-                subtitle = "Automatically follow system dark and light mode settings",
-                selected = themeChoice == ThemeChoice.SYSTEM,
-                onSelect = { onThemeChoiceSelected(ThemeChoice.SYSTEM) }
-            )
+            // Theme Mode Section (Matching Image 2)
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text("Theme", style = MaterialTheme.typography.titleLarge)
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    PrimaryThemeCardOption(
+                        modifier = Modifier.weight(1f),
+                        title = "Light",
+                        selected = themeChoice == ThemeChoice.LIGHT,
+                        previewMode = PreviewMode.LIGHT,
+                        onSelect = { onThemeChoiceSelected(ThemeChoice.LIGHT) }
+                    )
+                    PrimaryThemeCardOption(
+                        modifier = Modifier.weight(1f),
+                        title = "Dark",
+                        selected = themeChoice == ThemeChoice.DARK,
+                        previewMode = PreviewMode.DARK,
+                        onSelect = { onThemeChoiceSelected(ThemeChoice.DARK) }
+                    )
+                    PrimaryThemeCardOption(
+                        modifier = Modifier.weight(1f),
+                        title = "Auto",
+                        selected = themeChoice == ThemeChoice.SYSTEM,
+                        previewMode = PreviewMode.AUTO,
+                        onSelect = { onThemeChoiceSelected(ThemeChoice.SYSTEM) }
+                    )
+                }
+            }
 
             HorizontalDivider()
 
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Color adjuster", style = MaterialTheme.typography.titleLarge)
-                Text(
-                    "Choose a premade palette to adjust secondary and accent colors across the app.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            // Color Palette Section (Matching Image 1)
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Color palette", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        "Choose an accent palette to customize application colors",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
-            AccentTheme.entries.forEach { option ->
-                AccentThemeOptionCard(
-                    accentTheme = option,
-                    isDark = isDark,
-                    selected = accentTheme == option,
-                    onSelect = { onAccentThemeSelected(option) }
-                )
+                val themeRows = AccentTheme.entries.chunked(3)
+                themeRows.forEach { rowEntries ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        rowEntries.forEach { option ->
+                            PaletteGridItemCard(
+                                modifier = Modifier.weight(1f),
+                                accentTheme = option,
+                                isDark = isDark,
+                                selected = accentTheme == option,
+                                onSelect = { onAccentThemeSelected(option) }
+                            )
+                        }
+                        repeat(3 - rowEntries.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private enum class PreviewMode { LIGHT, DARK, AUTO }
+
+@Composable
+private fun PrimaryThemeCardOption(
+    modifier: Modifier = Modifier,
+    title: String,
+    selected: Boolean,
+    previewMode: PreviewMode,
+    onSelect: () -> Unit
+) {
+    Column(
+        modifier = modifier.clickable(onClick = onSelect),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(130.dp)
+                .then(
+                    if (selected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
+                    else Modifier.border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                ),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            ThemePreviewCanvas(previewMode = previewMode)
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            RadioButton(selected = selected, onClick = onSelect)
+            Text(title, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+@Composable
+private fun ThemePreviewCanvas(previewMode: PreviewMode) {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val width = size.width
+        val height = size.height
+
+        val lightBg = Color(0xFFFFF7F6)
+        val lightHeader = Color(0xFF8B4A2B)
+        val lightLine1 = Color(0xFFFFDBCF)
+        val lightLine2 = Color(0xFFFCE1D7)
+        val lightNavBg = Color(0xFFFDE8E2)
+        val lightNavBtn = Color(0xFF8B4A2B)
+
+        val darkBg = Color(0xFF1E1B19)
+        val darkHeader = Color(0xFFFFDBCF)
+        val darkLine1 = Color(0xFF4A3E39)
+        val darkLine2 = Color(0xFF38302C)
+        val darkNavBg = Color(0xFF2B2421)
+        val darkNavBtn = Color(0xFFFFDBCF)
+
+        fun drawThemeUI(
+            bg: Color,
+            header: Color,
+            line1: Color,
+            line2: Color,
+            navBg: Color,
+            navBtn: Color
+        ) {
+            drawRect(color = bg)
+
+            val margin = width * 0.12f
+            drawRoundRect(
+                color = header,
+                topLeft = androidx.compose.ui.geometry.Offset(margin, height * 0.12f),
+                size = androidx.compose.ui.geometry.Size(width - (margin * 2), height * 0.22f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(12f, 12f)
+            )
+
+            drawRoundRect(
+                color = line1,
+                topLeft = androidx.compose.ui.geometry.Offset(margin, height * 0.40f),
+                size = androidx.compose.ui.geometry.Size(width * 0.65f, height * 0.05f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f)
+            )
+            drawRoundRect(
+                color = line2,
+                topLeft = androidx.compose.ui.geometry.Offset(margin, height * 0.49f),
+                size = androidx.compose.ui.geometry.Size(width * 0.50f, height * 0.05f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f)
+            )
+            drawRoundRect(
+                color = line1,
+                topLeft = androidx.compose.ui.geometry.Offset(margin, height * 0.58f),
+                size = androidx.compose.ui.geometry.Size(width * 0.72f, height * 0.05f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f)
+            )
+
+            drawRoundRect(
+                color = navBg,
+                topLeft = androidx.compose.ui.geometry.Offset(margin, height * 0.78f),
+                size = androidx.compose.ui.geometry.Size(width - (margin * 2), height * 0.14f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(10f, 10f)
+            )
+            drawCircle(
+                color = navBtn,
+                radius = height * 0.045f,
+                center = androidx.compose.ui.geometry.Offset(margin + (height * 0.07f), height * 0.85f)
+            )
+        }
+
+        when (previewMode) {
+            PreviewMode.LIGHT -> drawThemeUI(lightBg, lightHeader, lightLine1, lightLine2, lightNavBg, lightNavBtn)
+            PreviewMode.DARK -> drawThemeUI(darkBg, darkHeader, darkLine1, darkLine2, darkNavBg, darkNavBtn)
+            PreviewMode.AUTO -> {
+                val topTrianglePath = Path().apply {
+                    moveTo(0f, 0f)
+                    lineTo(width, 0f)
+                    lineTo(0f, height)
+                    close()
+                }
+                clipPath(topTrianglePath) {
+                    drawThemeUI(lightBg, lightHeader, lightLine1, lightLine2, lightNavBg, lightNavBtn)
+                }
+
+                val bottomTrianglePath = Path().apply {
+                    moveTo(width, 0f)
+                    lineTo(width, height)
+                    lineTo(0f, height)
+                    close()
+                }
+                clipPath(bottomTrianglePath) {
+                    drawThemeUI(darkBg, darkHeader, darkLine1, darkLine2, darkNavBg, darkNavBtn)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PaletteGridItemCard(
+    modifier: Modifier = Modifier,
+    accentTheme: AccentTheme,
+    isDark: Boolean,
+    selected: Boolean,
+    onSelect: () -> Unit
+) {
+    val (primary, secondary, tertiary) = accentTheme.swatchColors(isDark)
+
+    Card(
+        modifier = modifier
+            .aspectRatio(1f)
+            .clickable(onClick = onSelect)
+            .then(
+                if (selected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(20.dp))
+                else Modifier
+            ),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        )
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier.size(52.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    drawArc(
+                        color = primary,
+                        startAngle = 180f,
+                        sweepAngle = 180f,
+                        useCenter = true
+                    )
+                    drawArc(
+                        color = secondary,
+                        startAngle = 90f,
+                        sweepAngle = 90f,
+                        useCenter = true
+                    )
+                    drawArc(
+                        color = tertiary,
+                        startAngle = 0f,
+                        sweepAngle = 90f,
+                        useCenter = true
+                    )
+                }
+
+                if (selected) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.25f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
             }
         }
     }

@@ -14,11 +14,14 @@ enum class LibraryPresentation { GRID, LIST }
 enum class ThemeChoice { SYSTEM, LIGHT, DARK }
 enum class AccentTheme(val label: String) {
     TEAL("OScan Teal"),
+    MINT("Fresh Mint"),
     BLUE("Ocean Blue"),
-    EMERALD("Emerald Green"),
+    INDIGO("Lavender Indigo"),
     PURPLE("Royal Purple"),
+    PINK("Rose Pink"),
+    CRIMSON("Coral Crimson"),
     AMBER("Sunset Amber"),
-    CRIMSON("Rose Crimson"),
+    LIME("Olive Lime"),
     SLATE("Charcoal Slate")
 }
 enum class PdfPageSize(val label: String) { A4("A4 (210 × 297 mm)"), LETTER("US Letter (8.5 × 11 in)"), MATCH_PAGE("Match original page") }

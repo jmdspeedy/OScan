@@ -85,11 +85,14 @@ private val OScanDarkColorScheme = darkColorScheme(
 fun AccentTheme.swatchColors(darkTheme: Boolean): Triple<Color, Color, Color> {
     return when (this) {
         AccentTheme.TEAL -> if (darkTheme) Triple(Color(0xFF4FD8E8), Color(0xFFB1CBD0), Color(0xFFBBC5EB)) else Triple(Color(0xFF006874), Color(0xFF4A6267), Color(0xFF545D7E))
+        AccentTheme.MINT -> if (darkTheme) Triple(Color(0xFF95D5B2), Color(0xFF74C69D), Color(0xFF52B788)) else Triple(Color(0xFF2D6A4F), Color(0xFF52796F), Color(0xFF40916C))
         AccentTheme.BLUE -> if (darkTheme) Triple(Color(0xFF9ECAFF), Color(0xFFBBC7DB), Color(0xFFD7BEE4)) else Triple(Color(0xFF0061A4), Color(0xFF535F70), Color(0xFF6B5778))
-        AccentTheme.EMERALD -> if (darkTheme) Triple(Color(0xFF78DAA3), Color(0xFFB3CCB9), Color(0xFFA3CDDC)) else Triple(Color(0xFF006E44), Color(0xFF4D6354), Color(0xFF3C6472))
+        AccentTheme.INDIGO -> if (darkTheme) Triple(Color(0xFFBAC3FF), Color(0xFFC4C5DD), Color(0xFFE6BAD7)) else Triple(Color(0xFF4355B9), Color(0xFF5B5D72), Color(0xFF77536D))
         AccentTheme.PURPLE -> if (darkTheme) Triple(Color(0xFFD0BCFF), Color(0xFFCCC2DC), Color(0xFFEFB8C8)) else Triple(Color(0xFF6B4EA2), Color(0xFF625B71), Color(0xFF7D5260))
-        AccentTheme.AMBER -> if (darkTheme) Triple(Color(0xFFFFB95B), Color(0xFFD8C4A0), Color(0xFFAFCF97)) else Triple(Color(0xFF825500), Color(0xFF6C5D3F), Color(0xFF4B6545))
+        AccentTheme.PINK -> if (darkTheme) Triple(Color(0xFFFFB1C8), Color(0xFFE5BAD0), Color(0xFFF1BCAC)) else Triple(Color(0xFFB81D6D), Color(0xFF775368), Color(0xFF7E5244))
         AccentTheme.CRIMSON -> if (darkTheme) Triple(Color(0xFFFFB2BE), Color(0xFFE4BDC6), Color(0xFFE9BE99)) else Triple(Color(0xFF9C2A48), Color(0xFF75565E), Color(0xFF78593A))
+        AccentTheme.AMBER -> if (darkTheme) Triple(Color(0xFFFFB95B), Color(0xFFD8C4A0), Color(0xFFAFCF97)) else Triple(Color(0xFF825500), Color(0xFF6C5D3F), Color(0xFF4B6545))
+        AccentTheme.LIME -> if (darkTheme) Triple(Color(0xFFC0D163), Color(0xFFC8CAAB), Color(0xFFA3D0BF)) else Triple(Color(0xFF566500), Color(0xFF5F6146), Color(0xFF3C6657))
         AccentTheme.SLATE -> if (darkTheme) Triple(Color(0xFFB3CAD6), Color(0xFFBAC8CE), Color(0xFFC5C3EA)) else Triple(Color(0xFF4C616C), Color(0xFF535F64), Color(0xFF5C5B7D))
     }
 }
@@ -100,6 +103,19 @@ fun createColorScheme(
 ): ColorScheme {
     return when (accentTheme) {
         AccentTheme.TEAL -> if (darkTheme) OScanDarkColorScheme else OScanLightColorScheme
+        AccentTheme.MINT -> if (darkTheme) darkColorScheme(
+            primary = Color(0xFF95D5B2), onPrimary = Color(0xFF003822), primaryContainer = Color(0xFF005234), onPrimaryContainer = Color(0xFFB1F1CD),
+            secondary = Color(0xFFB4CCBD), onSecondary = Color(0xFF20352A), secondaryContainer = Color(0xFF364B3F), onSecondaryContainer = Color(0xFFCFE8D9),
+            tertiary = Color(0xFFA5CFCB), onTertiary = Color(0xFF073734), tertiaryContainer = Color(0xFF234E4B), onTertiaryContainer = Color(0xFFC1EBE7),
+            background = Color(0xFF0F1512), onBackground = Color(0xFFDEE4DF), surface = Color(0xFF0F1512), onSurface = Color(0xFFDEE4DF),
+            surfaceVariant = Color(0xFF404943), onSurfaceVariant = Color(0xFFC0C9C1), outline = Color(0xFF8A938C)
+        ) else lightColorScheme(
+            primary = Color(0xFF2D6A4F), onPrimary = Color.White, primaryContainer = Color(0xFFB1F1CD), onPrimaryContainer = Color(0xFF002112),
+            secondary = Color(0xFF4D6355), onSecondary = Color.White, secondaryContainer = Color(0xFFCFE8D9), onSecondaryContainer = Color(0xFF0A1F14),
+            tertiary = Color(0xFF3C6562), onTertiary = Color.White, tertiaryContainer = Color(0xFFC1EBE7), onTertiaryContainer = Color(0xFF00201E),
+            background = Color(0xFFF5FBF5), onBackground = Color(0xFF171D19), surface = Color(0xFFF5FBF5), onSurface = Color(0xFF171D19),
+            surfaceVariant = Color(0xFFDCE5DC), onSurfaceVariant = Color(0xFF404943), outline = Color(0xFF707973)
+        )
         AccentTheme.BLUE -> if (darkTheme) darkColorScheme(
             primary = Color(0xFF9ECAFF), onPrimary = Color(0xFF003258), primaryContainer = Color(0xFF00497D), onPrimaryContainer = Color(0xFFD1E4FF),
             secondary = Color(0xFFBBC7DB), onSecondary = Color(0xFF253140), secondaryContainer = Color(0xFF3B4858), onSecondaryContainer = Color(0xFFD7E3F7),
@@ -113,18 +129,18 @@ fun createColorScheme(
             background = Color(0xFFF8F9FF), onBackground = Color(0xFF191C20), surface = Color(0xFFF8F9FF), onSurface = Color(0xFF191C20),
             surfaceVariant = Color(0xFFDFE2EC), onSurfaceVariant = Color(0xFF43474E), outline = Color(0xFF73777F)
         )
-        AccentTheme.EMERALD -> if (darkTheme) darkColorScheme(
-            primary = Color(0xFF78DAA3), onPrimary = Color(0xFF003921), primaryContainer = Color(0xFF005232), onPrimaryContainer = Color(0xFF94F7BE),
-            secondary = Color(0xFFB3CCB9), onSecondary = Color(0xFF203527), secondaryContainer = Color(0xFF364B3D), onSecondaryContainer = Color(0xFFCFE9D5),
-            tertiary = Color(0xFFA3CDDC), onTertiary = Color(0xFF033542), tertiaryContainer = Color(0xFF234C5A), onTertiaryContainer = Color(0xFFBFE9F9),
-            background = Color(0xFF0F1511), onBackground = Color(0xFFDEE4DF), surface = Color(0xFF0F1511), onSurface = Color(0xFFDEE4DF),
-            surfaceVariant = Color(0xFF404943), onSurfaceVariant = Color(0xFFC0C9C1), outline = Color(0xFF8A938C)
+        AccentTheme.INDIGO -> if (darkTheme) darkColorScheme(
+            primary = Color(0xFFBAC3FF), onPrimary = Color(0xFF0E2589), primaryContainer = Color(0xFF2A3DA0), onPrimaryContainer = Color(0xFFDEE0FF),
+            secondary = Color(0xFFC4C5DD), onSecondary = Color(0xFF2D2F42), secondaryContainer = Color(0xFF434559), onSecondaryContainer = Color(0xFFE0E1FA),
+            tertiary = Color(0xFFE6BAD7), onTertiary = Color(0xFF45253D), tertiaryContainer = Color(0xFF5E3B55), onTertiaryContainer = Color(0xFFFFD7F3),
+            background = Color(0xFF12131C), onBackground = Color(0xFFE3E1EC), surface = Color(0xFF12131C), onSurface = Color(0xFFE3E1EC),
+            surfaceVariant = Color(0xFF46464F), onSurfaceVariant = Color(0xFFC6C5D0), outline = Color(0xFF90909A)
         ) else lightColorScheme(
-            primary = Color(0xFF006E44), onPrimary = Color.White, primaryContainer = Color(0xFF94F7BE), onPrimaryContainer = Color(0xFF002111),
-            secondary = Color(0xFF4D6354), onSecondary = Color.White, secondaryContainer = Color(0xFFCFE9D5), onSecondaryContainer = Color(0xFF0A1F13),
-            tertiary = Color(0xFF3C6472), onTertiary = Color.White, tertiaryContainer = Color(0xFFBFE9F9), onTertiaryContainer = Color(0xFF001F29),
-            background = Color(0xFFF5FBF5), onBackground = Color(0xFF171D19), surface = Color(0xFFF5FBF5), onSurface = Color(0xFF171D19),
-            surfaceVariant = Color(0xFFDCE5DC), onSurfaceVariant = Color(0xFF404943), outline = Color(0xFF707973)
+            primary = Color(0xFF4355B9), onPrimary = Color.White, primaryContainer = Color(0xFFDEE0FF), onPrimaryContainer = Color(0xFF00105C),
+            secondary = Color(0xFF5B5D72), onSecondary = Color.White, secondaryContainer = Color(0xFFE0E1FA), onSecondaryContainer = Color(0xFF181A2C),
+            tertiary = Color(0xFF77536D), onTertiary = Color.White, tertiaryContainer = Color(0xFFFFD7F3), onTertiaryContainer = Color(0xFF2D1127),
+            background = Color(0xFFFBF8FF), onBackground = Color(0xFF1B1B21), surface = Color(0xFFFBF8FF), onSurface = Color(0xFF1B1B21),
+            surfaceVariant = Color(0xFFE2E1EC), onSurfaceVariant = Color(0xFF46464F), outline = Color(0xFF777680)
         )
         AccentTheme.PURPLE -> if (darkTheme) darkColorScheme(
             primary = Color(0xFFD0BCFF), onPrimary = Color(0xFF3B1E70), primaryContainer = Color(0xFF523588), onPrimaryContainer = Color(0xFFEADDFF),
@@ -139,18 +155,18 @@ fun createColorScheme(
             background = Color(0xFFFEF7FF), onBackground = Color(0xFF1D1B20), surface = Color(0xFFFEF7FF), onSurface = Color(0xFF1D1B20),
             surfaceVariant = Color(0xFFE7E0EC), onSurfaceVariant = Color(0xFF49454F), outline = Color(0xFF79747E)
         )
-        AccentTheme.AMBER -> if (darkTheme) darkColorScheme(
-            primary = Color(0xFFFFB95B), onPrimary = Color(0xFF452B00), primaryContainer = Color(0xFF633F00), onPrimaryContainer = Color(0xFFFFDDA6),
-            secondary = Color(0xFFD8C4A0), onSecondary = Color(0xFF3B2F15), secondaryContainer = Color(0xFF53452A), onSecondaryContainer = Color(0xFFF5E1BB),
-            tertiary = Color(0xFFAFCF97), onTertiary = Color(0xFF1E3610), tertiaryContainer = Color(0xFF344C30), onTertiaryContainer = Color(0xFFCCEBC2),
-            background = Color(0xFF16130E), onBackground = Color(0xFFEAE1D9), surface = Color(0xFF16130E), onSurface = Color(0xFFEAE1D9),
-            surfaceVariant = Color(0xFF4F4539), onSurfaceVariant = Color(0xFFD2C4B4), outline = Color(0xFF9B8F80)
+        AccentTheme.PINK -> if (darkTheme) darkColorScheme(
+            primary = Color(0xFFFFB1C8), onPrimary = Color(0xFF650033), primaryContainer = Color(0xFF8E004B), onPrimaryContainer = Color(0xFFFFD9E2),
+            secondary = Color(0xFFE5BAD0), onSecondary = Color(0xFF442939), secondaryContainer = Color(0xFF5D3F50), onSecondaryContainer = Color(0xFFFFD8EC),
+            tertiary = Color(0xFFF1BCAC), onTertiary = Color(0xFF4A281E), tertiaryContainer = Color(0xFF643E33), onTertiaryContainer = Color(0xFFFFDBCF),
+            background = Color(0xFF191114), onBackground = Color(0xFFEFDFE2), surface = Color(0xFF191114), onSurface = Color(0xFFEFDFE2),
+            surfaceVariant = Color(0xFF524349), onSurfaceVariant = Color(0xFFD6C2C8), outline = Color(0xFF9E8C93)
         ) else lightColorScheme(
-            primary = Color(0xFF825500), onPrimary = Color.White, primaryContainer = Color(0xFFFFDDA6), onPrimaryContainer = Color(0xFF2A1800),
-            secondary = Color(0xFF6C5D3F), onSecondary = Color.White, secondaryContainer = Color(0xFFF5E1BB), onSecondaryContainer = Color(0xFF241A04),
-            tertiary = Color(0xFF4B6545), onTertiary = Color.White, tertiaryContainer = Color(0xFFCCEBC2), onTertiaryContainer = Color(0xFF082107),
-            background = Color(0xFFFFF8F3), onBackground = Color(0xFF1F1B16), surface = Color(0xFFFFF8F3), onSurface = Color(0xFF1F1B16),
-            surfaceVariant = Color(0xFFEFE0CF), onSurfaceVariant = Color(0xFF4F4539), outline = Color(0xFF817567)
+            primary = Color(0xFFB81D6D), onPrimary = Color.White, primaryContainer = Color(0xFFFFD9E2), onPrimaryContainer = Color(0xFF3E0020),
+            secondary = Color(0xFF775368), onSecondary = Color.White, secondaryContainer = Color(0xFFFFD8EC), onSecondaryContainer = Color(0xFF2D1124),
+            tertiary = Color(0xFF7E5244), onTertiary = Color.White, tertiaryContainer = Color(0xFFFFDBCF), onTertiaryContainer = Color(0xFF311207),
+            background = Color(0xFFFFF8F8), onBackground = Color(0xFF22191C), surface = Color(0xFFFFF8F8), onSurface = Color(0xFF22191C),
+            surfaceVariant = Color(0xFFF3DDE3), onSurfaceVariant = Color(0xFF524349), outline = Color(0xFF847379)
         )
         AccentTheme.CRIMSON -> if (darkTheme) darkColorScheme(
             primary = Color(0xFFFFB2BE), onPrimary = Color(0xFF600020), primaryContainer = Color(0xFF7D1032), onPrimaryContainer = Color(0xFFFFD9DF),
@@ -164,6 +180,32 @@ fun createColorScheme(
             tertiary = Color(0xFF78593A), onTertiary = Color.White, tertiaryContainer = Color(0xFFFFDDBE), onTertiaryContainer = Color(0xFF2B1702),
             background = Color(0xFFFFF8F7), onBackground = Color(0xFF22191B), surface = Color(0xFFFFF8F7), onSurface = Color(0xFF22191B),
             surfaceVariant = Color(0xFFF4DDDF), onSurfaceVariant = Color(0xFF524345), outline = Color(0xFF857375)
+        )
+        AccentTheme.AMBER -> if (darkTheme) darkColorScheme(
+            primary = Color(0xFFFFB95B), onPrimary = Color(0xFF452B00), primaryContainer = Color(0xFF633F00), onPrimaryContainer = Color(0xFFFFDDA6),
+            secondary = Color(0xFFD8C4A0), onSecondary = Color(0xFF3B2F15), secondaryContainer = Color(0xFF53452A), onSecondaryContainer = Color(0xFFF5E1BB),
+            tertiary = Color(0xFFAFCF97), onTertiary = Color(0xFF1E3610), tertiaryContainer = Color(0xFF344C30), onTertiaryContainer = Color(0xFFCCEBC2),
+            background = Color(0xFF16130E), onBackground = Color(0xFFEAE1D9), surface = Color(0xFF16130E), onSurface = Color(0xFFEAE1D9),
+            surfaceVariant = Color(0xFF4F4539), onSurfaceVariant = Color(0xFFD2C4B4), outline = Color(0xFF9B8F80)
+        ) else lightColorScheme(
+            primary = Color(0xFF825500), onPrimary = Color.White, primaryContainer = Color(0xFFFFDDA6), onPrimaryContainer = Color(0xFF2A1800),
+            secondary = Color(0xFF6C5D3F), onSecondary = Color.White, secondaryContainer = Color(0xFFF5E1BB), onSecondaryContainer = Color(0xFF241A04),
+            tertiary = Color(0xFF4B6545), onTertiary = Color.White, tertiaryContainer = Color(0xFFCCEBC2), onTertiaryContainer = Color(0xFF082107),
+            background = Color(0xFFFFF8F3), onBackground = Color(0xFF1F1B16), surface = Color(0xFFFFF8F3), onSurface = Color(0xFF1F1B16),
+            surfaceVariant = Color(0xFFEFE0CF), onSurfaceVariant = Color(0xFF4F4539), outline = Color(0xFF817567)
+        )
+        AccentTheme.LIME -> if (darkTheme) darkColorScheme(
+            primary = Color(0xFFC0D163), onPrimary = Color(0xFF2C3400), primaryContainer = Color(0xFF404C00), onPrimaryContainer = Color(0xFFDCEE7C),
+            secondary = Color(0xFFC8CAAB), onSecondary = Color(0xFF30321D), secondaryContainer = Color(0xFF464932), onSecondaryContainer = Color(0xFFE4E6C6),
+            tertiary = Color(0xFFA3D0BF), onTertiary = Color(0xFF0C372C), tertiaryContainer = Color(0xFF254E42), onTertiaryContainer = Color(0xFFBEECDC),
+            background = Color(0xFF13140D), onBackground = Color(0xFFE4E3D7), surface = Color(0xFF13140D), onSurface = Color(0xFFE4E3D7),
+            surfaceVariant = Color(0xFF47483B), onSurfaceVariant = Color(0xFFC8C7B6), outline = Color(0xFF919282)
+        ) else lightColorScheme(
+            primary = Color(0xFF566500), onPrimary = Color.White, primaryContainer = Color(0xFFDCEE7C), onPrimaryContainer = Color(0xFF181E00),
+            secondary = Color(0xFF5F6146), onSecondary = Color.White, secondaryContainer = Color(0xFFE4E6C6), onSecondaryContainer = Color(0xFF1B1D09),
+            tertiary = Color(0xFF3C6657), onTertiary = Color.White, tertiaryContainer = Color(0xFFBEECDC), onTertiaryContainer = Color(0xFF002117),
+            background = Color(0xFFFBFFA8).copy(alpha = 0.1f), onBackground = Color(0xFF1B1C15), surface = Color(0xFFFAFBAA).copy(alpha = 0.08f), onSurface = Color(0xFF1B1C15),
+            surfaceVariant = Color(0xFFE4E3D2), onSurfaceVariant = Color(0xFF47483B), outline = Color(0xFF77786A)
         )
         AccentTheme.SLATE -> if (darkTheme) darkColorScheme(
             primary = Color(0xFFB3CAD6), onPrimary = Color(0xFF1E333D), primaryContainer = Color(0xFF344954), onPrimaryContainer = Color(0xFFCFE6F3),
