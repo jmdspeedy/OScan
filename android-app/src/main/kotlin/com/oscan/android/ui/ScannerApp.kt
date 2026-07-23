@@ -338,7 +338,10 @@ private fun SessionReviewScreen(
                 HorizontalDivider()
             }
         }
-        AdaptiveActionGroup(Modifier.fillMaxWidth().padding(16.dp)) {
+        AdaptiveActionGroup(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalAlignment = Alignment.End
+        ) {
             OutlinedButton(onClick = onAdd) { Text("Add pages") }
             Button(onClick = onFinish, enabled = state.session.acceptedPages.isNotEmpty() && !pending) { Text("Finish") }
         }

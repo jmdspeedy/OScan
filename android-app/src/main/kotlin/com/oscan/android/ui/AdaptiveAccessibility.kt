@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +61,7 @@ fun AdaptiveActionGroup(
     modifier: Modifier = Modifier,
     spacing: Dp = 8.dp,
     forceStacked: Boolean = false,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: @Composable () -> Unit
 ) {
     val fontScale = LocalConfiguration.current.fontScale
@@ -69,12 +71,13 @@ fun AdaptiveActionGroup(
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(spacing),
+                horizontalAlignment = horizontalAlignment,
                 content = { content() }
             )
         } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(spacing),
+                horizontalArrangement = Arrangement.spacedBy(spacing, horizontalAlignment),
                 content = { content() }
             )
         }

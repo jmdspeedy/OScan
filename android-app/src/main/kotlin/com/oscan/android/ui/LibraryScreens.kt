@@ -60,11 +60,14 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.RotateLeft
 import androidx.compose.material.icons.filled.RotateRight
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -855,8 +858,11 @@ fun DocumentDetailScreen(
     onFavorite: (Boolean) -> Unit,
     onMove: (FolderId?) -> Unit,
     onTrash: () -> Unit,
-    onSavePdf: (Context, Document, Uri) -> Unit,
-    onSharePdf: (Context, Document) -> Unit,
+    defaultJpegQuality: com.oscan.android.data.preferences.JpegQuality = com.oscan.android.data.preferences.JpegQuality.HIGH,
+    onSavePdf: (Context, Document, Uri) -> Unit = { _, _, _ -> },
+    onSharePdf: (Context, Document) -> Unit = { _, _ -> },
+    onExport: (Context, Document, Uri, com.oscan.android.engine.ExportFormat, com.oscan.android.data.preferences.JpegQuality) -> Unit = { ctx, doc, uri, fmt, q -> onSavePdf(ctx, doc, uri) },
+    onShare: (Context, Document, com.oscan.android.engine.ExportFormat, com.oscan.android.data.preferences.JpegQuality) -> Unit = { ctx, doc, fmt, q -> onSharePdf(ctx, doc) },
     onOpenPage: (Int) -> Unit,
     onReorderPages: (List<PageId>) -> Unit = {},
     onRotatePage: (PageId, Int) -> Unit = { _, _ -> },
@@ -871,13 +877,16 @@ fun DocumentDetailScreen(
     var renameOpen by rememberSaveable { mutableStateOf(false) }
     var moveOpen by rememberSaveable { mutableStateOf(false) }
     var trashOpen by rememberSaveable { mutableStateOf(false) }
+    var exportDialogOpen by rememberSaveable { mutableStateOf(false) }
+    var pendingExportFormat by remember { mutableStateOf(com.oscan.android.engine.ExportFormat.PDF) }
+    var pendingExportQuality by remember { mutableStateOf(defaultJpegQuality) }
     var pageToDelete by remember { mutableStateOf<Page?>(null) }
 
     val createDocumentLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/pdf")
+        contract = ActivityResultContracts.CreateDocument("*/*")
     ) { uri: Uri? ->
         if (uri != null && document != null) {
-            onSavePdf(context, document, uri)
+            onExport(context, document, uri, pendingExportFormat, pendingExportQuality)
         }
     }
 
@@ -893,16 +902,10 @@ fun DocumentDetailScreen(
                                 Icon(Icons.Default.AddPhotoAlternate, "Add pages")
                             }
                             IconButton(
-                                onClick = { onSharePdf(context, document) },
+                                onClick = { exportDialogOpen = true },
                                 enabled = !isExporting
                             ) {
-                                Icon(Icons.Default.Share, "Share PDF")
-                            }
-                            IconButton(
-                                onClick = { createDocumentLauncher.launch("${document.name}.pdf") },
-                                enabled = !isExporting
-                            ) {
-                                Icon(Icons.Default.PictureAsPdf, "Save PDF")
+                                Icon(Icons.AutoMirrored.Filled.DriveFileMove, "Export / Save")
                             }
                         }
                         IconButton(onClick = { onFavorite(!document.isFavorite) }) {
@@ -917,15 +920,9 @@ fun DocumentDetailScreen(
                                     onClick = { overflowOpen = false; onAddPages() }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Save PDF") },
-                                    leadingIcon = { Icon(Icons.Default.PictureAsPdf, null) },
-                                    onClick = { overflowOpen = false; createDocumentLauncher.launch("${document.name}.pdf") },
-                                    enabled = !isExporting
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Share PDF") },
-                                    leadingIcon = { Icon(Icons.Default.Share, null) },
-                                    onClick = { overflowOpen = false; onSharePdf(context, document) },
+                                    text = { Text("Export / Save") },
+                                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.DriveFileMove, null) },
+                                    onClick = { overflowOpen = false; exportDialogOpen = true },
                                     enabled = !isExporting
                                 )
                                 DropdownMenuItem(
@@ -1096,11 +1093,31 @@ fun DocumentDetailScreen(
                     Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
                         Spacer(Modifier.width(16.dp))
-                        Text("Generating PDF…", style = MaterialTheme.typography.bodyMedium)
+                        Text("Exporting document…", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
         }
+    }
+
+    if (exportDialogOpen && document != null) {
+        ExportAndSaveDialog(
+            document = document,
+            defaultQuality = defaultJpegQuality,
+            isExporting = isExporting,
+            onDismiss = { exportDialogOpen = false },
+            onSave = { format, quality ->
+                exportDialogOpen = false
+                pendingExportFormat = format
+                pendingExportQuality = quality
+                val ext = if (document.pages.size == 1) format.extension else if (format == com.oscan.android.engine.ExportFormat.PDF) "pdf" else "zip"
+                createDocumentLauncher.launch("${document.name}.$ext")
+            },
+            onShare = { format, quality ->
+                exportDialogOpen = false
+                onShare(context, document, format, quality)
+            }
+        )
     }
 
     if (renameOpen && document != null) RenameDialog(document.name, { renameOpen = false }) { onRename(it); renameOpen = false }
@@ -1350,3 +1367,106 @@ private fun Document.metadataLine(): String {
 
 private fun Page.safeAspectRatio(): Float =
     if (width > 0 && height > 0) (width.toFloat() / height.toFloat()).coerceIn(0.55f, 1.6f) else 0.75f
+
+@Composable
+fun ExportAndSaveDialog(
+    document: Document,
+    defaultQuality: com.oscan.android.data.preferences.JpegQuality = com.oscan.android.data.preferences.JpegQuality.HIGH,
+    isExporting: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (com.oscan.android.engine.ExportFormat, com.oscan.android.data.preferences.JpegQuality) -> Unit,
+    onShare: (com.oscan.android.engine.ExportFormat, com.oscan.android.data.preferences.JpegQuality) -> Unit
+) {
+    var selectedFormat by rememberSaveable { mutableStateOf(com.oscan.android.engine.ExportFormat.PDF) }
+    var selectedQuality by rememberSaveable { mutableStateOf(defaultQuality) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.DriveFileMove,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(12.dp))
+                Text("Export / Save")
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    text = "Select format, image quality, and target action to save or share your document.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Text("Format", style = MaterialTheme.typography.titleMedium)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    com.oscan.android.engine.ExportFormat.entries.forEach { format ->
+                        FilterChip(
+                            selected = selectedFormat == format,
+                            onClick = { selectedFormat = format },
+                            label = { Text(format.label) },
+                            leadingIcon = {
+                                val icon = when (format) {
+                                    com.oscan.android.engine.ExportFormat.PDF -> Icons.Default.PictureAsPdf
+                                    com.oscan.android.engine.ExportFormat.PNG -> Icons.Default.Image
+                                    com.oscan.android.engine.ExportFormat.JPG -> Icons.Default.Photo
+                                }
+                                Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                Text("Image Quality", style = MaterialTheme.typography.titleMedium)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    com.oscan.android.data.preferences.JpegQuality.entries.forEach { quality ->
+                        FilterChip(
+                            selected = selectedQuality == quality,
+                            onClick = { selectedQuality = quality },
+                            label = { Text(quality.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = { onShare(selectedFormat, selectedQuality) },
+                    enabled = !isExporting
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Share")
+                }
+                Button(
+                    onClick = { onSave(selectedFormat, selectedQuality) },
+                    enabled = !isExporting
+                ) {
+                    Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Save")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+

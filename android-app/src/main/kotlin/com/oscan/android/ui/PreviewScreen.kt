@@ -40,7 +40,7 @@ fun PreviewScreen(
     croppedBitmap: Bitmap,
     selectedFilter: FilterType,
     onFilterSelected: (FilterType) -> Unit,
-    onBackToCrop: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onBackToCrop: (() -> Unit)? = null,
     onExportPdfRequested: () -> Unit,
     primaryActionLabel: String = "Accept page"
 ) {
@@ -75,9 +75,13 @@ fun PreviewScreen(
                             )
                         }
                     }
-                    AdaptiveActionGroup(forceStacked = twoPane) {
-                        OutlinedButton(onClick = onBackToCrop) { Text("Adjust edges") }
-                        Button(onClick = onExportPdfRequested) { Text(primaryActionLabel) }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Button(onClick = onExportPdfRequested) {
+                            Text(primaryActionLabel)
+                        }
                     }
                 }
             }

@@ -60,7 +60,8 @@ data class LibraryUiState(
 class LibraryViewModel(
     private val repository: DocumentRepository,
     private val preferencesStore: UserPreferencesStore,
-    private val pdfExporter: AndroidPdfExporter = AndroidPdfExporter()
+    private val pdfExporter: AndroidPdfExporter = AndroidPdfExporter(),
+    private val documentExporter: com.oscan.android.engine.AndroidDocumentExporter = com.oscan.android.engine.AndroidDocumentExporter(pdfExporter)
 ) : ViewModel() {
     private val selectedDocumentId = MutableStateFlow<DocumentId?>(null)
     private val selectedFolderId = MutableStateFlow<FolderId?>(null)
@@ -449,16 +450,19 @@ class LibraryViewModel(
         }
     }
 
-    fun exportDocumentPdfToUri(
+    fun exportDocumentToUri(
         context: Context,
         document: Document,
         fileStore: DocumentFileStore,
-        targetUri: Uri
+        targetUri: Uri,
+        format: com.oscan.android.engine.ExportFormat = com.oscan.android.engine.ExportFormat.PDF,
+        quality: com.oscan.android.data.preferences.JpegQuality? = null
     ) {
         if (isExporting.value) return
         isExporting.value = true
         message.value = null
         val currentPrefs = uiState.value.userPreferences
+        val targetQuality = quality ?: currentPrefs.defaultJpegQuality
         viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) {
@@ -471,17 +475,127 @@ class LibraryViewModel(
                         throw IllegalStateException("No page assets found for document")
                     }
                     context.contentResolver.openOutputStream(targetUri)?.use { out ->
-                        pdfExporter.exportPageSpecsToPdf(
+                        documentExporter.exportDocument(
                             pages = pageSpecs,
                             outputStream = out,
+                            format = format,
                             pageSize = currentPrefs.defaultPageSize,
-                            quality = currentPrefs.defaultJpegQuality
+                            quality = targetQuality,
+                            documentName = document.name
                         )
                     } ?: throw IllegalStateException("Could not open output stream")
                 }
-                message.value = "PDF exported successfully"
+                message.value = "${format.label} exported successfully"
             } catch (e: Exception) {
                 message.value = "Export failed: ${e.userMessage()}"
+            } finally {
+                isExporting.value = false
+            }
+        }
+    }
+
+    fun exportDocumentPdfToUri(
+        context: Context,
+        document: Document,
+        fileStore: DocumentFileStore,
+        targetUri: Uri
+    ) {
+        exportDocumentToUri(context, document, fileStore, targetUri, com.oscan.android.engine.ExportFormat.PDF)
+    }
+
+    fun shareDocument(
+        context: Context,
+        document: Document,
+        fileStore: DocumentFileStore,
+        format: com.oscan.android.engine.ExportFormat = com.oscan.android.engine.ExportFormat.PDF,
+        quality: com.oscan.android.data.preferences.JpegQuality? = null,
+        onLaunchShare: (Intent) -> Unit
+    ) {
+        if (isExporting.value) return
+        isExporting.value = true
+        message.value = null
+        val currentPrefs = uiState.value.userPreferences
+        val targetQuality = quality ?: currentPrefs.defaultJpegQuality
+        viewModelScope.launch {
+            try {
+                val chooserIntent = withContext(Dispatchers.IO) {
+                    val pageSpecs = document.pages.sortedBy { it.position }.mapNotNull { page ->
+                        val file = fileStore.resolve(page.processedAsset).takeIf { it.isFile }
+                            ?: fileStore.resolve(page.originalAsset).takeIf { it.isFile }
+                        file?.let { com.oscan.android.engine.PdfPageSpec(it, page.rotationDegrees) }
+                    }
+                    if (pageSpecs.isEmpty()) {
+                        throw IllegalStateException("No page assets found for document")
+                    }
+                    val exportDir = File(context.cacheDir, "exports")
+                    if (!exportDir.exists()) exportDir.mkdirs()
+
+                    val safeName = document.name.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+                    val uris = mutableListOf<Uri>()
+
+                    if (format == com.oscan.android.engine.ExportFormat.PDF) {
+                        val pdfFile = File(exportDir, "$safeName.pdf")
+                        FileOutputStream(pdfFile).use { out ->
+                            documentExporter.exportDocument(
+                                pages = pageSpecs,
+                                outputStream = out,
+                                format = com.oscan.android.engine.ExportFormat.PDF,
+                                pageSize = currentPrefs.defaultPageSize,
+                                quality = targetQuality,
+                                documentName = document.name
+                            )
+                        }
+                        uris.add(FileProvider.getUriForFile(context, "com.oscan.android.fileprovider", pdfFile))
+                    } else {
+                        if (pageSpecs.size == 1) {
+                            val imageFile = File(exportDir, "$safeName.${format.extension}")
+                            FileOutputStream(imageFile).use { out ->
+                                documentExporter.exportDocument(
+                                    pages = pageSpecs,
+                                    outputStream = out,
+                                    format = format,
+                                    pageSize = currentPrefs.defaultPageSize,
+                                    quality = targetQuality,
+                                    documentName = document.name
+                                )
+                            }
+                            uris.add(FileProvider.getUriForFile(context, "com.oscan.android.fileprovider", imageFile))
+                        } else {
+                            pageSpecs.forEachIndexed { index, spec ->
+                                val imageFile = File(exportDir, "${safeName}_page_${index + 1}.${format.extension}")
+                                FileOutputStream(imageFile).use { out ->
+                                    documentExporter.exportDocument(
+                                        pages = listOf(spec),
+                                        outputStream = out,
+                                        format = format,
+                                        pageSize = currentPrefs.defaultPageSize,
+                                        quality = targetQuality,
+                                        documentName = document.name
+                                    )
+                                }
+                                uris.add(FileProvider.getUriForFile(context, "com.oscan.android.fileprovider", imageFile))
+                            }
+                        }
+                    }
+
+                    val shareIntent = if (uris.size == 1) {
+                        Intent(Intent.ACTION_SEND).apply {
+                            type = format.mimeType
+                            putExtra(Intent.EXTRA_STREAM, uris[0])
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                    } else {
+                        Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                            type = format.mimeType
+                            putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                    }
+                    Intent.createChooser(shareIntent, "Share ${document.name}")
+                }
+                onLaunchShare(chooserIntent)
+            } catch (e: Exception) {
+                message.value = "Share failed: ${e.userMessage()}"
             } finally {
                 isExporting.value = false
             }
@@ -494,54 +608,7 @@ class LibraryViewModel(
         fileStore: DocumentFileStore,
         onLaunchShare: (Intent) -> Unit
     ) {
-        if (isExporting.value) return
-        isExporting.value = true
-        message.value = null
-        val currentPrefs = uiState.value.userPreferences
-        viewModelScope.launch {
-            try {
-                val chooserIntent = withContext(Dispatchers.IO) {
-                    val pageSpecs = document.pages.sortedBy { it.position }.mapNotNull { page ->
-                        val file = fileStore.resolve(page.processedAsset).takeIf { it.isFile }
-                            ?: fileStore.resolve(page.originalAsset).takeIf { it.isFile }
-                        file?.let { com.oscan.android.engine.PdfPageSpec(it, page.rotationDegrees) }
-                    }
-                    if (pageSpecs.isEmpty()) {
-                        throw IllegalStateException("No page assets found for document")
-                    }
-                    val pdfDir = File(context.cacheDir, "pdfs")
-                    if (!pdfDir.exists()) pdfDir.mkdirs()
-
-                    val safeName = document.name.replace(Regex("[^a-zA-Z0-9._-]"), "_")
-                    val pdfFile = File(pdfDir, "$safeName.pdf")
-                    FileOutputStream(pdfFile).use { out ->
-                        pdfExporter.exportPageSpecsToPdf(
-                            pages = pageSpecs,
-                            outputStream = out,
-                            pageSize = currentPrefs.defaultPageSize,
-                            quality = currentPrefs.defaultJpegQuality
-                        )
-                    }
-
-                    val contentUri = FileProvider.getUriForFile(
-                        context,
-                        "com.oscan.android.fileprovider",
-                        pdfFile
-                    )
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "application/pdf"
-                        putExtra(Intent.EXTRA_STREAM, contentUri)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    Intent.createChooser(shareIntent, "Share ${document.name}")
-                }
-                onLaunchShare(chooserIntent)
-            } catch (e: Exception) {
-                message.value = "Share failed: ${e.userMessage()}"
-            } finally {
-                isExporting.value = false
-            }
-        }
+        shareDocument(context, document, fileStore, com.oscan.android.engine.ExportFormat.PDF, onLaunchShare = onLaunchShare)
     }
 
     fun clearMessage() {
