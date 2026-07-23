@@ -73,6 +73,7 @@ import com.oscan.android.data.preferences.PdfPageSize
 import com.oscan.android.data.preferences.ThemeChoice
 import com.oscan.android.data.preferences.UserPreferences
 import com.oscan.android.data.storage.DocumentFileStore
+import com.oscan.android.ui.theme.createColorScheme
 import com.oscan.android.ui.theme.swatchColors
 import com.oscan.core.model.FilterType
 import java.io.File
@@ -372,6 +373,7 @@ fun AppearanceSettingsScreen(
                         modifier = Modifier.weight(1f),
                         title = "Light",
                         selected = themeChoice == ThemeChoice.LIGHT,
+                        accentTheme = accentTheme,
                         previewMode = PreviewMode.LIGHT,
                         onSelect = { onThemeChoiceSelected(ThemeChoice.LIGHT) }
                     )
@@ -379,6 +381,7 @@ fun AppearanceSettingsScreen(
                         modifier = Modifier.weight(1f),
                         title = "Dark",
                         selected = themeChoice == ThemeChoice.DARK,
+                        accentTheme = accentTheme,
                         previewMode = PreviewMode.DARK,
                         onSelect = { onThemeChoiceSelected(ThemeChoice.DARK) }
                     )
@@ -386,6 +389,7 @@ fun AppearanceSettingsScreen(
                         modifier = Modifier.weight(1f),
                         title = "Auto",
                         selected = themeChoice == ThemeChoice.SYSTEM,
+                        accentTheme = accentTheme,
                         previewMode = PreviewMode.AUTO,
                         onSelect = { onThemeChoiceSelected(ThemeChoice.SYSTEM) }
                     )
@@ -396,14 +400,7 @@ fun AppearanceSettingsScreen(
 
             // Color Palette Section (Matching Image 1)
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Color palette", style = MaterialTheme.typography.titleLarge)
-                    Text(
-                        "Choose an accent palette to customize application colors",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text("Color palette", style = MaterialTheme.typography.titleLarge)
 
                 val themeRows = AccentTheme.entries.chunked(3)
                 themeRows.forEach { rowEntries ->
@@ -437,6 +434,7 @@ private fun PrimaryThemeCardOption(
     modifier: Modifier = Modifier,
     title: String,
     selected: Boolean,
+    accentTheme: AccentTheme,
     previewMode: PreviewMode,
     onSelect: () -> Unit
 ) {
@@ -456,7 +454,7 @@ private fun PrimaryThemeCardOption(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            ThemePreviewCanvas(previewMode = previewMode)
+            ThemePreviewCanvas(accentTheme = accentTheme, previewMode = previewMode)
         }
 
         Row(
@@ -470,78 +468,60 @@ private fun PrimaryThemeCardOption(
 }
 
 @Composable
-private fun ThemePreviewCanvas(previewMode: PreviewMode) {
+private fun ThemePreviewCanvas(accentTheme: AccentTheme, previewMode: PreviewMode) {
+    val lightScheme = remember(accentTheme) { createColorScheme(accentTheme, darkTheme = false) }
+    val darkScheme = remember(accentTheme) { createColorScheme(accentTheme, darkTheme = true) }
+
     Canvas(modifier = Modifier.fillMaxSize()) {
         val width = size.width
         val height = size.height
 
-        val lightBg = Color(0xFFFFF7F6)
-        val lightHeader = Color(0xFF8B4A2B)
-        val lightLine1 = Color(0xFFFFDBCF)
-        val lightLine2 = Color(0xFFFCE1D7)
-        val lightNavBg = Color(0xFFFDE8E2)
-        val lightNavBtn = Color(0xFF8B4A2B)
-
-        val darkBg = Color(0xFF1E1B19)
-        val darkHeader = Color(0xFFFFDBCF)
-        val darkLine1 = Color(0xFF4A3E39)
-        val darkLine2 = Color(0xFF38302C)
-        val darkNavBg = Color(0xFF2B2421)
-        val darkNavBtn = Color(0xFFFFDBCF)
-
-        fun drawThemeUI(
-            bg: Color,
-            header: Color,
-            line1: Color,
-            line2: Color,
-            navBg: Color,
-            navBtn: Color
-        ) {
-            drawRect(color = bg)
+        fun drawThemeUI(scheme: androidx.compose.material3.ColorScheme) {
+            drawRect(color = scheme.surface)
 
             val margin = width * 0.12f
             drawRoundRect(
-                color = header,
+                color = scheme.primary,
                 topLeft = androidx.compose.ui.geometry.Offset(margin, height * 0.12f),
                 size = androidx.compose.ui.geometry.Size(width - (margin * 2), height * 0.22f),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(12f, 12f)
             )
 
             drawRoundRect(
-                color = line1,
+                color = scheme.primaryContainer,
                 topLeft = androidx.compose.ui.geometry.Offset(margin, height * 0.40f),
                 size = androidx.compose.ui.geometry.Size(width * 0.65f, height * 0.05f),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f)
             )
             drawRoundRect(
-                color = line2,
+                color = scheme.secondaryContainer,
                 topLeft = androidx.compose.ui.geometry.Offset(margin, height * 0.49f),
                 size = androidx.compose.ui.geometry.Size(width * 0.50f, height * 0.05f),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f)
             )
             drawRoundRect(
-                color = line1,
+                color = scheme.tertiaryContainer,
                 topLeft = androidx.compose.ui.geometry.Offset(margin, height * 0.58f),
                 size = androidx.compose.ui.geometry.Size(width * 0.72f, height * 0.05f),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f)
             )
 
             drawRoundRect(
-                color = navBg,
+                color = scheme.surfaceVariant,
                 topLeft = androidx.compose.ui.geometry.Offset(margin, height * 0.78f),
                 size = androidx.compose.ui.geometry.Size(width - (margin * 2), height * 0.14f),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(10f, 10f)
             )
             drawCircle(
-                color = navBtn,
+                color = scheme.primary,
                 radius = height * 0.045f,
                 center = androidx.compose.ui.geometry.Offset(margin + (height * 0.07f), height * 0.85f)
             )
         }
 
         when (previewMode) {
-            PreviewMode.LIGHT -> drawThemeUI(lightBg, lightHeader, lightLine1, lightLine2, lightNavBg, lightNavBtn)
-            PreviewMode.DARK -> drawThemeUI(darkBg, darkHeader, darkLine1, darkLine2, darkNavBg, darkNavBtn)
+            PreviewMode.LIGHT -> drawThemeUI(lightScheme)
+            PreviewMode.DARK -> drawThemeUI(darkScheme)
             PreviewMode.AUTO -> {
                 val topTrianglePath = Path().apply {
                     moveTo(0f, 0f)
@@ -550,7 +530,7 @@ private fun ThemePreviewCanvas(previewMode: PreviewMode) {
                     close()
                 }
                 clipPath(topTrianglePath) {
-                    drawThemeUI(lightBg, lightHeader, lightLine1, lightLine2, lightNavBg, lightNavBtn)
+                    drawThemeUI(lightScheme)
                 }
 
                 val bottomTrianglePath = Path().apply {
@@ -560,7 +540,7 @@ private fun ThemePreviewCanvas(previewMode: PreviewMode) {
                     close()
                 }
                 clipPath(bottomTrianglePath) {
-                    drawThemeUI(darkBg, darkHeader, darkLine1, darkLine2, darkNavBg, darkNavBtn)
+                    drawThemeUI(darkScheme)
                 }
             }
         }
