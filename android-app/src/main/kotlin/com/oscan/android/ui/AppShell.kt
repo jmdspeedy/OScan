@@ -397,22 +397,13 @@ fun OScanAppShell(
                 libraryViewModel = libraryViewModel,
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
-                    NavigationBar(
-                        modifier = Modifier.height(
-                            if (destination == AppDestination.Scan) 72.dp else 80.dp
-                        )
-                    ) {
+                    NavigationBar {
                         AppDestination.entries.forEach { item ->
                             NavigationBarItem(
                                 selected = destination == item,
                                 onClick = { selectDestination(item) },
                                 icon = { Icon(if (destination == item) item.selectedIcon else item.icon, null) },
-                                label = {
-                                    Text(
-                                        text = item.label,
-                                        style = MaterialTheme.typography.labelMedium
-                                    )
-                                }
+                                label = { Text(item.label) }
                             )
                         }
                     }

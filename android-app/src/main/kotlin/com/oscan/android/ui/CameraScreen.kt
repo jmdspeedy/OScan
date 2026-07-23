@@ -12,9 +12,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,7 +29,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -37,8 +38,9 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -55,7 +57,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -72,6 +73,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -176,12 +178,12 @@ fun LiveCameraScreen(
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .padding(bottom = if (compactControls) 104.dp else 136.dp)
+                        .padding(bottom = if (compactControls) 76.dp else 100.dp)
                         .background(Color.White.copy(alpha = captureFlashAlpha.value))
                 )
             }
 
-            CameraGrid(bottomInset = if (compactControls) 104.dp else 136.dp)
+            CameraGrid(bottomInset = if (compactControls) 76.dp else 100.dp)
 
             state.corners?.takeIf { it.size == 4 }?.let { corners ->
                 DocumentCornerOverlay(corners, chrome.accent)
@@ -192,7 +194,7 @@ fun LiveCameraScreen(
                 onRequest = { permissionLauncher.launch(Manifest.permission.CAMERA) },
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = if (compactControls) 104.dp else 136.dp)
+                    .padding(bottom = if (compactControls) 76.dp else 100.dp)
             )
         }
 
@@ -212,7 +214,7 @@ fun LiveCameraScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(horizontal = 24.dp)
-                    .padding(bottom = if (compactControls) 114.dp else 150.dp)
+                    .padding(bottom = if (compactControls) 90.dp else 116.dp)
                     .background(chrome.floatingSurface, RoundedCornerShape(18.dp))
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
@@ -284,7 +286,7 @@ internal fun CameraTransitionPreview() {
         floatingSurface = MaterialTheme.colorScheme.surface.copy(alpha = .9f)
     )
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        CameraGrid(bottomInset = if (compact) 104.dp else 136.dp)
+        CameraGrid(bottomInset = if (compact) 76.dp else 100.dp)
         CameraTopControls(
             chrome = chrome,
             torchAvailable = false,
@@ -311,28 +313,41 @@ private fun BoxScope.CameraTopControls(
     controlsEnabled: Boolean,
     onToggleTorch: () -> Unit
 ) {
-    Surface(
-        color = chrome.floatingSurface,
-        shape = CircleShape,
+    val flashDescription = when {
+        !torchAvailable -> "Flash unavailable"
+        torchEnabled -> "Turn flash off"
+        else -> "Turn flash on"
+    }
+    Box(
         modifier = Modifier
             .align(Alignment.TopEnd)
             .statusBarsPadding()
-            .padding(top = 8.dp, end = 16.dp)
+            .padding(end = 10.dp)
             .size(48.dp)
-    ) {
-        IconButton(
-            onClick = onToggleTorch,
-            enabled = controlsEnabled && torchAvailable
-        ) {
-            Icon(
-                imageVector = if (torchEnabled) Icons.Default.FlashOn else Icons.Default.FlashOff,
-                contentDescription = when {
-                    !torchAvailable -> "Flash unavailable"
-                    torchEnabled -> "Turn flash off"
-                    else -> "Turn flash on"
-                },
-                tint = if (torchAvailable) chrome.onPanel else chrome.onPanel.copy(alpha = .38f)
+            .clickable(
+                enabled = controlsEnabled && torchAvailable,
+                onClick = onToggleTorch
             )
+            .semantics {
+                contentDescription = flashDescription
+                stateDescription = if (torchEnabled) "On" else "Off"
+            }
+    ) {
+        Surface(
+            color = chrome.floatingSurface,
+            shape = CircleShape,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .size(38.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = if (torchEnabled) Icons.Default.FlashOn else Icons.Default.FlashOff,
+                    contentDescription = null,
+                    tint = if (torchAvailable) chrome.onPanel else chrome.onPanel.copy(alpha = .38f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }
@@ -388,85 +403,27 @@ private fun BoxScope.CameraControlDock(
     onCapture: () -> Unit,
     onImport: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .align(Alignment.BottomCenter)
-            .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(chrome.panel.copy(alpha = .9f), chrome.panel),
-                    startY = 0f,
-                    endY = 520f
-                )
-            )
-    ) {
-        ScanModeDropdown(chrome, compact)
-        CaptureDock(
-            chrome = chrome,
-            compact = compact,
-            isCapturing = isCapturing,
-            captureEnabled = captureEnabled,
-            onCapture = onCapture,
-            onImport = onImport
-        )
-    }
+    CaptureDock(
+        chrome = chrome,
+        compact = compact,
+        isCapturing = isCapturing,
+        captureEnabled = captureEnabled,
+        onCapture = onCapture,
+        onImport = onImport,
+        modifier = Modifier.align(Alignment.BottomCenter)
+    )
 }
 
 @Composable
-private fun ScanModeDropdown(chrome: CameraChromeColors, compact: Boolean) {
+private fun ScanModeDropdown(
+    chrome: CameraChromeColors,
+    compact: Boolean,
+    modifier: Modifier = Modifier
+) {
     var expanded by remember { mutableStateOf(false) }
     var selectedMode by remember { mutableStateOf(CameraScanMode.Document) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = if (compact) 4.dp else 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (expanded) {
-            Surface(
-                color = chrome.floatingSurface,
-                shape = RoundedCornerShape(16.dp),
-                shadowElevation = 6.dp,
-                modifier = Modifier.widthIn(min = 156.dp)
-            ) {
-                Column(Modifier.padding(vertical = 4.dp)) {
-                    CameraScanMode.entries.forEach { mode ->
-                        Surface(
-                            onClick = {
-                                selectedMode = mode
-                                expanded = false
-                            },
-                            color = Color.Transparent,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = mode.label,
-                                    color = if (mode == selectedMode) chrome.accent else chrome.onPanel,
-                                    fontWeight = if (mode == selectedMode) FontWeight.SemiBold else FontWeight.Normal,
-                                    fontSize = if (compact) 11.sp else 12.sp,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                if (mode == selectedMode) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = chrome.accent,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(4.dp))
-        }
-
+    Box(modifier = modifier) {
         Surface(
             onClick = { expanded = !expanded },
             color = chrome.onPanel.copy(alpha = .06f),
@@ -484,7 +441,7 @@ private fun ScanModeDropdown(chrome: CameraChromeColors, compact: Boolean) {
                     selectedMode.label,
                     color = chrome.accent,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = if (compact) 11.sp else 12.sp
+                    fontSize = if (compact) 9.sp else 10.sp
                 )
                 Spacer(Modifier.size(4.dp))
                 Icon(
@@ -492,6 +449,35 @@ private fun ScanModeDropdown(chrome: CameraChromeColors, compact: Boolean) {
                     contentDescription = null,
                     tint = chrome.accent,
                     modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            offset = DpOffset(
+                x = 0.dp,
+                y = if (compact) (-104).dp else (-120).dp
+            ),
+            modifier = Modifier.widthIn(min = 112.dp, max = 124.dp)
+        ) {
+            CameraScanMode.entries.forEach { mode ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = mode.label,
+                            color = if (mode == selectedMode) chrome.accent else chrome.onPanel,
+                            fontWeight = if (mode == selectedMode) FontWeight.SemiBold else FontWeight.Normal,
+                            fontSize = if (compact) 9.sp else 10.sp
+                        )
+                    },
+                    onClick = {
+                        selectedMode = mode
+                        expanded = false
+                    },
+                    contentPadding = PaddingValues(horizontal = 12.dp),
+                    modifier = Modifier.height(if (compact) 36.dp else 40.dp)
                 )
             }
         }
@@ -505,20 +491,21 @@ private fun CaptureDock(
     isCapturing: Boolean,
     captureEnabled: Boolean,
     onCapture: () -> Unit,
-    onImport: () -> Unit
+    onImport: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val dockHeight = if (compact) 70.dp else 88.dp
+    val dockHeight = if (compact) 76.dp else 100.dp
     val shutterSize = if (compact) 56.dp else 68.dp
     val shutterInnerSize = if (compact) 40.dp else 50.dp
     val sideControlSize = if (compact) 40.dp else 48.dp
 
-    Box(Modifier.fillMaxWidth().height(dockHeight)) {
+    Box(modifier.fillMaxWidth().height(dockHeight)) {
         Canvas(Modifier.matchParentSize()) {
             val center = size.width / 2f
             val archHalfWidth = (if (compact) 46.dp else 54.dp).toPx()
             val archShoulder = (if (compact) 36.dp else 44.dp).toPx()
             val archHeight = (if (compact) 20.dp else 26.dp).toPx()
-            val top = (if (compact) 26.dp else 32.dp).toPx()
+            val top = (if (compact) 28.dp else 36.dp).toPx()
             val path = Path().apply {
                 moveTo(0f, top)
                 lineTo(center - archHalfWidth, top)
@@ -549,7 +536,7 @@ private fun CaptureDock(
                 .align(Alignment.BottomStart)
                 .padding(
                     start = if (compact) 22.dp else 42.dp,
-                    bottom = if (compact) 4.dp else 10.dp
+                    bottom = if (compact) 6.dp else 12.dp
                 )
                 .size(sideControlSize)
                 .semantics { contentDescription = "Import from gallery" }
@@ -563,6 +550,17 @@ private fun CaptureDock(
                 )
             }
         }
+
+        ScanModeDropdown(
+            chrome = chrome,
+            compact = compact,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(
+                    end = if (compact) 12.dp else 16.dp,
+                    bottom = if (compact) 8.dp else 14.dp
+                )
+        )
 
         Surface(
             onClick = onCapture,
