@@ -923,21 +923,8 @@ fun AboutScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
-    val (versionName, versionCode) = remember(context) {
-        try {
-            val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            val name = pInfo.versionName ?: "0.5.0"
-            val code = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                pInfo.longVersionCode
-            } else {
-                @Suppress("DEPRECATION")
-                pInfo.versionCode.toLong()
-            }
-            name to code
-        } catch (e: Exception) {
-            "0.5.0" to 5L
-        }
-    }
+    val versionName = remember(context) { com.oscan.android.util.AppVersionUtils.getVersionName(context) }
+    val versionCode = remember(context) { com.oscan.android.util.AppVersionUtils.getVersionCode(context) }
 
     val libraries = remember {
         listOf(

@@ -1,6 +1,7 @@
 package com.oscan.android.ui
 
 import android.Manifest
+import android.media.MediaActionSound
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -9,6 +10,7 @@ import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -28,6 +30,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -45,6 +49,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -122,6 +127,11 @@ fun LiveCameraScreen(
         floatingSurface = MaterialTheme.colorScheme.surface.copy(alpha = .9f)
     )
     val haptics = LocalHapticFeedback.current
+    val accessibilitySettings = LocalOScanAccessibilitySettings.current
+    val shutterSound = remember { MediaActionSound().apply { load(MediaActionSound.SHUTTER_CLICK) } }
+    DisposableEffect(shutterSound) { onDispose(shutterSound::release) }
+    var captureFeedbackEvent by remember { mutableIntStateOf(0) }
+    val captureFlashAlpha = remember { Animatable(0f) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val orientation = LocalConfiguration.current.orientation
     val compactControls = orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -154,6 +164,11 @@ fun LiveCameraScreen(
     val shutterTranslation = with(density) {
         (if (compactControls) 34.dp else 58.dp).toPx() * (1f - shutterProgress.value)
     }
+    LaunchedEffect(captureFeedbackEvent) {
+        if (captureFeedbackEvent == 0 || accessibilitySettings.reducedMotion) return@LaunchedEffect
+        captureFlashAlpha.snapTo(.16f)
+        captureFlashAlpha.animateTo(0f, animationSpec = tween(durationMillis = 160))
+    }
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
@@ -170,6 +185,15 @@ fun LiveCameraScreen(
                     cameraViewModel.updatePreviewSize(it.size.width, it.size.height)
                 }
         )
+
+        if (captureFlashAlpha.value > 0f) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(bottom = if (compactControls) 112.dp else 190.dp)
+                    .background(Color.White.copy(alpha = captureFlashAlpha.value))
+            )
+        }
 
         CameraGrid(bottomInset = if (compactControls) 112.dp else 190.dp)
 
@@ -216,10 +240,20 @@ fun LiveCameraScreen(
             captureEnabled = state.isAvailable && !state.isStarting && !state.isCapturing && !captureState.isProcessing,
             shutterProgress = shutterProgress.value,
             shutterTranslation = shutterTranslation,
+            captureFeedbackEvent = captureFeedbackEvent,
+            reducedMotion = accessibilitySettings.reducedMotion,
             onCapture = {
-                if (shutterFeedbackEnabled) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 val temp = File.createTempFile("capture-", ".jpg", context.cacheDir)
-                cameraViewModel.capture(temp) { it?.let(onCaptured) }
+                cameraViewModel.capture(temp) { capturedFile ->
+                    capturedFile?.let {
+                        if (shutterFeedbackEnabled) {
+                            shutterSound.play(MediaActionSound.SHUTTER_CLICK)
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
+                        captureFeedbackEvent++
+                        onCaptured(it)
+                    }
+                }
             },
             onImport = onImport,
             onReview = onDone
@@ -287,6 +321,8 @@ internal fun CameraTransitionPreview(captureState: CameraCaptureState) {
             captureEnabled = false,
             shutterProgress = 1f,
             shutterTranslation = 0f,
+            captureFeedbackEvent = 0,
+            reducedMotion = true,
             onCapture = {},
             onImport = {},
             onReview = {}
@@ -397,6 +433,8 @@ private fun BoxScope.CameraControlDock(
     captureEnabled: Boolean,
     shutterProgress: Float,
     shutterTranslation: Float,
+    captureFeedbackEvent: Int,
+    reducedMotion: Boolean,
     onCapture: () -> Unit,
     onImport: () -> Unit,
     onReview: () -> Unit
@@ -423,6 +461,8 @@ private fun BoxScope.CameraControlDock(
             captureEnabled = captureEnabled,
             shutterProgress = shutterProgress,
             shutterTranslation = shutterTranslation,
+            captureFeedbackEvent = captureFeedbackEvent,
+            reducedMotion = reducedMotion,
             onCapture = onCapture,
             onImport = onImport,
             onReview = onReview
@@ -470,6 +510,8 @@ private fun CaptureDock(
     captureEnabled: Boolean,
     shutterProgress: Float,
     shutterTranslation: Float,
+    captureFeedbackEvent: Int,
+    reducedMotion: Boolean,
     onCapture: () -> Unit,
     onImport: () -> Unit,
     onReview: () -> Unit
@@ -478,6 +520,25 @@ private fun CaptureDock(
     val shutterSize = if (compact) 68.dp else 96.dp
     val shutterInnerSize = if (compact) 50.dp else 72.dp
     val sideControlSize = if (compact) 36.dp else 58.dp
+    val counterPulse = remember { Animatable(1f) }
+    var showPlusOne by remember { mutableStateOf(false) }
+    LaunchedEffect(captureFeedbackEvent) {
+        if (captureFeedbackEvent == 0) return@LaunchedEffect
+        showPlusOne = true
+        if (!reducedMotion) {
+            counterPulse.snapTo(.9f)
+            counterPulse.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium
+                )
+            )
+        }
+        delay(520)
+        showPlusOne = false
+    }
+
     Box(Modifier.fillMaxWidth().height(dockHeight)) {
         Canvas(Modifier.matchParentSize()) {
             val center = size.width / 2f
@@ -530,34 +591,92 @@ private fun CaptureDock(
             }
         }
 
-        Surface(
-            onClick = onReview,
-            enabled = capturedCount > 0 && !isProcessing,
-            color = chrome.onPanel.copy(alpha = if (capturedCount > 0) .12f else .07f),
-            shape = RoundedCornerShape(22.dp),
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(
-                    end = if (compact) 18.dp else 34.dp,
-                    bottom = if (compact) 6.dp else 22.dp
-                )
-                .semantics {
-                    contentDescription = if (capturedCount > 0) {
-                        "Review $capturedCount captured pages"
-                    } else {
-                        "No captured pages"
+                    end = if (compact) 12.dp else 24.dp,
+                    bottom = if (compact) 4.dp else 16.dp
+                ),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                color = chrome.onPanel.copy(alpha = if (capturedCount > 0) .12f else .07f),
+                shape = RoundedCornerShape(if (compact) 10.dp else 12.dp),
+                modifier = Modifier
+                    .height(if (compact) 32.dp else 38.dp)
+                    .graphicsLayer {
+                        scaleX = counterPulse.value
+                        scaleY = counterPulse.value
+                    }
+                    .semantics {
+                        contentDescription = if (capturedCount == 1) {
+                            "1 captured page"
+                        } else {
+                            "$capturedCount captured pages"
+                        }
+                    }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = if (compact) 7.dp else 9.dp)
+                ) {
+                    Icon(
+                        Icons.Default.ContentCopy,
+                        contentDescription = null,
+                        tint = chrome.onPanel.copy(alpha = if (capturedCount > 0) 1f else .58f),
+                        modifier = Modifier.size(if (compact) 14.dp else 16.dp)
+                    )
+                    Spacer(Modifier.size(if (compact) 4.dp else 5.dp))
+                    Text(
+                        text = "$capturedCount ${if (capturedCount == 1) "page" else "pages"}",
+                        color = chrome.onPanel.copy(alpha = if (capturedCount > 0) 1f else .58f),
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                    if (showPlusOne) {
+                        Spacer(Modifier.size(4.dp))
+                        Text(
+                            text = "+1",
+                            color = chrome.accent,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelSmall
+                        )
                     }
                 }
-        ) {
-            Text(
-                text = if (isProcessing) "Adding…" else "$capturedCount ${if (capturedCount == 1) "page" else "pages"}",
-                color = chrome.onPanel.copy(alpha = if (capturedCount > 0) 1f else .58f),
-                style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(
-                    horizontal = if (compact) 12.dp else 15.dp,
-                    vertical = if (compact) 7.dp else 10.dp
-                )
-            )
+            }
+
+            if (capturedCount > 0) {
+                Surface(
+                    onClick = onReview,
+                    enabled = !isProcessing,
+                    color = Color.Transparent,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .size(48.dp)
+                        .semantics {
+                            contentDescription = "Finish scan, $capturedCount ${if (capturedCount == 1) "page" else "pages"}"
+                            stateDescription = if (isProcessing) "Preparing captured page" else "Ready"
+                        }
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Surface(
+                            color = chrome.accent.copy(alpha = if (isProcessing) .48f else 1f),
+                            shape = RoundedCornerShape(if (compact) 10.dp else 12.dp),
+                            modifier = Modifier.size(if (compact) 32.dp else 38.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = if (isProcessing) .58f else 1f),
+                                    modifier = Modifier.size(if (compact) 17.dp else 20.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         Surface(
@@ -590,15 +709,9 @@ private fun CaptureDock(
                     border = BorderStroke(if (compact) 3.dp else 4.dp, chrome.onPanel),
                     modifier = Modifier.size(shutterInnerSize)
                 ) {}
-                if (isCapturing) {
-                    CircularProgressIndicator(
-                        Modifier.size(if (compact) 24.dp else 30.dp),
-                        color = chrome.onPanel,
-                        strokeWidth = 3.dp
-                    )
-                }
             }
         }
+
     }
 }
 

@@ -736,6 +736,9 @@ private fun MeScreen(
     var editNameDialogOpen by remember { mutableStateOf(false) }
     var editAvatarDialogOpen by remember { mutableStateOf(false) }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val versionName = remember(context) { com.oscan.android.util.AppVersionUtils.getVersionName(context) }
+
     val avatarBgColor = when (userPreferences.avatarPreset) {
         "INDIGO" -> androidx.compose.ui.graphics.Color(0xFF3F51B5)
         "AMBER" -> androidx.compose.ui.graphics.Color(0xFFFFB300)
@@ -854,7 +857,7 @@ private fun MeScreen(
 
             MeSettingRow("Privacy Policy", "100% local, no telemetry or accounts", Icons.Default.PrivacyTip) { onOpenSubRoute(SettingsSubRoute.PRIVACY) }
             MeSettingRow("Help & User Guide", "Scanning, crop adjustments, multi-page editing", Icons.Default.HelpOutline) { onOpenSubRoute(SettingsSubRoute.HELP) }
-            MeSettingRow("About OScan", "Version 1.0.0, open-source notices", Icons.Default.Info) { onOpenSubRoute(SettingsSubRoute.ABOUT) }
+            MeSettingRow("About OScan", "Version $versionName, open-source notices", Icons.Default.Info) { onOpenSubRoute(SettingsSubRoute.ABOUT) }
         }
     }
 
