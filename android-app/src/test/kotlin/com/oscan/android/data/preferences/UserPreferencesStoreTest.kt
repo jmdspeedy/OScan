@@ -34,6 +34,7 @@ class UserPreferencesStoreTest {
         assertEquals(PdfPageSize.A4, prefs.defaultPageSize)
         assertEquals(JpegQuality.HIGH, prefs.defaultJpegQuality)
         assertEquals(ThemeChoice.SYSTEM, prefs.themeChoice)
+        assertEquals(AccentTheme.TEAL, prefs.accentTheme)
     }
 
     @Test
@@ -46,6 +47,7 @@ class UserPreferencesStoreTest {
         store.setDefaultPageSize(PdfPageSize.LETTER)
         store.setDefaultJpegQuality(JpegQuality.MEDIUM)
         store.setThemeChoice(ThemeChoice.DARK)
+        store.setAccentTheme(AccentTheme.PURPLE)
 
         val updated = store.preferences.first()
         assertEquals("Custom User", updated.displayName)
@@ -56,5 +58,6 @@ class UserPreferencesStoreTest {
         assertEquals(PdfPageSize.LETTER, updated.defaultPageSize)
         assertEquals(JpegQuality.MEDIUM, updated.defaultJpegQuality)
         assertEquals(ThemeChoice.DARK, updated.themeChoice)
+        assertEquals(AccentTheme.PURPLE, updated.accentTheme)
     }
 }

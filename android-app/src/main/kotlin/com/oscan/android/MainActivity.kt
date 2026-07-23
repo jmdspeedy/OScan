@@ -68,7 +68,10 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             val uiState by libraryViewModel.uiState.collectAsState()
-            OScanTheme(themeChoice = uiState.userPreferences.themeChoice) {
+            OScanTheme(
+                themeChoice = uiState.userPreferences.themeChoice,
+                accentTheme = uiState.userPreferences.accentTheme
+            ) {
                 Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.background) {
                     ScannerApp(
                         viewModel = viewModel,

@@ -58,12 +58,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
+import com.oscan.android.data.preferences.AccentTheme
 import com.oscan.android.data.preferences.CameraLensPreference
 import com.oscan.android.data.preferences.JpegQuality
 import com.oscan.android.data.preferences.PdfPageSize
 import com.oscan.android.data.preferences.ThemeChoice
 import com.oscan.android.data.preferences.UserPreferences
 import com.oscan.android.data.storage.DocumentFileStore
+import com.oscan.android.ui.theme.swatchColors
 import com.oscan.core.model.FilterType
 import java.io.File
 
@@ -318,9 +322,18 @@ fun ExportSettingsScreen(
 @Composable
 fun AppearanceSettingsScreen(
     themeChoice: ThemeChoice,
+    accentTheme: AccentTheme,
     onThemeChoiceSelected: (ThemeChoice) -> Unit,
+    onAccentThemeSelected: (AccentTheme) -> Unit,
     onBack: () -> Unit
 ) {
+    val isSystemDark = isSystemInDarkTheme()
+    val isDark = when (themeChoice) {
+        ThemeChoice.SYSTEM -> isSystemDark
+        ThemeChoice.LIGHT -> false
+        ThemeChoice.DARK -> true
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -339,28 +352,117 @@ fun AppearanceSettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Text("Theme preference", style = MaterialTheme.typography.titleMedium)
+            Text("Primary theme mode", style = MaterialTheme.typography.titleLarge)
             
             ThemeChoiceOption(
-                title = "System default",
-                subtitle = "Follow system dark and light mode settings",
-                selected = themeChoice == ThemeChoice.SYSTEM,
-                onSelect = { onThemeChoiceSelected(ThemeChoice.SYSTEM) }
-            )
-            ThemeChoiceOption(
                 title = "Light theme",
-                subtitle = "Clean light background and surfaces",
+                subtitle = "Clean light background and bright surfaces",
                 selected = themeChoice == ThemeChoice.LIGHT,
                 onSelect = { onThemeChoiceSelected(ThemeChoice.LIGHT) }
             )
             ThemeChoiceOption(
                 title = "Dark theme",
-                subtitle = "Cool dark charcoal background and surfaces",
+                subtitle = "Cool dark charcoal background and dark surfaces",
                 selected = themeChoice == ThemeChoice.DARK,
                 onSelect = { onThemeChoiceSelected(ThemeChoice.DARK) }
             )
+            ThemeChoiceOption(
+                title = "System default",
+                subtitle = "Automatically follow system dark and light mode settings",
+                selected = themeChoice == ThemeChoice.SYSTEM,
+                onSelect = { onThemeChoiceSelected(ThemeChoice.SYSTEM) }
+            )
+
+            HorizontalDivider()
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Color adjuster", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "Choose a premade palette to adjust secondary and accent colors across the app.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            AccentTheme.entries.forEach { option ->
+                AccentThemeOptionCard(
+                    accentTheme = option,
+                    isDark = isDark,
+                    selected = accentTheme == option,
+                    onSelect = { onAccentThemeSelected(option) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccentThemeOptionCard(
+    accentTheme: AccentTheme,
+    isDark: Boolean,
+    selected: Boolean,
+    onSelect: () -> Unit
+) {
+    val (primary, secondary, tertiary) = accentTheme.swatchColors(isDark)
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onSelect)
+            .then(
+                if (selected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium)
+                else Modifier
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
+        ),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                RadioButton(selected = selected, onClick = onSelect)
+                Column {
+                    Text(accentTheme.label, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        if (selected) "Active color scheme" else "Tap to apply palette",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .background(primary, CircleShape)
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape)
+                )
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .background(secondary, CircleShape)
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape)
+                )
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .background(tertiary, CircleShape)
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape)
+                )
+            }
         }
     }
 }

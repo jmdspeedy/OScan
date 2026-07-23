@@ -239,6 +239,10 @@ class LibraryViewModel(
         viewModelScope.launch { preferencesStore.setThemeChoice(themeChoice) }
     }
 
+    fun setAccentTheme(accentTheme: com.oscan.android.data.preferences.AccentTheme) {
+        viewModelScope.launch { preferencesStore.setAccentTheme(accentTheme) }
+    }
+
     fun cleanCache(context: Context, fileStore: DocumentFileStore) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {

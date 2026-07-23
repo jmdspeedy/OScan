@@ -12,6 +12,15 @@ import kotlinx.coroutines.flow.map
 enum class DocumentSort { MODIFIED_DESC, MODIFIED_ASC, CREATED_DESC, CREATED_ASC, NAME_ASC, NAME_DESC }
 enum class LibraryPresentation { GRID, LIST }
 enum class ThemeChoice { SYSTEM, LIGHT, DARK }
+enum class AccentTheme(val label: String) {
+    TEAL("OScan Teal"),
+    BLUE("Ocean Blue"),
+    EMERALD("Emerald Green"),
+    PURPLE("Royal Purple"),
+    AMBER("Sunset Amber"),
+    CRIMSON("Rose Crimson"),
+    SLATE("Charcoal Slate")
+}
 enum class PdfPageSize(val label: String) { A4("A4 (210 × 297 mm)"), LETTER("US Letter (8.5 × 11 in)"), MATCH_PAGE("Match original page") }
 enum class JpegQuality(val label: String, val qualityInt: Int) { HIGH("High (90%)", 90), MEDIUM("Medium (80%)", 80), LOW("Low (60%)", 60) }
 enum class CameraLensPreference { BACK, FRONT }
@@ -20,6 +29,7 @@ data class UserPreferences(
     val documentSort: DocumentSort = DocumentSort.MODIFIED_DESC,
     val libraryPresentation: LibraryPresentation = LibraryPresentation.GRID,
     val themeChoice: ThemeChoice = ThemeChoice.SYSTEM,
+    val accentTheme: AccentTheme = AccentTheme.TEAL,
     val displayName: String = "Local Workspace",
     val avatarPreset: String = "TEAL",
     val autoCaptureDefault: Boolean = false,
@@ -39,6 +49,7 @@ class UserPreferencesStore(private val context: Context) {
             documentSort = values.enumValue(Keys.SORT, DocumentSort.MODIFIED_DESC),
             libraryPresentation = values.enumValue(Keys.PRESENTATION, LibraryPresentation.GRID),
             themeChoice = values.enumValue(Keys.THEME, ThemeChoice.SYSTEM),
+            accentTheme = values.enumValue(Keys.ACCENT_THEME, AccentTheme.TEAL),
             displayName = values[Keys.DISPLAY_NAME] ?: "Local Workspace",
             avatarPreset = values[Keys.AVATAR_PRESET] ?: "TEAL",
             autoCaptureDefault = values[Keys.AUTO_CAPTURE_DEFAULT] ?: false,
@@ -54,6 +65,7 @@ class UserPreferencesStore(private val context: Context) {
     suspend fun setDocumentSort(value: DocumentSort) = setEnum(Keys.SORT, value)
     suspend fun setLibraryPresentation(value: LibraryPresentation) = setEnum(Keys.PRESENTATION, value)
     suspend fun setThemeChoice(value: ThemeChoice) = setEnum(Keys.THEME, value)
+    suspend fun setAccentTheme(value: AccentTheme) = setEnum(Keys.ACCENT_THEME, value)
     suspend fun setDisplayName(value: String) = context.oscanPreferences.edit { it[Keys.DISPLAY_NAME] = value }
     suspend fun setAvatarPreset(value: String) = context.oscanPreferences.edit { it[Keys.AVATAR_PRESET] = value }
     suspend fun setAutoCaptureDefault(value: Boolean) = context.oscanPreferences.edit { it[Keys.AUTO_CAPTURE_DEFAULT] = value }
@@ -77,6 +89,7 @@ class UserPreferencesStore(private val context: Context) {
         val SORT = stringPreferencesKey("document_sort")
         val PRESENTATION = stringPreferencesKey("library_presentation")
         val THEME = stringPreferencesKey("theme_choice")
+        val ACCENT_THEME = stringPreferencesKey("accent_theme")
         val DISPLAY_NAME = stringPreferencesKey("display_name")
         val AVATAR_PRESET = stringPreferencesKey("avatar_preset")
         val AUTO_CAPTURE_DEFAULT = booleanPreferencesKey("auto_capture_default")

@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material.icons.filled.SelectAll
@@ -51,6 +52,7 @@ import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.Scanner
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -99,7 +101,7 @@ import com.oscan.android.data.storage.DocumentFileStore
 
 private enum class AppDestination(val label: String, val selectedIcon: ImageVector, val icon: ImageVector) {
     Home("Home", Icons.Filled.Home, Icons.Outlined.Home),
-    Scan("Scan", Icons.Filled.Scanner, Icons.Outlined.Scanner),
+    Scan("Scan", Icons.Filled.PhotoCamera, Icons.Outlined.PhotoCamera),
     Me("Me", Icons.Filled.Person, Icons.Outlined.Person)
 }
 
@@ -160,7 +162,9 @@ fun OScanAppShell(
             )
             SettingsSubRoute.APPEARANCE -> AppearanceSettingsScreen(
                 themeChoice = state.userPreferences.themeChoice,
+                accentTheme = state.userPreferences.accentTheme,
                 onThemeChoiceSelected = libraryViewModel::setThemeChoice,
+                onAccentThemeSelected = libraryViewModel::setAccentTheme,
                 onBack = { activeSubRoute = SettingsSubRoute.NONE }
             )
             SettingsSubRoute.STORAGE -> StorageSettingsScreen(
@@ -653,7 +657,7 @@ private fun EmptyHomeScreen(onScanDocument: () -> Unit, onImportImages: () -> Un
         supportingText = "Scan with the camera or import images. Everything stays on this device."
     ) {
         Button(onClick = onScanDocument, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Scanner, null)
+            Icon(Icons.Default.PhotoCamera, null)
             Spacer(Modifier.width(8.dp))
             Text("Scan document")
         }
@@ -669,12 +673,12 @@ private fun EmptyHomeScreen(onScanDocument: () -> Unit, onImportImages: () -> Un
 @Composable
 private fun ScanEntryScreen(onOpenCamera: () -> Unit, onImportImages: () -> Unit) {
     EmptyStateLayout(
-        icon = Icons.Default.Scanner,
+        icon = Icons.Default.PhotoCamera,
         title = "Scan a document",
         supportingText = "Capture pages with the camera or import images. Everything is processed and saved locally."
     ) {
         Button(onClick = onOpenCamera, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Scanner, null)
+            Icon(Icons.Default.PhotoCamera, null)
             Spacer(Modifier.width(8.dp))
             Text("Open camera")
         }
@@ -807,7 +811,7 @@ private fun MeScreen(
             MeSettingRow("Capture", "Auto-capture default, shutter feedback", Icons.Default.CameraAlt) { onOpenSubRoute(SettingsSubRoute.CAPTURE) }
             MeSettingRow("Enhancement", "Default treatment (Magic / Original)", Icons.Default.AutoAwesome) { onOpenSubRoute(SettingsSubRoute.ENHANCEMENT) }
             MeSettingRow("Export", "Filename pattern, PDF page size & quality", Icons.Default.PictureAsPdf) { onOpenSubRoute(SettingsSubRoute.EXPORT) }
-            MeSettingRow("Appearance", "System, Light, Dark theme", Icons.Default.Palette) { onOpenSubRoute(SettingsSubRoute.APPEARANCE) }
+            MeSettingRow("Appearance", "Primary theme mode & ${userPreferences.accentTheme.label}", Icons.Default.Palette) { onOpenSubRoute(SettingsSubRoute.APPEARANCE) }
             MeSettingRow("Storage", "Local usage summary & cache cleanup", Icons.Default.Storage) { onOpenSubRoute(SettingsSubRoute.STORAGE) }
         }
 
