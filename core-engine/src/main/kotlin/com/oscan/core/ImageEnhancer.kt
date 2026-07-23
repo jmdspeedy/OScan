@@ -2,10 +2,13 @@ package com.oscan.core
 
 import com.oscan.core.model.FilterType
 import org.opencv.core.Core
+import org.opencv.core.CvType
 import org.opencv.core.Mat
+import org.opencv.core.Scalar
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 class ImageEnhancer {
     fun applyFilter(source: Mat, filter: FilterType): Mat = when (filter) {
@@ -28,13 +31,18 @@ class ImageEnhancer {
 
         val luminance = normalizeIllumination(channels[0])
         val contrast = Mat()
-        Imgproc.createCLAHE(1.45, Size(10.0, 10.0)).apply(luminance, contrast)
-        // Raise near-white paper toward white while slightly deepening dark ink.
-        contrast.convertTo(contrast, -1, 1.08, -10.0)
+        Imgproc.createCLAHE(1.15, Size(10.0, 10.0)).apply(luminance, contrast)
+        contrast.convertTo(contrast, -1, 1.04, -5.0)
+
+        // Flatten only bright, nearly neutral pixels. A small median pass removes sensor/paper
+        // texture before the nonlinear shoulder maps paper to solid white. Dark neutral ink and
+        // chromatic regions such as stamps, logos, and table fills stay outside this mask.
+        val paperMask = createPaperMask(contrast, channels[1], channels[2])
+        whitenPaper(contrast, paperMask)
 
         // Restore modest colour saturation after whitening the luminance channel.
-        channels[1].convertTo(channels[1], -1, 1.10, -12.8)
-        channels[2].convertTo(channels[2], -1, 1.10, -12.8)
+        channels[1].convertTo(channels[1], -1, 1.15, -19.2)
+        channels[2].convertTo(channels[2], -1, 1.15, -19.2)
         channels[0].release()
         channels[0] = contrast
         Core.merge(channels, lab)
@@ -47,6 +55,7 @@ class ImageEnhancer {
         Core.addWeighted(colour, 1.28, blurred, -0.28, 0.0, sharpened)
 
         luminance.release()
+        paperMask.release()
         blurred.release()
         colour.release()
         lab.release()
@@ -59,13 +68,26 @@ class ImageEnhancer {
         Imgproc.cvtColor(source, gray, Imgproc.COLOR_BGR2GRAY)
         val normalized = normalizeIllumination(gray)
         val enhanced = Mat()
-        Imgproc.createCLAHE(1.6, Size(10.0, 10.0)).apply(normalized, enhanced)
+        Imgproc.createCLAHE(1.15, Size(10.0, 10.0)).apply(normalized, enhanced)
+        enhanced.convertTo(enhanced, -1, 1.04, -5.0)
+        // Although the result is grayscale, source chroma still tells us which bright regions are
+        // coloured graphics rather than paper. That prevents blue/red fills from being patchily
+        // whitened while keeping the neutral page background clean.
+        val sourceLab = Mat()
+        Imgproc.cvtColor(source, sourceLab, Imgproc.COLOR_BGR2Lab)
+        val sourceChannels = ArrayList<Mat>(3)
+        Core.split(sourceLab, sourceChannels)
+        val paperMask = createPaperMask(enhanced, sourceChannels[1], sourceChannels[2])
+        whitenPaper(enhanced, paperMask)
         val blurred = Mat()
         Imgproc.GaussianBlur(enhanced, blurred, Size(0.0, 0.0), 0.8)
         val sharpened = Mat()
         Core.addWeighted(enhanced, 1.25, blurred, -0.25, 0.0, sharpened)
         gray.release()
         normalized.release()
+        paperMask.release()
+        sourceLab.release()
+        sourceChannels.forEach(Mat::release)
         enhanced.release()
         blurred.release()
         return sharpened
@@ -99,5 +121,60 @@ class ImageEnhancer {
         Core.divide(luminance, background, normalized, 242.0)
         background.release()
         return normalized
+    }
+
+    private fun createPaperMask(luminance: Mat, aChannel: Mat, bChannel: Mat): Mat {
+        val bright = createBrightPaperMask(luminance)
+
+        val aDistance = Mat()
+        val bDistance = Mat()
+        val chromaDistance = Mat()
+        Core.absdiff(aChannel, Scalar(128.0), aDistance)
+        Core.absdiff(bChannel, Scalar(128.0), bDistance)
+        Core.max(aDistance, bDistance, chromaDistance)
+        val neutral = Mat()
+        Imgproc.threshold(chromaDistance, neutral, 14.0, 255.0, Imgproc.THRESH_BINARY_INV)
+
+        val mask = Mat()
+        Core.bitwise_and(bright, neutral, mask)
+        bright.release()
+        aDistance.release()
+        bDistance.release()
+        chromaDistance.release()
+        neutral.release()
+        return mask
+    }
+
+    private fun createBrightPaperMask(luminance: Mat): Mat {
+        val bright = Mat()
+        Imgproc.threshold(luminance, bright, 188.0, 255.0, Imgproc.THRESH_BINARY)
+        return bright
+    }
+
+    private fun whitenPaper(luminance: Mat, paperMask: Mat) {
+        val smoothed = Mat()
+        Imgproc.medianBlur(luminance, smoothed, 3)
+        val paperWhite = applyPaperWhiteCurve(smoothed)
+        paperWhite.copyTo(luminance, paperMask)
+        smoothed.release()
+        paperWhite.release()
+    }
+
+    private fun applyPaperWhiteCurve(luminance: Mat): Mat {
+        val values = ByteArray(256) { value ->
+            val mapped = if (value < 185) {
+                value
+            } else {
+                val t = ((value - 185) / 50.0).coerceIn(0.0, 1.0)
+                (185.0 + 70.0 * (1.0 - (1.0 - t) * (1.0 - t))).roundToInt()
+            }
+            (if (mapped >= 248) 255 else mapped).coerceIn(0, 255).toByte()
+        }
+        val lookup = Mat(1, 256, CvType.CV_8UC1)
+        lookup.put(0, 0, values)
+        val result = Mat()
+        Core.LUT(luminance, lookup, result)
+        lookup.release()
+        return result
     }
 }

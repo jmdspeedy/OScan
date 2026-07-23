@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class DocumentFilter { ALL, FAVORITES, UNFILED }
+enum class DocumentFilter { ALL, FAVORITES }
 
 data class LibraryUiState(
     val isLoading: Boolean = true,
@@ -120,7 +120,6 @@ class LibraryViewModel(
         filteredDocs = when (currentFilter) {
             DocumentFilter.ALL -> filteredDocs
             DocumentFilter.FAVORITES -> filteredDocs.filter { it.isFavorite }
-            DocumentFilter.UNFILED -> filteredDocs.filter { it.folder == null }
         }
 
         // Filter by search query (document name or folder name)

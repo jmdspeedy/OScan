@@ -160,7 +160,7 @@ fun LiveCameraScreen(
         }
 
         Column(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color.Black.copy(alpha = .68f)).navigationBarsPadding().padding(16.dp),
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color.Black.copy(alpha = .68f)).padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(currentStatus, color = Color.White)

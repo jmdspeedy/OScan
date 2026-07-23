@@ -220,13 +220,6 @@ private fun FilterChipsRow(
                 leadingIcon = { Icon(Icons.Default.Favorite, null, modifier = Modifier.size(16.dp)) }
             )
         }
-        item {
-            FilterChip(
-                selected = currentFilter == DocumentFilter.UNFILED,
-                onClick = { onFilterChange(DocumentFilter.UNFILED) },
-                label = { Text("Unfiled") }
-            )
-        }
     }
 }
 

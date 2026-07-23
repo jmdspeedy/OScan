@@ -1,5 +1,6 @@
 package com.oscan.android.ui
 
+import java.io.File
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -105,12 +106,15 @@ private enum class AppDestination(val label: String, val selectedIcon: ImageVect
 @Composable
 fun OScanAppShell(
     libraryViewModel: LibraryViewModel,
+    cameraViewModel: CameraViewModel? = null,
+    captureState: CameraCaptureState? = null,
+    onCaptured: ((File) -> Unit)? = null,
+    onDone: (() -> Unit)? = null,
     scannerViewModel: ScannerViewModel? = null,
     scannerEngine: com.oscan.android.engine.ScannerEngine? = null,
     repository: com.oscan.android.data.repository.DocumentRepository? = null,
     fileStore: DocumentFileStore,
-    onImportImages: () -> Unit,
-    onOpenCamera: () -> Unit
+    onImportImages: () -> Unit
 ) {
     val state by libraryViewModel.uiState.collectAsState()
     var destination by rememberSaveable { mutableStateOf(AppDestination.Home) }
@@ -247,7 +251,7 @@ fun OScanAppShell(
                     TextButton(onClick = {
                         addPagesDialogOpen = false
                         scannerViewModel.prepareAddPagesToDocument(doc.id, doc.name)
-                        onOpenCamera()
+                        destination = AppDestination.Scan
                     }) {
                         Text("Open camera")
                     }
@@ -338,7 +342,10 @@ fun OScanAppShell(
                     snackbarHostState = snackbarHostState,
                     onDestinationSelected = { destination = it },
                     onImportImages = onImportImages,
-                    onOpenCamera = onOpenCamera,
+                    cameraViewModel = cameraViewModel,
+                    captureState = captureState,
+                    onCaptured = onCaptured,
+                    onDone = onDone,
                     onOpenFolders = { isViewingFolders = true },
                     onOpenSubRoute = { activeSubRoute = it },
                     libraryViewModel = libraryViewModel,
@@ -355,7 +362,10 @@ fun OScanAppShell(
                 snackbarHostState = snackbarHostState,
                 onDestinationSelected = { destination = it },
                 onImportImages = onImportImages,
-                onOpenCamera = onOpenCamera,
+                cameraViewModel = cameraViewModel,
+                captureState = captureState,
+                onCaptured = onCaptured,
+                onDone = onDone,
                 onOpenFolders = { isViewingFolders = true },
                 onOpenSubRoute = { activeSubRoute = it },
                 libraryViewModel = libraryViewModel,
@@ -440,7 +450,10 @@ private fun DestinationScaffold(
     snackbarHostState: SnackbarHostState,
     onDestinationSelected: (AppDestination) -> Unit,
     onImportImages: () -> Unit,
-    onOpenCamera: () -> Unit,
+    cameraViewModel: CameraViewModel? = null,
+    captureState: CameraCaptureState? = null,
+    onCaptured: ((File) -> Unit)? = null,
+    onDone: (() -> Unit)? = null,
     onOpenFolders: () -> Unit,
     onOpenSubRoute: (SettingsSubRoute) -> Unit,
     libraryViewModel: LibraryViewModel,
@@ -455,62 +468,64 @@ private fun DestinationScaffold(
     Scaffold(
         modifier = modifier,
         topBar = {
-            if (state.selectionMode && destination == AppDestination.Home) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            "${state.selectedDocumentIds.size} selected",
-                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = libraryViewModel::clearSelection) {
-                            Icon(Icons.Default.Close, "Cancel selection")
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { libraryViewModel.selectAll(state.documents.map { it.id }) }) {
-                            Icon(Icons.Default.SelectAll, "Select all")
-                        }
-                        IconButton(onClick = { libraryViewModel.bulkSetFavorite(true) }) {
-                            Icon(Icons.Default.Favorite, "Favorite selected")
-                        }
-                        IconButton(onClick = { bulkMoveDialogOpen = true }) {
-                            Icon(Icons.AutoMirrored.Filled.DriveFileMove, "Move selected")
-                        }
-                        IconButton(onClick = { bulkTrashConfirmOpen = true }) {
-                            Icon(Icons.Default.Delete, "Trash selected")
-                        }
-                    }
-                )
-            } else {
-                TopAppBar(
-                    title = { Text(if (destination == AppDestination.Home) "OScan" else destination.label) },
-                    actions = {
-                        if (destination == AppDestination.Home) {
-                            IconButton(onClick = onOpenFolders) {
-                                Icon(Icons.Default.Folder, "Folders")
+            if (destination != AppDestination.Scan) {
+                if (state.selectionMode && destination == AppDestination.Home) {
+                    TopAppBar(
+                        title = {
+                            Text(
+                                "${state.selectedDocumentIds.size} selected",
+                                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                            )
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = libraryViewModel::clearSelection) {
+                                Icon(Icons.Default.Close, "Cancel selection")
                             }
-                            IconButton(onClick = libraryViewModel::openTrash) {
-                                Icon(Icons.Default.Delete, "Trash")
+                        },
+                        actions = {
+                            IconButton(onClick = { libraryViewModel.selectAll(state.documents.map { it.id }) }) {
+                                Icon(Icons.Default.SelectAll, "Select all")
                             }
-                            if (state.documents.isNotEmpty()) {
-                                Box {
-                                    IconButton(onClick = { sortMenuOpen = true }) { Icon(Icons.AutoMirrored.Filled.Sort, "Sort documents") }
-                                    DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { sortMenuOpen = false }) {
-                                        DocumentSort.entries.forEach { sort ->
-                                            DropdownMenuItem(
-                                                text = { Text(sort.label()) },
-                                                onClick = { sortMenuOpen = false; libraryViewModel.setSort(sort) },
-                                                trailingIcon = { if (sort == state.sort) Text("✓") }
-                                            )
+                            IconButton(onClick = { libraryViewModel.bulkSetFavorite(true) }) {
+                                Icon(Icons.Default.Favorite, "Favorite selected")
+                            }
+                            IconButton(onClick = { bulkMoveDialogOpen = true }) {
+                                Icon(Icons.AutoMirrored.Filled.DriveFileMove, "Move selected")
+                            }
+                            IconButton(onClick = { bulkTrashConfirmOpen = true }) {
+                                Icon(Icons.Default.Delete, "Trash selected")
+                            }
+                        }
+                    )
+                } else {
+                    TopAppBar(
+                        title = { Text(if (destination == AppDestination.Home) "OScan" else destination.label) },
+                        actions = {
+                            if (destination == AppDestination.Home) {
+                                IconButton(onClick = onOpenFolders) {
+                                    Icon(Icons.Default.Folder, "Folders")
+                                }
+                                IconButton(onClick = libraryViewModel::openTrash) {
+                                    Icon(Icons.Default.Delete, "Trash")
+                                }
+                                if (state.documents.isNotEmpty()) {
+                                    Box {
+                                        IconButton(onClick = { sortMenuOpen = true }) { Icon(Icons.AutoMirrored.Filled.Sort, "Sort documents") }
+                                        DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { sortMenuOpen = false }) {
+                                            DocumentSort.entries.forEach { sort ->
+                                                DropdownMenuItem(
+                                                    text = { Text(sort.label()) },
+                                                    onClick = { sortMenuOpen = false; libraryViewModel.setSort(sort) },
+                                                    trailingIcon = { if (sort == state.sort) Text("✓") }
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                )
+                    )
+                }
             }
         },
         bottomBar = bottomBar,
@@ -531,7 +546,37 @@ private fun DestinationScaffold(
                     onOpenFolder = libraryViewModel::openFolder,
                     onCreateFolderRequested = { createFolderDialogOpen = true }
                 ) { EmptyHomeScreen({ onDestinationSelected(AppDestination.Scan) }, onImportImages) }
-                AppDestination.Scan -> ScanEntryScreen(onOpenCamera, onImportImages)
+                AppDestination.Scan -> {
+                    if (cameraViewModel != null && captureState != null && onCaptured != null && onDone != null) {
+                        BackHandler(enabled = destination == AppDestination.Scan) {
+                            if (captureState.capturedCount > 0) {
+                                onDone()
+                            } else {
+                                onDestinationSelected(AppDestination.Home)
+                            }
+                        }
+                        LiveCameraScreen(
+                            cameraViewModel = cameraViewModel,
+                            captureState = captureState,
+                            onCaptured = onCaptured,
+                            onDone = onDone,
+                            onClose = {
+                                if (captureState.capturedCount > 0) {
+                                    onDone()
+                                } else {
+                                    onDestinationSelected(AppDestination.Home)
+                                }
+                            },
+                            onImport = onImportImages,
+                            shutterFeedbackEnabled = state.userPreferences.shutterFeedback
+                        )
+                    } else {
+                        ScanEntryScreen(
+                            onOpenCamera = { onDestinationSelected(AppDestination.Scan) },
+                            onImportImages = onImportImages
+                        )
+                    }
+                }
                 AppDestination.Me -> MeScreen(
                     userPreferences = state.userPreferences,
                     trashCount = state.trashDocuments.size,

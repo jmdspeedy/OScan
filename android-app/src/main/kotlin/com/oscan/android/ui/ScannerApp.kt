@@ -77,10 +77,8 @@ fun ScannerApp(
     repository: com.oscan.android.data.repository.DocumentRepository? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val libraryState by libraryViewModel.uiState.collectAsState()
     var replacementPageId by rememberSaveable { mutableStateOf<String?>(null) }
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
-    var showCamera by rememberSaveable { mutableStateOf(false) }
     val captureState by viewModel.cameraCaptureState.collectAsState()
 
     val multiplePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(50)) { uris ->
@@ -91,7 +89,6 @@ fun ScannerApp(
         replacementPageId = null
     }
     val launchMultiplePicker = {
-        showCamera = false
         multiplePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
     val launchReplacement: (String) -> Unit = { pageId ->
@@ -100,32 +97,17 @@ fun ScannerApp(
     }
 
     if (uiState is ScannerUiState.Empty) {
-        if (showCamera) {
-            BackHandler {
-                if (!captureState.isProcessing) {
-                    showCamera = false
-                    if (captureState.capturedCount > 0) viewModel.finishCameraCapture()
-                }
-            }
-            LiveCameraScreen(
-                cameraViewModel = cameraViewModel,
-                captureState = captureState,
-                onCaptured = viewModel::onCameraCaptured,
-                onDone = { showCamera = false; viewModel.finishCameraCapture() },
-                onClose = { showCamera = false; if (captureState.capturedCount > 0) viewModel.finishCameraCapture() },
-                onImport = launchMultiplePicker,
-                shutterFeedbackEnabled = libraryState.userPreferences.shutterFeedback
-            )
-            return
-        }
         OScanAppShell(
             libraryViewModel = libraryViewModel,
+            cameraViewModel = cameraViewModel,
+            captureState = captureState,
+            onCaptured = viewModel::onCameraCaptured,
+            onDone = viewModel::finishCameraCapture,
             scannerViewModel = viewModel,
             scannerEngine = scannerEngine,
             repository = repository,
             fileStore = fileStore,
-            onImportImages = launchMultiplePicker,
-            onOpenCamera = { showCamera = true }
+            onImportImages = launchMultiplePicker
         )
         return
     }

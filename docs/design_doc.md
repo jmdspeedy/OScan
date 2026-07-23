@@ -37,7 +37,7 @@ The fallback intentionally does not require a single connected four-point contou
 
 ### Magic filter as implemented
 
-`ImageEnhancer.applyMagicFilter()` converts the page to Lab, removes large-scale illumination gradients from luminance, applies restrained local contrast, retains and modestly strengthens chroma, and finishes with an unsharp mask. It returns a full-resolution colour image. `applyFilter()` also exposes Original, Gray, and adaptive B&W treatments.
+`ImageEnhancer.applyMagicFilter()` converts the page to Lab, removes large-scale illumination gradients from luminance, and applies restrained local contrast. A chroma-aware mask median-smooths bright neutral paper and maps it through a nonlinear white shoulder, suppressing paper/sensor texture without whitening coloured stamps, logos, or table fills. Chroma is modestly strengthened before a final unsharp mask. It returns a full-resolution colour image. `applyFilter()` also exposes Original, Gray, and adaptive B&W treatments.
 
 ### PDF export as implemented
 
