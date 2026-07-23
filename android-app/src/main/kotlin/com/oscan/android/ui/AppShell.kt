@@ -844,7 +844,7 @@ private fun MeScreen(
             MeSettingRow("Capture", "Auto-capture default, shutter feedback", Icons.Default.CameraAlt) { onOpenSubRoute(SettingsSubRoute.CAPTURE) }
             MeSettingRow("Enhancement", "Default treatment (Magic / Original)", Icons.Default.AutoAwesome) { onOpenSubRoute(SettingsSubRoute.ENHANCEMENT) }
             MeSettingRow("Export", "Filename pattern, PDF page size & quality", Icons.Default.PictureAsPdf) { onOpenSubRoute(SettingsSubRoute.EXPORT) }
-            MeSettingRow("Appearance", "Primary theme mode & ${userPreferences.accentTheme.label}", Icons.Default.Palette) { onOpenSubRoute(SettingsSubRoute.APPEARANCE) }
+            MeSettingRow("Appearance", "Change the theme of OScan", Icons.Default.Palette) { onOpenSubRoute(SettingsSubRoute.APPEARANCE) }
             MeSettingRow("Storage", "Local usage summary & cache cleanup", Icons.Default.Storage) { onOpenSubRoute(SettingsSubRoute.STORAGE) }
         }
 

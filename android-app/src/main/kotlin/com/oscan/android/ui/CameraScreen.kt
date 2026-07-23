@@ -34,8 +34,10 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -74,6 +76,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -109,15 +112,6 @@ fun LiveCameraScreen(
         permissionGranted = granted
     }
 
-    if (!permissionGranted) {
-        CameraPermissionScreen(
-            denied = permissionRequested,
-            onRequest = { permissionLauncher.launch(Manifest.permission.CAMERA) },
-            onImport = onImport,
-            onClose = onClose
-        )
-        return
-    }
 
     val state by cameraViewModel.uiState.collectAsState()
     val chrome = CameraChromeColors(
@@ -171,56 +165,68 @@ fun LiveCameraScreen(
     }
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        AndroidView(
-            factory = { ctx ->
-                PreviewView(ctx).apply {
-                    scaleType = PreviewView.ScaleType.FILL_CENTER
-                    implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-                    previewView = this
-                }
-            },
-            modifier = Modifier
-                .fillMaxSize()
-                .onGloballyPositioned {
-                    cameraViewModel.updatePreviewSize(it.size.width, it.size.height)
-                }
-        )
+        if (permissionGranted) {
+            AndroidView(
+                factory = { ctx ->
+                    PreviewView(ctx).apply {
+                        scaleType = PreviewView.ScaleType.FILL_CENTER
+                        implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                        previewView = this
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onGloballyPositioned {
+                        cameraViewModel.updatePreviewSize(it.size.width, it.size.height)
+                    }
+            )
 
-        if (captureFlashAlpha.value > 0f) {
-            Box(
-                Modifier
+            if (captureFlashAlpha.value > 0f) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(bottom = if (compactControls) 112.dp else 190.dp)
+                        .background(Color.White.copy(alpha = captureFlashAlpha.value))
+                )
+            }
+
+            CameraGrid(bottomInset = if (compactControls) 112.dp else 190.dp)
+
+            state.corners?.takeIf { it.size == 4 }?.let { corners ->
+                DocumentCornerOverlay(corners, chrome.accent)
+            }
+        } else {
+            CameraPermissionCard(
+                denied = permissionRequested,
+                onRequest = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                modifier = Modifier
                     .fillMaxSize()
                     .padding(bottom = if (compactControls) 112.dp else 190.dp)
-                    .background(Color.White.copy(alpha = captureFlashAlpha.value))
             )
-        }
-
-        CameraGrid(bottomInset = if (compactControls) 112.dp else 190.dp)
-
-        state.corners?.takeIf { it.size == 4 }?.let { corners ->
-            DocumentCornerOverlay(corners, chrome.accent)
         }
 
         CameraTopControls(
             chrome = chrome,
-            torchAvailable = state.torchAvailable,
+            torchAvailable = state.torchAvailable && permissionGranted,
             torchEnabled = state.torchEnabled,
-            controlsEnabled = !state.isCapturing && !captureState.isProcessing,
+            controlsEnabled = permissionGranted && !state.isCapturing && !captureState.isProcessing,
             onToggleTorch = cameraViewModel::toggleTorch,
             onImport = onImport
         )
 
-        Text(
-            text = currentStatus,
-            color = chrome.onPanel,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(horizontal = 24.dp)
-                .padding(bottom = if (compactControls) 122.dp else 210.dp)
-                .background(chrome.floatingSurface, RoundedCornerShape(18.dp))
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+        if (permissionGranted) {
+            Text(
+                text = currentStatus,
+                color = chrome.onPanel,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = if (compactControls) 122.dp else 210.dp)
+                    .background(chrome.floatingSurface, RoundedCornerShape(18.dp))
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
 
         Box(
             Modifier
@@ -237,21 +243,25 @@ fun LiveCameraScreen(
             capturedCount = captureState.capturedCount,
             isProcessing = captureState.isProcessing,
             isCapturing = state.isCapturing,
-            captureEnabled = state.isAvailable && !state.isStarting && !state.isCapturing && !captureState.isProcessing,
+            captureEnabled = permissionGranted && state.isAvailable && !state.isStarting && !state.isCapturing && !captureState.isProcessing,
             shutterProgress = shutterProgress.value,
             shutterTranslation = shutterTranslation,
             captureFeedbackEvent = captureFeedbackEvent,
             reducedMotion = accessibilitySettings.reducedMotion,
             onCapture = {
-                val temp = File.createTempFile("capture-", ".jpg", context.cacheDir)
-                cameraViewModel.capture(temp) { capturedFile ->
-                    capturedFile?.let {
-                        if (shutterFeedbackEnabled) {
-                            shutterSound.play(MediaActionSound.SHUTTER_CLICK)
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                if (!permissionGranted) {
+                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                } else {
+                    val temp = File.createTempFile("capture-", ".jpg", context.cacheDir)
+                    cameraViewModel.capture(temp) { capturedFile ->
+                        capturedFile?.let {
+                            if (shutterFeedbackEnabled) {
+                                shutterSound.play(MediaActionSound.SHUTTER_CLICK)
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
+                            captureFeedbackEvent++
+                            onCaptured(it)
                         }
-                        captureFeedbackEvent++
-                        onCaptured(it)
                     }
                 }
             },
@@ -272,10 +282,10 @@ fun LiveCameraScreen(
                 }
         )
 
-        if (state.isStarting) {
+        if (permissionGranted && state.isStarting) {
             CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.White)
         }
-        if (!state.isAvailable) {
+        if (permissionGranted && !state.isAvailable) {
             Column(
                 Modifier.align(Alignment.Center).padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -716,32 +726,77 @@ private fun CaptureDock(
 }
 
 @Composable
-private fun CameraPermissionScreen(
+private fun CameraPermissionCard(
     denied: Boolean,
     onRequest: () -> Unit,
-    onImport: () -> Unit,
-    onClose: () -> Unit
+    modifier: Modifier = Modifier
 ) {
-    Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                if (denied) "Camera access is off" else "Allow camera access",
-                style = MaterialTheme.typography.headlineSmall
-            )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                if (denied) "You can try again or import images without camera access."
-                else "OScan needs camera access only while you scan. Processing stays on this device."
-            )
-            Spacer(Modifier.height(24.dp))
-            Button(onClick = onRequest, modifier = Modifier.fillMaxWidth()) {
-                Text(if (denied) "Try again" else "Continue")
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 8.dp,
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .widthIn(max = 340.dp)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(vertical = 32.dp, horizontal = 24.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                    modifier = Modifier.size(76.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoCamera,
+                            contentDescription = "Camera Access",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(38.dp)
+                        )
+                    }
+                }
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    text = if (denied) "Camera access is off" else "Allow camera access",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = if (denied) "OScan requires camera access to scan documents."
+                    else "OScan needs camera access only while you scan. Processing stays on this device.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 20.sp
+                )
+                Spacer(Modifier.height(24.dp))
+                Button(
+                    onClick = onRequest,
+                    modifier = Modifier
+                        .height(48.dp)
+                        .padding(horizontal = 16.dp),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(
+                        text = if (denied) "Try again" else "Continue",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                }
             }
-            Spacer(Modifier.height(12.dp))
-            OutlinedButton(onClick = onImport, modifier = Modifier.fillMaxWidth()) {
-                Text("Import images")
-            }
-            TextButton(onClick = onClose) { Text("Home") }
         }
     }
 }
