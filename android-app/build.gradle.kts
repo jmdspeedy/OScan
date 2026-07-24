@@ -101,6 +101,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-process:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
+    // Keep FragmentActivity (needed by biometric prompts) compatible with Activity Result APIs.
+    implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("androidx.room:room-runtime:2.6.1")

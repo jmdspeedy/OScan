@@ -3,6 +3,7 @@ package com.oscan.android.ui
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -82,19 +83,19 @@ fun ScannerApp(
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
     val captureState by viewModel.cameraCaptureState.collectAsState()
 
-    val multiplePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+    val multiplePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(50)) { uris ->
         viewModel.onImagesSelected(uris)
     }
-    val replacementPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+    val replacementPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
         replacementPageId?.let { viewModel.onReplacementSelected(it, uri) }
         replacementPageId = null
     }
     val launchMultiplePicker = {
-        multiplePicker.launch(arrayOf("image/*"))
+        multiplePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
     val launchReplacement: (String) -> Unit = { pageId ->
         replacementPageId = pageId
-        replacementPicker.launch(arrayOf("image/*"))
+        replacementPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
 
     if (uiState is ScannerUiState.Empty) {
