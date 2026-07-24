@@ -5,8 +5,13 @@ import com.oscan.android.data.db.OScanDatabase
 import com.oscan.android.data.preferences.UserPreferencesStore
 import com.oscan.android.data.repository.DocumentRepository
 import com.oscan.android.data.repository.LocalDocumentRepository
-import com.oscan.android.data.storage.DocumentFileStore
+import com.oscan.android.data.repository.NewPage
 import com.oscan.android.data.session.ScanSessionStore
+import com.oscan.android.data.storage.DocumentFileStore
+import com.oscan.android.data.vault.LocalVaultRepository
+import com.oscan.android.data.vault.VaultBiometricManager
+import com.oscan.android.data.vault.VaultRepository
+import com.oscan.android.data.vault.VaultSessionManager
 
 class OScanApplication : Application() {
     lateinit var appContainer: AppContainer
@@ -16,6 +21,7 @@ class OScanApplication : Application() {
         super.onCreate()
         appContainer = AppContainer(this)
         appContainer.fileStore.clearInterruptedWrites()
+        appContainer.vaultRepository.cleanEphemeralCache()
     }
 }
 
@@ -27,4 +33,7 @@ class AppContainer(application: Application) {
     }
     val userPreferences: UserPreferencesStore by lazy { UserPreferencesStore(application) }
     val scanSessionStore: ScanSessionStore by lazy { ScanSessionStore(application) }
+    val vaultRepository: VaultRepository by lazy { LocalVaultRepository(application) }
+    val vaultSessionManager: VaultSessionManager by lazy { VaultSessionManager() }
+    val vaultBiometricManager: VaultBiometricManager by lazy { VaultBiometricManager(application) }
 }

@@ -60,6 +60,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Photo
@@ -145,6 +146,7 @@ fun HomeLibraryScreen(
     onToggleDocumentSelection: (DocumentId) -> Unit,
     onOpenFolder: (FolderId) -> Unit,
     onCreateFolderRequested: () -> Unit,
+    onOpenVault: (() -> Unit)? = null,
     emptyContent: @Composable () -> Unit
 ) {
     Column(Modifier.fillMaxSize()) {
@@ -175,6 +177,7 @@ fun HomeLibraryScreen(
             currentFilter = state.filter,
             onFilterChange = onFilterChange,
             foldersCount = state.folders.size,
+            onOpenVault = onOpenVault,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
         )
 
@@ -183,7 +186,13 @@ fun HomeLibraryScreen(
                 CircularProgressIndicator()
             }
             state.documents.isEmpty() && state.searchQuery.isNotEmpty() -> NoSearchResultsState(state.searchQuery)
-            state.documents.isEmpty() -> emptyContent()
+            state.documents.isEmpty() -> {
+                if (state.filter == DocumentFilter.FAVORITES) {
+                    EmptyFavoritesState()
+                } else {
+                    emptyContent()
+                }
+            }
             else -> DocumentList(
                 state = state,
                 fileStore = fileStore,
@@ -197,11 +206,25 @@ fun HomeLibraryScreen(
     }
 }
 
+/**
+ * Displays an empty state layout when the Favorites filter is active and no favorite documents exist.
+ * Explains how to mark documents as favorite and does not include the root scan document action button.
+ */
+@Composable
+private fun EmptyFavoritesState() {
+    EmptyStateLayout(
+        icon = Icons.Default.Favorite,
+        title = "No favorite documents",
+        supportingText = "Tap the heart icon on any document to add it to your favorites."
+    ) {}
+}
+
 @Composable
 private fun FilterChipsRow(
     currentFilter: DocumentFilter,
     onFilterChange: (DocumentFilter) -> Unit,
     foldersCount: Int,
+    onOpenVault: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     LazyRow(
@@ -222,6 +245,16 @@ private fun FilterChipsRow(
                 label = { Text("Favorites") },
                 leadingIcon = { Icon(Icons.Default.Favorite, null, modifier = Modifier.size(16.dp)) }
             )
+        }
+        if (onOpenVault != null) {
+            item {
+                FilterChip(
+                    selected = false,
+                    onClick = onOpenVault,
+                    label = { Text("Vault") },
+                    leadingIcon = { Icon(Icons.Default.Lock, null, modifier = Modifier.size(16.dp)) }
+                )
+            }
         }
     }
 }
@@ -868,7 +901,8 @@ fun DocumentDetailScreen(
     onRotatePage: (PageId, Int) -> Unit = { _, _ -> },
     onDeletePage: (PageId) -> Unit = {},
     onAddPages: () -> Unit = {},
-    onEditPage: (Page) -> Unit = {}
+    onEditPage: (Page) -> Unit = {},
+    onMoveToVault: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -909,10 +943,15 @@ fun DocumentDetailScreen(
                             }
                         }
                         IconButton(onClick = { onFavorite(!document.isFavorite) }) {
-                            Icon(if (document.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, if (document.isFavorite) "Remove favorite" else "Add favorite")
+                            Icon(if (document.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, "Favorite")
+                        }
+                        IconButton(onClick = { renameOpen = true }) {
+                            Icon(Icons.Default.Edit, "Rename")
                         }
                         Box {
-                            IconButton(onClick = { overflowOpen = true }) { Icon(Icons.Default.MoreVert, "Document actions") }
+                            IconButton(onClick = { overflowOpen = true }) {
+                                Icon(Icons.Default.MoreVert, "More actions")
+                            }
                             DropdownMenu(expanded = overflowOpen, onDismissRequest = { overflowOpen = false }) {
                                 DropdownMenuItem(
                                     text = { Text("Add pages") },
@@ -929,6 +968,11 @@ fun DocumentDetailScreen(
                                     text = { Text(if (document.isFavorite) "Remove favorite" else "Add favorite") },
                                     leadingIcon = { Icon(if (document.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, null) },
                                     onClick = { overflowOpen = false; onFavorite(!document.isFavorite) }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Move to Vault") },
+                                    leadingIcon = { Icon(Icons.Default.Lock, null) },
+                                    onClick = { overflowOpen = false; onMoveToVault() }
                                 )
                                 if (folders.isNotEmpty() || document.folder != null) {
                                     DropdownMenuItem(text = { Text("Move to folder") }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.DriveFileMove, null) }, onClick = { overflowOpen = false; moveOpen = true })

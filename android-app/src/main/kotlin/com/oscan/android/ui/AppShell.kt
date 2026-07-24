@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PrivacyTip
@@ -80,6 +81,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -88,6 +90,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import com.oscan.android.ui.vault.VaultFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -115,6 +118,7 @@ private enum class AppDestination(val label: String, val selectedIcon: ImageVect
 @Composable
 fun OScanAppShell(
     libraryViewModel: LibraryViewModel,
+    vaultViewModel: com.oscan.android.ui.vault.VaultViewModel? = null,
     cameraViewModel: CameraViewModel? = null,
     captureState: CameraCaptureState? = null,
     onCaptured: ((File) -> Unit)? = null,
@@ -123,7 +127,8 @@ fun OScanAppShell(
     scannerEngine: com.oscan.android.engine.ScannerEngine? = null,
     repository: com.oscan.android.data.repository.DocumentRepository? = null,
     fileStore: DocumentFileStore,
-    onImportImages: () -> Unit
+    onImportImages: () -> Unit,
+    onSecureWindowChanged: ((Boolean) -> Unit)? = null
 ) {
     val state by libraryViewModel.uiState.collectAsState()
     var destination by rememberSaveable { mutableStateOf(AppDestination.Home) }
@@ -143,6 +148,8 @@ fun OScanAppShell(
     var editingPage by remember { mutableStateOf<com.oscan.android.data.model.Page?>(null) }
     var addPagesDialogOpen by remember { mutableStateOf(false) }
     var isViewingFolders by rememberSaveable { mutableStateOf(false) }
+    var isViewingVault by rememberSaveable { mutableStateOf(false) }
+    var pendingVaultMoveDocumentIds by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
     var activeSubRoute by rememberSaveable { mutableStateOf(SettingsSubRoute.NONE) }
 
     val gridState = rememberLazyGridState()
@@ -154,6 +161,25 @@ fun OScanAppShell(
             snackbarHostState.showSnackbar(it)
             libraryViewModel.clearMessage()
         }
+    }
+
+    if (isViewingVault && vaultViewModel != null) {
+        DisposableEffect(onSecureWindowChanged) {
+            onSecureWindowChanged?.invoke(true)
+            onDispose { onSecureWindowChanged?.invoke(false) }
+        }
+        VaultFlow(
+            viewModel = vaultViewModel,
+            documentsToMoveIntoVault = pendingVaultMoveDocumentIds.mapNotNull { id ->
+                state.documents.find { it.id.value == id }
+            },
+            onMoveIntoVaultConsumed = { pendingVaultMoveDocumentIds = emptyList() },
+            onExit = {
+                pendingVaultMoveDocumentIds = emptyList()
+                isViewingVault = false
+            }
+        )
+        return
     }
 
     if (activeSubRoute != SettingsSubRoute.NONE) {
@@ -243,7 +269,14 @@ fun OScanAppShell(
                 onRotatePage = { pageId: PageId, delta: Int -> state.selectedDocumentId?.let { libraryViewModel.rotatePage(it, pageId, delta) } },
                 onDeletePage = { pageId: PageId -> state.selectedDocumentId?.let { libraryViewModel.deletePage(it, pageId) } },
                 onAddPages = { addPagesDialogOpen = true },
-                onEditPage = { page: Page -> editingPage = page }
+                onEditPage = { page: Page -> editingPage = page },
+                onMoveToVault = {
+                    state.selectedDocument?.let { document ->
+                        pendingVaultMoveDocumentIds = listOf(document.id.value)
+                        libraryViewModel.closeDocument()
+                        isViewingVault = true
+                    }
+                }
             )
         }
         BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -372,6 +405,16 @@ fun OScanAppShell(
                     onCaptured = onCaptured,
                     onDone = onDone,
                     onOpenFolders = { isViewingFolders = true },
+                    onOpenVault = {
+                        if (vaultViewModel != null) isViewingVault = true
+                    },
+                    onMoveSelectedToVault = {
+                        if (state.selectedDocumentIds.isNotEmpty() && vaultViewModel != null) {
+                            pendingVaultMoveDocumentIds = state.selectedDocumentIds.map { it.value }
+                            libraryViewModel.clearSelection()
+                            isViewingVault = true
+                        }
+                    },
                     onOpenSubRoute = { activeSubRoute = it },
                     libraryViewModel = libraryViewModel,
                     modifier = Modifier.weight(1f)
@@ -393,6 +436,16 @@ fun OScanAppShell(
                 onCaptured = onCaptured,
                 onDone = onDone,
                 onOpenFolders = { isViewingFolders = true },
+                onOpenVault = {
+                    if (vaultViewModel != null) isViewingVault = true
+                },
+                onMoveSelectedToVault = {
+                    if (state.selectedDocumentIds.isNotEmpty() && vaultViewModel != null) {
+                        pendingVaultMoveDocumentIds = state.selectedDocumentIds.map { it.value }
+                        libraryViewModel.clearSelection()
+                        isViewingVault = true
+                    }
+                },
                 onOpenSubRoute = { activeSubRoute = it },
                 libraryViewModel = libraryViewModel,
                 modifier = Modifier.fillMaxSize(),
@@ -482,6 +535,8 @@ private fun DestinationScaffold(
     onCaptured: ((File) -> Unit)? = null,
     onDone: (() -> Unit)? = null,
     onOpenFolders: () -> Unit,
+    onOpenVault: (() -> Unit)? = null,
+    onMoveSelectedToVault: () -> Unit = {},
     onOpenSubRoute: (SettingsSubRoute) -> Unit,
     libraryViewModel: LibraryViewModel,
     modifier: Modifier,
@@ -510,8 +565,8 @@ private fun DestinationScaffold(
                             }
                         },
                         actions = {
-                            IconButton(onClick = { libraryViewModel.selectAll(state.documents.map { it.id }) }) {
-                                Icon(Icons.Default.SelectAll, "Select all")
+                            IconButton(onClick = onMoveSelectedToVault) {
+                                Icon(Icons.Default.Lock, "Move selected to Vault")
                             }
                             IconButton(onClick = { libraryViewModel.bulkSetFavorite(true) }) {
                                 Icon(Icons.Default.Favorite, "Favorite selected")
@@ -581,7 +636,8 @@ private fun DestinationScaffold(
                     onToggleSelectionMode = libraryViewModel::toggleSelectionMode,
                     onToggleDocumentSelection = libraryViewModel::toggleDocumentSelection,
                     onOpenFolder = libraryViewModel::openFolder,
-                    onCreateFolderRequested = { createFolderDialogOpen = true }
+                    onCreateFolderRequested = { createFolderDialogOpen = true },
+                    onOpenVault = onOpenVault
                 ) { EmptyHomeScreen { onDestinationSelected(AppDestination.Scan) } }
                 AppDestination.Scan -> {
                     if (cameraViewModel != null && captureState != null && onCaptured != null && onDone != null) {

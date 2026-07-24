@@ -1,25 +1,27 @@
 package com.oscan.android
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.material3.Surface
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import com.oscan.android.engine.AndroidScannerEngine
-import com.oscan.android.ui.ScannerApp
-import com.oscan.android.ui.ScannerViewModel
-import com.oscan.android.ui.LibraryViewModel
-import com.oscan.android.ui.CameraViewModel
-import com.oscan.android.ui.theme.OScanTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.FragmentActivity
+import com.oscan.android.engine.AndroidScannerEngine
+import com.oscan.android.ui.CameraViewModel
+import com.oscan.android.ui.LibraryViewModel
+import com.oscan.android.ui.ScannerApp
+import com.oscan.android.ui.ScannerViewModel
+import com.oscan.android.ui.theme.OScanTheme
+import com.oscan.android.ui.vault.VaultViewModel
 import com.oscan.core.model.FilterType
 import kotlinx.coroutines.flow.first
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     private val scannerEngine by lazy { AndroidScannerEngine(applicationContext) }
     private val container by lazy { (application as OScanApplication).appContainer }
@@ -63,6 +65,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val vaultViewModel: VaultViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                VaultViewModel(
+                    vaultRepository = container.vaultRepository,
+                    sessionManager = container.vaultSessionManager,
+                    biometricManager = container.vaultBiometricManager,
+                    fileStore = container.fileStore,
+                    documentRepository = container.documentRepository
+                ) as T
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -77,9 +93,17 @@ class MainActivity : ComponentActivity() {
                         viewModel = viewModel,
                         cameraViewModel = cameraViewModel,
                         libraryViewModel = libraryViewModel,
+                        vaultViewModel = vaultViewModel,
                         fileStore = container.fileStore,
                         scannerEngine = scannerEngine,
-                        repository = container.documentRepository
+                        repository = container.documentRepository,
+                        onSecureWindowChanged = { secure ->
+                            if (secure) {
+                                window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                            } else {
+                                window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                            }
+                        }
                     )
                 }
             }

@@ -3,7 +3,6 @@ package com.oscan.android.ui
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -72,33 +71,36 @@ fun ScannerApp(
     viewModel: ScannerViewModel,
     cameraViewModel: CameraViewModel,
     libraryViewModel: LibraryViewModel,
+    vaultViewModel: com.oscan.android.ui.vault.VaultViewModel? = null,
     fileStore: DocumentFileStore,
     scannerEngine: com.oscan.android.engine.ScannerEngine? = null,
-    repository: com.oscan.android.data.repository.DocumentRepository? = null
+    repository: com.oscan.android.data.repository.DocumentRepository? = null,
+    onSecureWindowChanged: ((Boolean) -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var replacementPageId by rememberSaveable { mutableStateOf<String?>(null) }
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
     val captureState by viewModel.cameraCaptureState.collectAsState()
 
-    val multiplePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(50)) { uris ->
+    val multiplePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         viewModel.onImagesSelected(uris)
     }
-    val replacementPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
+    val replacementPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         replacementPageId?.let { viewModel.onReplacementSelected(it, uri) }
         replacementPageId = null
     }
     val launchMultiplePicker = {
-        multiplePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        multiplePicker.launch(arrayOf("image/*"))
     }
     val launchReplacement: (String) -> Unit = { pageId ->
         replacementPageId = pageId
-        replacementPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        replacementPicker.launch(arrayOf("image/*"))
     }
 
     if (uiState is ScannerUiState.Empty) {
         OScanAppShell(
             libraryViewModel = libraryViewModel,
+            vaultViewModel = vaultViewModel,
             cameraViewModel = cameraViewModel,
             captureState = captureState,
             onCaptured = viewModel::onCameraCaptured,
@@ -107,7 +109,8 @@ fun ScannerApp(
             scannerEngine = scannerEngine,
             repository = repository,
             fileStore = fileStore,
-            onImportImages = launchMultiplePicker
+            onImportImages = launchMultiplePicker,
+            onSecureWindowChanged = onSecureWindowChanged
         )
         return
     }

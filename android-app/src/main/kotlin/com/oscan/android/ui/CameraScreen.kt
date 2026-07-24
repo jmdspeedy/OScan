@@ -7,12 +7,19 @@ import android.content.res.Configuration
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -31,15 +38,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -53,6 +56,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +64,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
@@ -73,7 +78,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -81,6 +87,7 @@ import androidx.core.content.ContextCompat
 import java.io.File
 import kotlin.math.hypot
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private data class CameraChromeColors(
     val accent: Color,
@@ -414,71 +421,85 @@ private fun BoxScope.CameraControlDock(
     )
 }
 
+/**
+ * Mode selector button located on the bottom dock of the camera screen.
+ * Formatted as a fixed-length horizontal button positioned below the dock line,
+ * with a tiny "MODE" label placed outside on top of the button container.
+ * Tapping cycles through available [CameraScanMode] options with a bounce scale animation
+ * and a vertical slide text transition.
+ *
+ * @param chrome Color tokens for the camera UI chrome.
+ * @param compact True if the layout is in compact (landscape) mode.
+ * @param modifier Layout modifier applied to the outer Column container.
+ */
 @Composable
-private fun ScanModeDropdown(
+private fun ScanModeButton(
     chrome: CameraChromeColors,
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
-    var expanded by remember { mutableStateOf(false) }
     var selectedMode by remember { mutableStateOf(CameraScanMode.Document) }
+    val scope = rememberCoroutineScope()
+    val buttonScale = remember { Animatable(1f) }
 
-    Box(modifier = modifier) {
+    val buttonWidth = if (compact) 88.dp else 104.dp
+    val buttonHeight = if (compact) 28.dp else 34.dp
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "MODE",
+            color = chrome.onPanel.copy(alpha = 0.5f),
+            fontWeight = FontWeight.Bold,
+            fontSize = if (compact) 7.sp else 8.sp,
+            letterSpacing = 0.8.sp,
+            modifier = Modifier.padding(bottom = 2.dp)
+        )
         Surface(
-            onClick = { expanded = !expanded },
-            color = chrome.onPanel.copy(alpha = .06f),
-            shape = RoundedCornerShape(18.dp),
-            modifier = Modifier.semantics {
-                contentDescription = "Scan mode, ${selectedMode.label}"
-                stateDescription = if (expanded) "Expanded" else "Collapsed"
-            }
+            onClick = {
+                scope.launch {
+                    buttonScale.animateTo(0.92f, animationSpec = tween(70))
+                    buttonScale.animateTo(1f, animationSpec = tween(120))
+                }
+                val entries = CameraScanMode.entries
+                val nextIndex = (entries.indexOf(selectedMode) + 1) % entries.size
+                selectedMode = entries[nextIndex]
+            },
+            color = chrome.onPanel.copy(alpha = .08f),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .size(width = buttonWidth, height = buttonHeight)
+                .graphicsLayer {
+                    scaleX = buttonScale.value
+                    scaleY = buttonScale.value
+                }
+                .semantics {
+                    contentDescription = "Scan mode, ${selectedMode.label}"
+                }
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = if (compact) 6.dp else 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
             ) {
-                Text(
-                    selectedMode.label,
-                    color = chrome.accent,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = if (compact) 9.sp else 10.sp
-                )
-                Spacer(Modifier.size(4.dp))
-                Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = chrome.accent,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            offset = DpOffset(
-                x = 0.dp,
-                y = if (compact) (-104).dp else (-120).dp
-            ),
-            modifier = Modifier.widthIn(min = 112.dp, max = 124.dp)
-        ) {
-            CameraScanMode.entries.forEach { mode ->
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = mode.label,
-                            color = if (mode == selectedMode) chrome.accent else chrome.onPanel,
-                            fontWeight = if (mode == selectedMode) FontWeight.SemiBold else FontWeight.Normal,
-                            fontSize = if (compact) 9.sp else 10.sp
-                        )
+                AnimatedContent(
+                    targetState = selectedMode,
+                    transitionSpec = {
+                        (slideInVertically { height -> height / 2 } + fadeIn(tween(140))) togetherWith
+                            (slideOutVertically { height -> -height / 2 } + fadeOut(tween(140)))
                     },
-                    onClick = {
-                        selectedMode = mode
-                        expanded = false
-                    },
-                    contentPadding = PaddingValues(horizontal = 12.dp),
-                    modifier = Modifier.height(if (compact) 36.dp else 40.dp)
-                )
+                    label = "ScanModeTransition"
+                ) { targetMode ->
+                    Text(
+                        text = targetMode.label,
+                        color = chrome.accent,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = if (compact) 9.sp else 10.sp,
+                        letterSpacing = 0.5.sp,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }
@@ -551,14 +572,14 @@ private fun CaptureDock(
             }
         }
 
-        ScanModeDropdown(
+        ScanModeButton(
             chrome = chrome,
             compact = compact,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(
-                    end = if (compact) 12.dp else 16.dp,
-                    bottom = if (compact) 8.dp else 14.dp
+                    end = if (compact) 14.dp else 24.dp,
+                    bottom = if (compact) 6.dp else 10.dp
                 )
         )
 

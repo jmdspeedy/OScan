@@ -65,6 +65,7 @@ Output artifacts (boundary overlay, crop, magic filter, PDF) will be written to 
 
 - [Product design specification](docs/DESIGN.md)
 - [Feature backlog and status](docs/FEATURES.md)
+- [Vault feature specification](docs/VAULT_SPEC.md)
 - [Phase 1 testing guide](docs/testing_guide.md)
 - [Android Studio run and testing guide](docs/android_testing_guide.md)
 - [Phase 2 Android implementation instructions](docs/phase2_instructions.md)
