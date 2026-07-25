@@ -43,7 +43,8 @@ data class VaultUiState(
     val isMovingDocument: Boolean = false,
     val biometricSupported: Boolean = false,
     val biometricAvailable: Boolean = false,
-    val biometricEnabled: Boolean = false
+    val biometricEnabled: Boolean = false,
+    val showBiometricSetup: Boolean = false
 )
 
 class VaultViewModel(
@@ -142,7 +143,8 @@ class VaultViewModel(
                 sessionManager.unlockWithVmk(keys.vmk)
                 _uiState.value = _uiState.value.copy(
                     errorMessage = null,
-                    infoMessage = "Vault configured successfully"
+                    infoMessage = "Vault configured successfully",
+                    showBiometricSetup = true
                 )
             } catch (error: VaultRepositoryError.InvalidPasscode) {
                 _uiState.value = _uiState.value.copy(errorMessage = error.reason)
@@ -441,6 +443,7 @@ class VaultViewModel(
         }.onSuccess {
             _uiState.value = _uiState.value.copy(
                 biometricEnabled = true,
+                showBiometricSetup = false,
                 errorMessage = null,
                 infoMessage = "Fingerprint unlock enabled"
             )
@@ -451,6 +454,13 @@ class VaultViewModel(
                 errorMessage = error.message ?: "Fingerprint unlock could not be enabled"
             )
         }
+    }
+
+    fun skipBiometricSetup() {
+        _uiState.value = _uiState.value.copy(
+            showBiometricSetup = false,
+            errorMessage = null
+        )
     }
 
     fun createBiometricUnlockCipher(): Cipher? =

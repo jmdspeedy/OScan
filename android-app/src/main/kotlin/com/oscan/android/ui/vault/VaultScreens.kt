@@ -196,6 +196,7 @@ fun VaultFlow(
     val uiState by viewModel.uiState.collectAsState()
     var isViewingSettings by remember { mutableStateOf(false) }
     var moveOutDocument by remember { mutableStateOf<VaultDocument?>(null) }
+    var biometricPromptAttempted by remember { mutableStateOf(false) }
     val launchBiometricPrompt = rememberVaultBiometricPrompt(viewModel)
 
     LaunchedEffect(Unit) {
@@ -205,6 +206,20 @@ fun VaultFlow(
         if (uiState.sessionState !is VaultSessionState.Unlocked) {
             isViewingSettings = false
             moveOutDocument = null
+        } else {
+            biometricPromptAttempted = false
+        }
+    }
+    LaunchedEffect(uiState.sessionState, uiState.biometricEnabled) {
+        if (
+            uiState.sessionState is VaultSessionState.Locked &&
+            uiState.biometricEnabled &&
+            !biometricPromptAttempted
+        ) {
+            biometricPromptAttempted = true
+            viewModel.createBiometricUnlockCipher()?.let { cipher ->
+                launchBiometricPrompt(BiometricAction.UNLOCK, cipher)
+            }
         }
     }
     LaunchedEffect(
@@ -261,6 +276,17 @@ fun VaultFlow(
             val keys = (uiState.sessionState as VaultSessionState.Unlocked).keys
             val selectedDocument = uiState.selectedDocument
             when {
+                uiState.showBiometricSetup -> VaultBiometricSetupScreen(
+                    biometricAvailable = uiState.biometricAvailable,
+                    errorMessage = uiState.errorMessage,
+                    onEnable = {
+                        viewModel.createBiometricEnrollmentCipher()?.let { cipher ->
+                            launchBiometricPrompt(BiometricAction.ENROLL, cipher)
+                        }
+                    },
+                    onSkip = viewModel::skipBiometricSetup
+                )
+
                 isViewingSettings -> VaultSettingsScreen(
                     viewModel = viewModel,
                     onEnableBiometric = {
@@ -330,6 +356,90 @@ fun VaultFlow(
                 }
             }
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun VaultBiometricSetupScreen(
+    biometricAvailable: Boolean,
+    errorMessage: String?,
+    onEnable: () -> Unit,
+    onSkip: () -> Unit
+) {
+    BackHandler(onBack = onSkip)
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Set up fingerprint") })
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = MaterialTheme.shapes.extraLarge,
+                modifier = Modifier.size(88.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.Fingerprint,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+            Text(
+                "Unlock faster with your fingerprint",
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                if (biometricAvailable) {
+                    "Use your fingerprint as the primary way to unlock Vault. Your passcode will always remain available as a fallback."
+                } else {
+                    "A strong fingerprint is not enrolled on this device. You can enable fingerprint unlock later in Vault Settings."
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            if (errorMessage != null) {
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            Spacer(Modifier.height(32.dp))
+            Button(
+                onClick = onEnable,
+                enabled = biometricAvailable,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Fingerprint, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Enable fingerprint unlock")
+            }
+            Spacer(Modifier.height(8.dp))
+            TextButton(onClick = onSkip, modifier = Modifier.fillMaxWidth()) {
+                Text(if (biometricAvailable) "Not now" else "Continue")
+            }
+        }
     }
 }
 
