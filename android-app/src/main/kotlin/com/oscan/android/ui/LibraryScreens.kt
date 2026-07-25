@@ -1069,39 +1069,42 @@ fun DocumentDetailScreen(
                                         rotationDegrees = page.rotationDegrees
                                     )
                                     var pageMenuOpen by remember { mutableStateOf(false) }
-                                    IconButton(
-                                        onClick = { pageMenuOpen = true },
+                                    Box(
                                         modifier = Modifier
                                             .align(Alignment.TopEnd)
                                             .padding(4.dp)
-                                            .background(
+                                    ) {
+                                        IconButton(
+                                            onClick = { pageMenuOpen = true },
+                                            modifier = Modifier.background(
                                                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
                                                 shape = RoundedCornerShape(20.dp)
                                             )
-                                    ) {
-                                        Icon(Icons.Default.MoreVert, "Page options")
-                                    }
-                                    DropdownMenu(expanded = pageMenuOpen, onDismissRequest = { pageMenuOpen = false }) {
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.page_rotate_left)) },
-                                            leadingIcon = { Icon(Icons.Default.RotateLeft, null) },
-                                            onClick = { pageMenuOpen = false; onRotatePage(page.id, -90) }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.page_rotate_right)) },
-                                            leadingIcon = { Icon(Icons.Default.RotateRight, null) },
-                                            onClick = { pageMenuOpen = false; onRotatePage(page.id, 90) }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.page_recrop_treatment)) },
-                                            leadingIcon = { Icon(Icons.Default.Crop, null) },
-                                            onClick = { pageMenuOpen = false; onEditPage(page) }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.page_remove)) },
-                                            leadingIcon = { Icon(Icons.Default.Delete, null) },
-                                            onClick = { pageMenuOpen = false; pageToDelete = page }
-                                        )
+                                        ) {
+                                            Icon(Icons.Default.MoreVert, "Page options")
+                                        }
+                                        DropdownMenu(expanded = pageMenuOpen, onDismissRequest = { pageMenuOpen = false }) {
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(R.string.page_rotate_left)) },
+                                                leadingIcon = { Icon(Icons.Default.RotateLeft, null) },
+                                                onClick = { pageMenuOpen = false; onRotatePage(page.id, -90) }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(R.string.page_rotate_right)) },
+                                                leadingIcon = { Icon(Icons.Default.RotateRight, null) },
+                                                onClick = { pageMenuOpen = false; onRotatePage(page.id, 90) }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(R.string.page_recrop_treatment)) },
+                                                leadingIcon = { Icon(Icons.Default.Crop, null) },
+                                                onClick = { pageMenuOpen = false; onEditPage(page) }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(R.string.page_remove)) },
+                                                leadingIcon = { Icon(Icons.Default.Delete, null) },
+                                                onClick = { pageMenuOpen = false; pageToDelete = page }
+                                            )
+                                        }
                                     }
                                 }
                                 Row(

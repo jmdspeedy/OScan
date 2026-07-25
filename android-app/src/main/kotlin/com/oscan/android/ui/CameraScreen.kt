@@ -64,6 +64,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -541,22 +542,22 @@ private fun CaptureDock(
     Box(modifier.fillMaxWidth().height(dockHeight)) {
         Canvas(Modifier.matchParentSize()) {
             val center = size.width / 2f
-            val archHalfWidth = (if (compact) 46.dp else 54.dp).toPx()
-            val archShoulder = (if (compact) 36.dp else 44.dp).toPx()
-            val archHeight = (if (compact) 20.dp else 26.dp).toPx()
-            val top = (if (compact) 28.dp else 36.dp).toPx()
+            val shutterRadius = shutterSize.toPx() / 2f
+            val notchRadius = shutterRadius + (if (compact) 6.dp else 8.dp).toPx()
+            val top = shutterRadius
             val path = Path().apply {
                 moveTo(0f, top)
-                lineTo(center - archHalfWidth, top)
-                cubicTo(
-                    center - archShoulder, top,
-                    center - archShoulder, top - archHeight,
-                    center, top - archHeight
-                )
-                cubicTo(
-                    center + archShoulder, top - archHeight,
-                    center + archShoulder, top,
-                    center + archHalfWidth, top
+                lineTo(center - notchRadius, top)
+                arcTo(
+                    rect = Rect(
+                        left = center - notchRadius,
+                        top = top - notchRadius,
+                        right = center + notchRadius,
+                        bottom = top + notchRadius
+                    ),
+                    startAngleDegrees = 180f,
+                    sweepAngleDegrees = -180f,
+                    forceMoveTo = false
                 )
                 lineTo(size.width, top)
                 lineTo(size.width, size.height)

@@ -413,7 +413,6 @@ fun OScanAppShell(
             Row(Modifier.fillMaxSize()) {
                 OScanNavigationRail(destination, selectDestination)
                 DestinationScaffold(
-                    destination = destination,
                     pagerState = destinationPagerState,
                     state = state,
                     fileStore = fileStore,
@@ -445,7 +444,6 @@ fun OScanAppShell(
             }
         } else {
             DestinationScaffold(
-                destination = destination,
                 pagerState = destinationPagerState,
                 state = state,
                 fileStore = fileStore,
@@ -545,7 +543,6 @@ private fun OScanNavigationRail(selected: AppDestination, onDestinationSelected:
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun DestinationScaffold(
-    destination: AppDestination,
     pagerState: PagerState,
     state: LibraryUiState,
     fileStore: DocumentFileStore,
@@ -574,67 +571,6 @@ private fun DestinationScaffold(
 
     Scaffold(
         modifier = modifier,
-        topBar = {
-            if (destination != AppDestination.Scan && destination != AppDestination.Me) {
-                if (state.selectionMode && destination == AppDestination.Home) {
-                    TopAppBar(
-                        title = {
-                            Text(
-                            stringResource(R.string.selection_count, state.selectedDocumentIds.size),
-                                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-                            )
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = libraryViewModel::clearSelection) {
-                                Icon(Icons.Default.Close, "Cancel selection")
-                            }
-                        },
-                        actions = {
-                            IconButton(onClick = onMoveSelectedToVault) {
-                                Icon(Icons.Default.Lock, "Move selected to Vault")
-                            }
-                            IconButton(onClick = { libraryViewModel.bulkSetFavorite(true) }) {
-                                Icon(Icons.Default.Favorite, stringResource(R.string.favorite_selected))
-                            }
-                            IconButton(onClick = { bulkMoveDialogOpen = true }) {
-                                Icon(Icons.AutoMirrored.Filled.DriveFileMove, "Move selected")
-                            }
-                            IconButton(onClick = { bulkTrashConfirmOpen = true }) {
-                                Icon(Icons.Default.Delete, "Trash selected")
-                            }
-                        }
-                    )
-                } else {
-                    TopAppBar(
-                        title = { Text(if (destination == AppDestination.Home) "OScan" else destination.label()) },
-                        actions = {
-                            if (destination == AppDestination.Home) {
-                                IconButton(onClick = onOpenFolders) {
-                                    Icon(Icons.Default.Folder, "Folders")
-                                }
-                                IconButton(onClick = libraryViewModel::openTrash) {
-                                    Icon(Icons.Default.Delete, "Trash")
-                                }
-                                if (state.documents.isNotEmpty()) {
-                                    Box {
-                                        IconButton(onClick = { sortMenuOpen = true }) { Icon(Icons.AutoMirrored.Filled.Sort, "Sort documents") }
-                                        DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { sortMenuOpen = false }) {
-                                            DocumentSort.entries.forEach { sort ->
-                                                DropdownMenuItem(
-                                                    text = { Text(sort.label()) },
-                                                    onClick = { sortMenuOpen = false; libraryViewModel.setSort(sort) },
-                                                    trailingIcon = { if (sort == state.sort) Text("✓") }
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    )
-                }
-            }
-        },
         bottomBar = bottomBar,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
@@ -648,7 +584,26 @@ private fun DestinationScaffold(
             val pageDestination = AppDestination.entries[pageIndex]
             val cameraIsSettled = pagerState.settledPage == AppDestination.Scan.ordinal &&
                 !pagerState.isScrollInProgress
-            Box(Modifier.fillMaxSize()) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
+                    DestinationTopAppBar(
+                        destination = pageDestination,
+                        state = state,
+                        sortMenuOpen = sortMenuOpen,
+                        onSortMenuOpenChange = { sortMenuOpen = it },
+                        onOpenFolders = onOpenFolders,
+                        onOpenTrash = libraryViewModel::openTrash,
+                        onClearSelection = libraryViewModel::clearSelection,
+                        onMoveSelectedToVault = onMoveSelectedToVault,
+                        onFavoriteSelected = { libraryViewModel.bulkSetFavorite(true) },
+                        onMoveSelected = { bulkMoveDialogOpen = true },
+                        onTrashSelected = { bulkTrashConfirmOpen = true },
+                        onSortSelected = libraryViewModel::setSort
+                    )
+                }
+            ) { pagePadding ->
+            Box(Modifier.fillMaxSize().padding(pagePadding)) {
             when (pageDestination) {
                 AppDestination.Home -> HomeLibraryScreen(
                     state = state,
@@ -705,6 +660,7 @@ private fun DestinationScaffold(
                 )
             }
             }
+            }
         }
     }
 
@@ -747,6 +703,92 @@ private fun DestinationScaffold(
             }
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DestinationTopAppBar(
+    destination: AppDestination,
+    state: LibraryUiState,
+    sortMenuOpen: Boolean,
+    onSortMenuOpenChange: (Boolean) -> Unit,
+    onOpenFolders: () -> Unit,
+    onOpenTrash: () -> Unit,
+    onClearSelection: () -> Unit,
+    onMoveSelectedToVault: () -> Unit,
+    onFavoriteSelected: () -> Unit,
+    onMoveSelected: () -> Unit,
+    onTrashSelected: () -> Unit,
+    onSortSelected: (DocumentSort) -> Unit
+) {
+    if (destination == AppDestination.Scan || destination == AppDestination.Me) return
+
+    if (state.selectionMode && destination == AppDestination.Home) {
+        TopAppBar(
+            title = {
+                Text(
+                    stringResource(R.string.selection_count, state.selectedDocumentIds.size),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                )
+            },
+            navigationIcon = {
+                IconButton(onClick = onClearSelection) {
+                    Icon(Icons.Default.Close, "Cancel selection")
+                }
+            },
+            actions = {
+                IconButton(onClick = onMoveSelectedToVault) {
+                    Icon(Icons.Default.Lock, "Move selected to Vault")
+                }
+                IconButton(onClick = onFavoriteSelected) {
+                    Icon(Icons.Default.Favorite, stringResource(R.string.favorite_selected))
+                }
+                IconButton(onClick = onMoveSelected) {
+                    Icon(Icons.AutoMirrored.Filled.DriveFileMove, "Move selected")
+                }
+                IconButton(onClick = onTrashSelected) {
+                    Icon(Icons.Default.Delete, "Trash selected")
+                }
+            }
+        )
+        return
+    }
+
+    TopAppBar(
+        title = { Text(if (destination == AppDestination.Home) "OScan" else destination.label()) },
+        actions = {
+            if (destination == AppDestination.Home) {
+                IconButton(onClick = onOpenFolders) {
+                    Icon(Icons.Default.Folder, "Folders")
+                }
+                IconButton(onClick = onOpenTrash) {
+                    Icon(Icons.Default.Delete, "Trash")
+                }
+                if (state.documents.isNotEmpty()) {
+                    Box {
+                        IconButton(onClick = { onSortMenuOpenChange(true) }) {
+                            Icon(Icons.AutoMirrored.Filled.Sort, "Sort documents")
+                        }
+                        DropdownMenu(
+                            expanded = sortMenuOpen,
+                            onDismissRequest = { onSortMenuOpenChange(false) }
+                        ) {
+                            DocumentSort.entries.forEach { sort ->
+                                DropdownMenuItem(
+                                    text = { Text(sort.label()) },
+                                    onClick = {
+                                        onSortMenuOpenChange(false)
+                                        onSortSelected(sort)
+                                    },
+                                    trailingIcon = { if (sort == state.sort) Text("✓") }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    )
 }
 
 private enum class SettingsSubRoute {

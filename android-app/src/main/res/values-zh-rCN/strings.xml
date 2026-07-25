@@ -289,6 +289,7 @@
     <string name="scanner_discard_body">已接受的页面将从此设备中移除。</string>
     <string name="scanner_reset_edges">重置边缘</string>
     <string name="scanner_accepted_count">已接受 %1$d 页</string>
+    <string name="scanner_accept_page">接受页面</string>
     <string name="scanner_page_number">第 %1$d 页</string>
     <string name="scanner_save_summary">将 %1$d 页保存为一个本地文档。</string>
     <string name="scanner_document_name">文档名称</string>

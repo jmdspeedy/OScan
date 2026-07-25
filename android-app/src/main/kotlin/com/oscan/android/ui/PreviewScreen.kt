@@ -45,7 +45,7 @@ fun PreviewScreen(
     onFilterSelected: (FilterType) -> Unit,
     @Suppress("UNUSED_PARAMETER") onBackToCrop: (() -> Unit)? = null,
     onExportPdfRequested: () -> Unit,
-    primaryActionLabel: String = "Accept page"
+    primaryActionLabel: String? = null
 ) {
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize().background(OScanTheme.colors.workspace)
@@ -74,7 +74,7 @@ fun PreviewScreen(
                                 selected = selectedFilter == filter,
                                 onClick = { onFilterSelected(filter) },
                                 shape = SegmentedButtonDefaults.itemShape(index, FilterType.entries.size),
-                                label = { Text(filter.displayName) }
+                                label = { Text(filter.displayName()) }
                             )
                         }
                     }
@@ -83,7 +83,7 @@ fun PreviewScreen(
                         horizontalArrangement = Arrangement.End
                     ) {
                         Button(onClick = onExportPdfRequested) {
-                            Text(primaryActionLabel)
+                            Text(primaryActionLabel ?: stringResource(R.string.scanner_accept_page))
                         }
                     }
                 }

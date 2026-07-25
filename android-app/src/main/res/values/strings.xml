@@ -293,6 +293,7 @@
     <string name="scanner_discard_body">Accepted pages will be removed from this device.</string>
     <string name="scanner_reset_edges">Reset edges</string>
     <string name="scanner_accepted_count">%1$d accepted</string>
+    <string name="scanner_accept_page">Accept page</string>
     <string name="scanner_page_number">Page %1$d</string>
     <string name="scanner_save_summary">Save %1$d pages as one local document.</string>
     <string name="scanner_document_name">Document name</string>

@@ -289,6 +289,7 @@
     <string name="scanner_discard_body">確定済みのページがこの端末から削除されます。</string>
     <string name="scanner_reset_edges">輪郭をリセット</string>
     <string name="scanner_accepted_count">%1$dページ確定済み</string>
+    <string name="scanner_accept_page">ページを確定</string>
     <string name="scanner_page_number">%1$dページ目</string>
     <string name="scanner_save_summary">%1$dページを1つの書類として端末に保存します。</string>
     <string name="scanner_document_name">書類名</string>
