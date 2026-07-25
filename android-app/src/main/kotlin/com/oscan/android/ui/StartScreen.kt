@@ -7,7 +7,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.oscan.android.R
 
 @Composable
 fun StartScreen(
@@ -22,7 +24,7 @@ fun StartScreen(
     ) {
         Icon(
             imageVector = Icons.Default.AddPhotoAlternate,
-            contentDescription = "Document Scanner",
+            contentDescription = stringResource(R.string.app_name),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(96.dp)
         )
@@ -30,7 +32,7 @@ fun StartScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "OScan Document Scanner",
+            text = stringResource(R.string.start_welcome_title),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -38,7 +40,7 @@ fun StartScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Scan documents offline with auto corner detection, magic filter, and PDF export.",
+            text = stringResource(R.string.start_welcome_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -51,7 +53,7 @@ fun StartScreen(
                 .fillMaxWidth(0.8f)
                 .height(50.dp)
         ) {
-            Text("Choose Image")
+            Text(stringResource(R.string.start_action_import))
         }
     }
 }

@@ -12,20 +12,20 @@ import kotlinx.coroutines.flow.map
 enum class DocumentSort { MODIFIED_DESC, MODIFIED_ASC, CREATED_DESC, CREATED_ASC, NAME_ASC, NAME_DESC }
 enum class LibraryPresentation { GRID, LIST }
 enum class ThemeChoice { SYSTEM, LIGHT, DARK }
-enum class AccentTheme(val label: String) {
-    TEAL("OScan Teal"),
-    MINT("Fresh Mint"),
-    BLUE("Ocean Blue"),
-    INDIGO("Lavender Indigo"),
-    PURPLE("Royal Purple"),
-    PINK("Rose Pink"),
-    CRIMSON("Coral Crimson"),
-    AMBER("Sunset Amber"),
-    LIME("Olive Lime"),
-    SLATE("Charcoal Slate")
+enum class AccentTheme {
+    TEAL,
+    MINT,
+    BLUE,
+    INDIGO,
+    PURPLE,
+    PINK,
+    CRIMSON,
+    AMBER,
+    LIME,
+    SLATE
 }
-enum class PdfPageSize(val label: String) { A4("A4 (210 × 297 mm)"), LETTER("US Letter (8.5 × 11 in)"), MATCH_PAGE("Match original page") }
-enum class JpegQuality(val label: String, val qualityInt: Int) { HIGH("High (90%)", 90), MEDIUM("Medium (80%)", 80), LOW("Low (60%)", 60) }
+enum class PdfPageSize { A4, LETTER, MATCH_PAGE }
+enum class JpegQuality(val qualityInt: Int) { HIGH(90), MEDIUM(80), LOW(60) }
 enum class CameraLensPreference { BACK, FRONT }
 
 data class UserPreferences(

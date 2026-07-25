@@ -1,5 +1,7 @@
 package com.oscan.android.ui
 
+import com.oscan.android.R
+
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -52,6 +54,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -72,6 +75,7 @@ fun ScannerApp(
     viewModel: ScannerViewModel,
     cameraViewModel: CameraViewModel,
     libraryViewModel: LibraryViewModel,
+    appLocaleController: com.oscan.android.localization.AppLocaleController? = null,
     vaultViewModel: com.oscan.android.ui.vault.VaultViewModel? = null,
     fileStore: DocumentFileStore,
     scannerEngine: com.oscan.android.engine.ScannerEngine? = null,
@@ -101,6 +105,7 @@ fun ScannerApp(
     if (uiState is ScannerUiState.Empty) {
         OScanAppShell(
             libraryViewModel = libraryViewModel,
+            appLocaleController = appLocaleController,
             vaultViewModel = vaultViewModel,
             cameraViewModel = cameraViewModel,
             captureState = captureState,
@@ -139,22 +144,22 @@ fun ScannerApp(
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            title = { Text("Discard this scan?") },
-            text = { Text("Accepted pages will be removed from this device.") },
+            title = { Text(stringResource(R.string.scanner_discard_title)) },
+            text = { Text(stringResource(R.string.scanner_discard_body)) },
             confirmButton = {
-                TextButton(onClick = { showDiscardDialog = false; viewModel.discardSession() }) { Text("Discard") }
+                TextButton(onClick = { showDiscardDialog = false; viewModel.discardSession() }) { Text(stringResource(R.string.action_discard)) }
             },
-            dismissButton = { TextButton(onClick = { showDiscardDialog = false }) { Text("Keep editing") } }
+            dismissButton = { TextButton(onClick = { showDiscardDialog = false }) { Text(stringResource(R.string.action_keep_editing)) } }
         )
     }
 
-    val title = when (state) {
-        is ScannerUiState.CropReady -> "Adjust edges"
-        is ScannerUiState.PreviewReady -> "Enhance page"
-        is ScannerUiState.Review -> "Review pages"
-        is ScannerUiState.SaveDocument -> "Save document"
-        is ScannerUiState.Saved -> "Document saved"
-        else -> "OScan"
+            val title = when (state) {
+                is ScannerUiState.CropReady -> stringResource(R.string.scanner_adjust_edges)
+                is ScannerUiState.PreviewReady -> stringResource(R.string.scanner_enhance_page)
+                is ScannerUiState.Review -> stringResource(R.string.scanner_review_pages)
+                is ScannerUiState.SaveDocument -> stringResource(R.string.scanner_save_document)
+                is ScannerUiState.Saved -> stringResource(R.string.scanner_document_saved)
+                else -> stringResource(R.string.app_name)
     }
 
     Scaffold(
@@ -172,18 +177,18 @@ fun ScannerApp(
                                 is ScannerUiState.CropReady -> if (hasAcceptedPages) viewModel.showReview() else requestDiscard()
                                 else -> requestDiscard()
                             }
-                        }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                        }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back_button)) }
                     }
                 },
                 actions = {
                     if (state is ScannerUiState.CropReady) {
                         IconButton(onClick = viewModel::onResetCorners) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Reset edges")
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.scanner_reset_edges))
                         }
                         TextButton(
                             onClick = viewModel::onCropConfirmed,
                             enabled = state.isValidGeometry
-                        ) { Text("Done", fontWeight = FontWeight.SemiBold) }
+                        ) { Text(stringResource(R.string.action_done), fontWeight = FontWeight.SemiBold) }
                     }
                 }
             )
@@ -191,14 +196,15 @@ fun ScannerApp(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             val announcement = when (state) {
-                ScannerUiState.LoadingSession -> "Restoring scan"
-                is ScannerUiState.CropReady -> "Page ready. Adjust the crop boundary."
-                is ScannerUiState.Processing -> state.message
-                is ScannerUiState.PreviewReady -> "Processing complete. Choose a treatment."
-                is ScannerUiState.Review -> "Review ready. ${state.session.acceptedPages.size} pages accepted."
-                is ScannerUiState.SaveDocument -> state.errorMessage ?: if (state.isSaving) "Saving document" else "Ready to save document"
-                is ScannerUiState.Saved -> "Document saved locally"
-                is ScannerUiState.Error -> state.message
+                ScannerUiState.LoadingSession -> stringResource(R.string.scanner_restoring)
+                is ScannerUiState.CropReady -> stringResource(R.string.scanner_crop_ready)
+                is ScannerUiState.Processing -> localizedRuntimeMessage(state.message)
+                is ScannerUiState.PreviewReady -> stringResource(R.string.scanner_processing_complete)
+                is ScannerUiState.Review -> stringResource(R.string.scanner_review_ready, state.session.acceptedPages.size)
+                is ScannerUiState.SaveDocument -> state.errorMessage?.let { localizedRuntimeMessage(it) }
+                    ?: if (state.isSaving) stringResource(R.string.scan_saving_document) else stringResource(R.string.scan_ready_save)
+                is ScannerUiState.Saved -> stringResource(R.string.scanner_saved_announcement)
+                is ScannerUiState.Error -> localizedRuntimeMessage(state.message)
                 is ScannerUiState.Importing -> if (state.completed == state.total) "Import complete" else ""
                 ScannerUiState.Empty -> ""
             }
@@ -214,7 +220,7 @@ fun ScannerApp(
                 ScannerUiState.Empty -> Unit
                 ScannerUiState.LoadingSession -> ProgressState("Restoring your scan…")
                 is ScannerUiState.Importing -> ProgressState("Importing images ${state.completed} of ${state.total}…")
-                is ScannerUiState.Processing -> ProgressState(state.message)
+                is ScannerUiState.Processing -> ProgressState(localizedRuntimeMessage(state.message))
                 is ScannerUiState.CropReady -> Column(Modifier.fillMaxSize()) {
                     SessionPositionHeader(state.session, state.page.position, state.previewBitmap)
                     CropScreen(
@@ -259,7 +265,7 @@ fun ScannerApp(
                     },
                     onDone = viewModel::startAnother
                 )
-                is ScannerUiState.Error -> ErrorState(state.message, viewModel::dismissError)
+                is ScannerUiState.Error -> ErrorState(localizedRuntimeMessage(state.message), viewModel::dismissError)
             }
         }
     }
@@ -275,8 +281,8 @@ private fun SessionPositionHeader(session: ScanSession, position: Int, thumbnail
             Image(thumbnail.asImageBitmap(), contentDescription = null, modifier = Modifier.size(40.dp))
             Spacer(Modifier.width(12.dp))
             Column {
-                Text("Page ${position + 1} of ${session.pages.size}", fontWeight = FontWeight.SemiBold)
-                Text("${session.acceptedPages.size} accepted", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.page_position_format, position + 1, session.pages.size), fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.scanner_accepted_count, session.acceptedPages.size), style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -296,7 +302,7 @@ private fun SessionReviewScreen(
     val pending = state.pages.any { it.status == SessionPageStatus.CROP_REVIEW || it.status == SessionPageStatus.TREATMENT_REVIEW }
     Column(Modifier.fillMaxSize()) {
         Text(
-            "${state.session.acceptedPages.size} of ${state.pages.size} pages accepted",
+            stringResource(R.string.scanner_review_count, state.session.acceptedPages.size, state.pages.size),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(16.dp)
         )
@@ -315,9 +321,9 @@ private fun SessionReviewScreen(
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Page ${page.position + 1}", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.scanner_page_number, page.position + 1), fontWeight = FontWeight.SemiBold)
                         Text(page.status.readableLabel(), style = MaterialTheme.typography.bodySmall)
-                        page.message?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                        page.message?.let { Text(localizedRuntimeMessage(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             when (page.status) {
                                 SessionPageStatus.ACCEPTED, SessionPageStatus.CROP_REVIEW, SessionPageStatus.TREATMENT_REVIEW ->
@@ -327,7 +333,7 @@ private fun SessionReviewScreen(
                                 }) { Text(if (page.canRetryDirectly) "Try again" else "Choose again") }
                                 else -> Unit
                             }
-                            TextButton(onClick = { onRemove(page.id) }) { Text("Remove") }
+                            TextButton(onClick = { onRemove(page.id) }) { Text(stringResource(R.string.action_remove)) }
                         }
                     }
                     Column {
@@ -346,8 +352,8 @@ private fun SessionReviewScreen(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalAlignment = Alignment.End
         ) {
-            OutlinedButton(onClick = onAdd) { Text("Add pages") }
-            Button(onClick = onFinish, enabled = state.session.acceptedPages.isNotEmpty() && !pending) { Text("Finish") }
+            OutlinedButton(onClick = onAdd) { Text(stringResource(R.string.action_add_pages)) }
+            Button(onClick = onFinish, enabled = state.session.acceptedPages.isNotEmpty() && !pending) { Text(stringResource(R.string.action_finish)) }
         }
     }
 }
@@ -365,11 +371,11 @@ private fun SaveDocumentScreen(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Save ${state.session.acceptedPages.size} pages as one local document.")
+        Text(stringResource(R.string.scanner_save_summary, state.session.acceptedPages.size))
         TextField(
             value = state.session.documentName,
             onValueChange = onNameChanged,
-            label = { Text("Document name") },
+            label = { Text(stringResource(R.string.scanner_document_name)) },
             enabled = !state.isSaving,
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -377,11 +383,11 @@ private fun SaveDocumentScreen(
         if (state.folders.isNotEmpty()) {
             Box {
                 OutlinedButton(onClick = { folderMenuOpen = true }, enabled = !state.isSaving) {
-                    Text(selectedFolder?.name ?: "No folder")
+                    Text(selectedFolder?.name ?: stringResource(R.string.scanner_no_folder))
                 }
                 androidx.compose.material3.DropdownMenu(expanded = folderMenuOpen, onDismissRequest = { folderMenuOpen = false }) {
                     androidx.compose.material3.DropdownMenuItem(
-                        text = { Text("No folder") },
+                        text = { Text(stringResource(R.string.scanner_no_folder)) },
                         onClick = { folderMenuOpen = false; onFolderSelected(null) }
                     )
                     state.folders.forEach { folder ->
@@ -393,7 +399,7 @@ private fun SaveDocumentScreen(
                 }
             }
         }
-        state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        state.errorMessage?.let { Text(localizedRuntimeMessage(it), color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(8.dp))
         Button(
             onClick = onSave,
@@ -422,15 +428,15 @@ private fun SavedDocumentScreen(
     ) {
         Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(64.dp))
         Spacer(Modifier.height(16.dp))
-        Text("Saved locally", style = MaterialTheme.typography.titleLarge)
-        Text("${state.name} • ${state.pageCount} ${if (state.pageCount == 1) "page" else "pages"}")
+        Text(stringResource(R.string.scanner_saved_locally), style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.scanner_saved_summary, state.name, state.pageCount))
         Spacer(Modifier.height(24.dp))
         Button(onClick = { onOpenDocument(state.documentId) }, modifier = Modifier.fillMaxWidth(0.8f)) {
-            Text("Open document")
+            Text(stringResource(R.string.action_open_document))
         }
         Spacer(Modifier.height(12.dp))
         OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth(0.8f)) {
-            Text("Done")
+            Text(stringResource(R.string.action_done))
         }
     }
 }
@@ -451,11 +457,11 @@ private fun ErrorState(message: String, onDismiss: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Something went wrong", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.error)
+        Text(stringResource(R.string.error_title), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.error)
         Spacer(Modifier.height(8.dp))
         Text(message)
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onDismiss) { Text("OK") }
+        Button(onClick = onDismiss) { Text(stringResource(R.string.action_ok)) }
     }
 }
 
@@ -469,11 +475,12 @@ private fun ScannerUiState.sessionOrNull(): ScanSession? = when (this) {
     else -> null
 }
 
+@Composable
 private fun SessionPageStatus.readableLabel(): String = when (this) {
-    SessionPageStatus.ACCEPTED -> "Accepted"
-    SessionPageStatus.CROP_REVIEW, SessionPageStatus.TREATMENT_REVIEW -> "Needs review"
-    SessionPageStatus.FAILED -> "Needs attention"
-    SessionPageStatus.IMPORTING -> "Importing"
-    SessionPageStatus.DETECTING -> "Finding edges"
-    SessionPageStatus.PROCESSING -> "Processing"
+    SessionPageStatus.ACCEPTED -> stringResource(R.string.status_accepted)
+    SessionPageStatus.CROP_REVIEW, SessionPageStatus.TREATMENT_REVIEW -> stringResource(R.string.status_needs_review)
+    SessionPageStatus.FAILED -> stringResource(R.string.status_needs_attention)
+    SessionPageStatus.IMPORTING -> stringResource(R.string.status_importing)
+    SessionPageStatus.DETECTING -> stringResource(R.string.status_finding_edges)
+    SessionPageStatus.PROCESSING -> stringResource(R.string.status_processing)
 }

@@ -1,0 +1,582 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Application Name -->
+    <string name="app_name" translatable="false">OScan</string>
+
+    <!-- General / Common UI -->
+    <string name="action_cancel">キャンセル</string>
+    <string name="action_confirm">確認</string>
+    <string name="action_save">保存</string>
+    <string name="action_delete">削除</string>
+    <string name="action_done">完了</string>
+    <string name="action_back">戻る</string>
+    <string name="action_close">閉じる</string>
+    <string name="action_retry">再試行</string>
+    <string name="action_share">共有</string>
+    <string name="action_export">エクスポート</string>
+    <string name="action_edit">編集</string>
+    <string name="action_rename">名前を変更</string>
+    <string name="action_move">移動</string>
+    <string name="action_restore">元に戻す</string>
+    <string name="cd_back_button">前の画面に戻る</string>
+    <string name="cd_close_button">画面を閉じる</string>
+    <string name="cd_more_options">その他のオプション</string>
+
+    <!-- Navigation items -->
+    <string name="nav_library">ライブラリ</string>
+    <string name="nav_camera">スキャン</string>
+    <string name="nav_me">マイページ</string>
+
+    <!-- Language Settings -->
+    <string name="settings_language_title">言語</string>
+    <string name="settings_language_heading">アプリの言語</string>
+    <string name="settings_language_subtitle">OScanで使用する言語を選択します。</string>
+    <string name="language_system">システムデフォルト</string>
+    <string name="language_system_current">現在: %1$s</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_simplified_chinese" translatable="false">简体中文</string>
+    <string name="language_japanese" translatable="false">日本語</string>
+
+    <!-- Me / Settings Screen Groups & Items -->
+    <string name="settings_section_capture">スキャンとキャプチャ</string>
+    <string name="settings_section_appearance">外観</string>
+    <string name="settings_section_storage">ストレージ</string>
+    <string name="settings_section_security">セキュリティと金庫</string>
+    <string name="settings_section_about">アプリについて</string>
+
+    <!-- Settings items -->
+    <string name="settings_default_treatment">デフォルトのフィルター</string>
+    <string name="settings_default_page_size">デフォルトのPDFページサイズ</string>
+    <string name="settings_jpeg_quality">JPEGエクスポート品質</string>
+    <string name="settings_grid_lines">カメラグリッド線</string>
+    <string name="settings_grid_lines_desc">カメラ画面に構図用グリッドを表示</string>
+    <string name="settings_auto_capture">自動キャプチャ</string>
+    <string name="settings_auto_capture_desc">書類が静止した時に自動で撮影</string>
+    <string name="settings_edge_guidance">エッジ検出ガイド</string>
+    <string name="settings_edge_guidance_desc">書類の輪郭を視覚的にガイド</string>
+
+    <string name="settings_theme">テーマ</string>
+    <string name="settings_accent">アクセントカラー</string>
+    <string name="settings_theme_system">システムデフォルト</string>
+    <string name="settings_theme_light">ライト</string>
+    <string name="settings_theme_dark">ダーク</string>
+
+    <string name="settings_trash_retention">ゴミ箱の自動削除</string>
+    <string name="settings_clear_cache">画像キャッシュを消去</string>
+    <string name="settings_clear_cache_desc">一時的な処理ファイルを解放</string>
+    <string name="settings_cache_cleared">キャッシュを消去しました</string>
+
+    <string name="settings_vault_setup">暗号化金庫の設定</string>
+    <string name="settings_vault_status_enabled">保護中</string>
+    <string name="settings_vault_status_disabled">未設定</string>
+    <string name="settings_biometrics">生体認証による解除</string>
+    <string name="settings_biometrics_desc">指紋や顔認証で金庫を解除</string>
+
+    <string name="settings_version">バージョン</string>
+    <string name="settings_licenses">オープンソースライセンス</string>
+    <string name="settings_privacy_policy">プライバシーポリシー</string>
+
+    <!-- Treatments / Filters -->
+    <string name="treatment_magic">マジックカラー</string>
+    <string name="treatment_color">カラー</string>
+    <string name="treatment_grayscale">グレースケール</string>
+    <string name="treatment_bw">白黒</string>
+    <string name="treatment_photo">オリジナル</string>
+
+    <!-- PDF Page Sizes -->
+    <string name="page_size_auto">自動（画像サイズに合わせる）</string>
+    <string name="page_size_a4" translatable="false">A4</string>
+    <string name="page_size_us_letter" translatable="false">US Letter</string>
+    <string name="page_size_legal" translatable="false">Legal</string>
+
+    <!-- JPEG Quality -->
+    <string name="jpeg_quality_low">低 (60%)</string>
+    <string name="jpeg_quality_medium">中 (80%)</string>
+    <string name="jpeg_quality_high">高 (95%)</string>
+
+    <!-- Accent Themes -->
+    <string name="accent_teal">ティール</string>
+    <string name="accent_mint">ミント</string>
+    <string name="accent_blue">オーシャンブルー</string>
+    <string name="accent_indigo">インディゴ</string>
+    <string name="accent_purple">パープル</string>
+    <string name="accent_pink">ローズピンク</string>
+    <string name="accent_crimson">クリムゾン</string>
+    <string name="accent_amber">アンバー</string>
+    <string name="accent_lime">オリーブライム</string>
+    <string name="accent_slate">スレート</string>
+
+    <!-- Trash Retention options -->
+    <string name="retention_never">自動削除しない</string>
+    <string name="retention_7_days">7日後</string>
+    <string name="retention_30_days">30日後</string>
+    <string name="retention_90_days">90日後</string>
+
+    <!-- Start / Welcome Screen -->
+    <string name="start_welcome_title">OScanへようこそ</string>
+    <string name="start_welcome_subtitle">高速でプライベートなローカルドキュメントスキャナー。</string>
+    <string name="start_action_scan">スキャンを開始</string>
+    <string name="start_action_import">ファイルをインポート</string>
+
+    <!-- Library Screen -->
+    <string name="library_title">ライブラリ</string>
+    <string name="library_search_placeholder">ドキュメントやフォルダーを検索…</string>
+    <string name="library_tab_all">すべて</string>
+    <string name="library_tab_documents">ドキュメント</string>
+    <string name="library_tab_folders">フォルダー</string>
+    <string name="library_tab_trash">ゴミ箱</string>
+    <string name="library_empty_title">ドキュメントがありません</string>
+    <string name="library_empty_subtitle">最初のドキュメントをスキャンするかファイルをインポートしてください。</string>
+    <string name="library_trash_empty">ゴミ箱は空です</string>
+
+    <string name="library_sort_by">並べ替え</string>
+    <string name="library_sort_date_desc">更新日時（新しい順）</string>
+    <string name="library_sort_date_asc">更新日時（古い順）</string>
+    <string name="library_sort_name_asc">名前（昇順）</string>
+    <string name="library_sort_name_desc">名前（降順）</string>
+    <string name="library_sort_pages_desc">ページ数</string>
+
+    <string name="library_action_new_folder">新規フォルダー</string>
+    <string name="library_action_empty_trash">ゴミ箱を空にする</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_new_folder_title">新規フォルダー作成</string>
+    <string name="dialog_folder_name_hint">フォルダー名</string>
+    <string name="dialog_rename_title">名前の変更</string>
+    <string name="dialog_rename_hint">名前</string>
+    <string name="dialog_delete_doc_title">ドキュメントの削除</string>
+    <string name="dialog_delete_doc_msg">「%1$s」をゴミ箱に移動しますか？</string>
+    <string name="dialog_delete_folder_title">フォルダーの削除</string>
+    <string name="dialog_delete_folder_msg">フォルダー「%1$s」と中身をすべてゴミ箱に移動しますか？</string>
+    <string name="dialog_empty_trash_title">ゴミ箱を空にする</string>
+    <string name="dialog_empty_trash_msg">ゴミ箱内のすべてのアイテムを永久に削除しますか？この操作は取り消せません。</string>
+
+    <!-- Document Page position -->
+    <string name="page_position_format">%1$d / %2$d ページ</string>
+
+    <!-- Camera Screen & Guidance -->
+    <string name="camera_guidance_steady">静止してください</string>
+    <string name="camera_guidance_position">枠内に書類を合わせてください</string>
+    <string name="camera_guidance_ready">準備完了</string>
+    <string name="camera_guidance_processing">ページを処理中…</string>
+    <string name="camera_mode_single">単一</string>
+    <string name="camera_mode_batch">連続</string>
+    <string name="camera_flash_auto">フラッシュ 自動</string>
+    <string name="camera_flash_on">フラッシュ オン</string>
+    <string name="camera_flash_off">フラッシュ オフ</string>
+    <string name="camera_permission_title">カメラの権限が必要です</string>
+    <string name="camera_permission_msg">書類をスキャンするにはカメラへのアクセス権限が必要です。</string>
+    <string name="camera_permission_grant">権限を許可</string>
+    <string name="cd_shutter">写真を撮影</string>
+    <string name="cd_toggle_flash">フラッシュを切り替え</string>
+    <string name="cd_switch_mode">スキャンモードを切り替え</string>
+
+    <!-- Crop Screen -->
+    <string name="crop_title">エッジ調整・トリミング</string>
+    <string name="crop_rotate_left">左に回転</string>
+    <string name="crop_rotate_right">右に回転</string>
+    <string name="crop_reset">リセット</string>
+    <string name="cd_crop_handle">頂点を調整</string>
+
+    <!-- Preview / Editor Screen -->
+    <string name="preview_title">スキャン確認</string>
+    <string name="preview_retake">撮り直し</string>
+    <string name="preview_keep_scanning">ページ追加</string>
+    <string name="preview_save_document">ドキュメントを保存</string>
+    <string name="editor_title">ドキュメントを編集</string>
+    <string name="editor_reorder">ページ順の変更</string>
+    <string name="editor_apply_all">すべてのページにフィルターを適用</string>
+
+    <!-- Export Screen -->
+    <string name="export_success_title">エクスポート完了</string>
+    <string name="export_saved_to">保存先: %1$s</string>
+    <string name="export_action_open">ファイルを開く</string>
+    <string name="export_action_share">ファイルを共有</string>
+
+    <!-- Vault Screens -->
+    <string name="vault_title">暗号化金庫</string>
+    <string name="vault_subtitle">安全な暗号化ストレージ</string>
+    <string name="vault_enter_passcode">パスコードを入力</string>
+    <string name="vault_set_passcode">パスコードを設定</string>
+    <string name="vault_confirm_passcode">パスコードの確認</string>
+    <string name="vault_passcode_mismatch">パスコードが一致しません。もう一度お試しください。</string>
+    <string name="vault_incorrect_passcode">パスコードが正しくありません</string>
+    <string name="vault_locked">金庫はロックされています</string>
+    <string name="vault_unlock">金庫をロック解除</string>
+    <string name="vault_move_to_vault">金庫に移動</string>
+    <string name="vault_remove_from_vault">金庫から取り出す</string>
+    <string name="vault_empty">保護されたドキュメントはありません</string>
+
+    <!-- Errors and Status Messages -->
+    <string name="error_generic">予期しないエラーが発生しました</string>
+    <string name="error_file_not_found">ファイルが見つかりません</string>
+    <string name="error_storage_full">ストレージ容量が不足しています</string>
+    <string name="error_import_failed">ドキュメントのインポートに失敗しました</string>
+    <string name="error_export_failed">ドキュメントのエクスポートに失敗しました</string>
+    <string name="error_camera_unavailable">カメラを利用できません</string>
+    <string name="error_vault_access">金庫へのアクセスが拒否されました</string>
+
+    <string name="action_ok">OK</string>
+    <string name="action_create">作成</string>
+    <string name="action_remove">削除</string>
+    <string name="action_finish">完了</string>
+    <string name="action_discard">破棄</string>
+    <string name="action_keep_editing">編集を続ける</string>
+    <string name="action_open_camera">カメラを開く</string>
+    <string name="action_import_images">画像をインポート</string>
+    <string name="action_scan_document">書類をスキャン</string>
+    <string name="action_add_pages">ページを追加</string>
+    <string name="action_open_document">書類を開く</string>
+    <string name="action_move_to_trash">ゴミ箱に移動</string>
+    <string name="action_back_home">ホームに戻る</string>
+    <string name="action_back_folders">フォルダに戻る</string>
+    <string name="action_clean_cache">キャッシュを消去</string>
+    <string name="library_no_documents">書類がありません</string>
+    <string name="library_home_empty_title">書類はここに表示されます</string>
+    <string name="library_home_empty_body">カメラでスキャンできます。すべてこの端末内に保存されます。</string>
+    <string name="scan_entry_title">書類をスキャン</string>
+    <string name="scan_entry_body">カメラで撮影するか画像を取り込みます。処理と保存はすべて端末内で行われます。</string>
+    <string name="folders_overview">フォルダ一覧</string>
+    <string name="settings_title">設定</string>
+    <string name="product_information">製品情報</string>
+    <string name="profile_edit_name">表示名を編集</string>
+    <string name="profile_display_name_label">ローカル表示名</string>
+    <string name="profile_avatar_color">アバターの色を選択</string>
+    <string name="cd_avatar">アバター</string>
+    <string name="cd_edit_name">名前を編集</string>
+    <string name="dialog_add_pages_title">「%1$s」にページを追加</string>
+    <string name="dialog_add_pages_body">この書類にページを追加する方法を選択します。</string>
+    <string name="dialog_move_selected_trash_title">選択した書類をゴミ箱に移動しますか？</string>
+    <string name="dialog_move_selected_trash_body">選択した書類は端末内のゴミ箱に移動されます。</string>
+    <string name="settings_capture_title">撮影設定</string>
+    <string name="settings_auto_capture_default">自動撮影の初期設定</string>
+    <string name="settings_auto_capture_default_desc">安定した書類の輪郭を検出すると自動で撮影します。</string>
+    <string name="settings_shutter_feedback">シャッターのフィードバック</string>
+    <string name="settings_shutter_feedback_desc">撮影時に画面、音、または振動で知らせます。</string>
+    <string name="settings_camera_preference">使用するカメラ</string>
+    <string name="settings_rear_camera">背面カメラ（推奨）</string>
+    <string name="settings_rear_camera_desc">ピント合わせと輪郭検出に最適</string>
+    <string name="settings_front_camera">前面カメラ</string>
+    <string name="settings_front_camera_desc">補助カメラ入力</string>
+    <string name="settings_enhancement_title">補正設定</string>
+    <string name="settings_default_enhancement">デフォルトの補正処理</string>
+    <string name="settings_default_enhancement_desc">ページのスキャン時に適用する初期処理を選択します。</string>
+    <string name="settings_export_title">エクスポート設定</string>
+    <string name="settings_filename_prefix">書類ファイル名の初期プレフィックス</string>
+    <string name="settings_filename_prefix_desc">保存時に日付のプレースホルダーが自動で書式設定されます。</string>
+    <string name="settings_pdf_page_size">PDFページサイズ</string>
+    <string name="settings_export_image_quality">画像の出力品質</string>
+    <string name="settings_appearance_title">外観設定</string>
+    <string name="settings_color_palette">カラーパレット</string>
+    <string name="settings_theme_auto">自動</string>
+    <string name="settings_storage_title">ストレージ</string>
+    <string name="settings_local_usage">端末内の使用量</string>
+    <string name="settings_saved_documents">保存済み書類</string>
+    <string name="settings_temporary_cache">一時キャッシュ</string>
+    <string name="settings_clean_cache_title">一時キャッシュを消去</string>
+    <string name="settings_clean_cache_desc">一時プレビューと出力キャッシュを削除します。保存済みの書類は安全です。</string>
+    <string name="settings_clean_cache_confirm">一時キャッシュを消去しますか？</string>
+    <string name="settings_clean_cache_confirm_body">一時プレビューと出力キャッシュを消去します。保存済みの書類には影響しません。</string>
+    <string name="privacy_title">プライバシーポリシー</string>
+    <string name="privacy_on_device">処理はすべてこの端末上で行われます</string>
+    <string name="privacy_local_offline">100%ローカル・オフライン</string>
+    <string name="privacy_no_accounts">アカウントやクラウドは不要</string>
+    <string name="privacy_explicit_sharing">システム共有を明示的に使用</string>
+    <string name="help_title">ヘルプとユーザーガイド</string>
+    <string name="about_title">OScanについて</string>
+    <string name="about_github">アプリのリポジトリを見る（GitHub）</string>
+    <string name="scanner_discard_title">このスキャンを破棄しますか？</string>
+    <string name="scanner_discard_body">確定済みのページがこの端末から削除されます。</string>
+    <string name="scanner_reset_edges">輪郭をリセット</string>
+    <string name="scanner_accepted_count">%1$dページ確定済み</string>
+    <string name="scanner_page_number">%1$dページ目</string>
+    <string name="scanner_save_summary">%1$dページを1つの書類として端末に保存します。</string>
+    <string name="scanner_document_name">書類名</string>
+    <string name="scanner_no_folder">フォルダなし</string>
+    <string name="scanner_saved_locally">端末に保存しました</string>
+    <string name="scanner_saved_summary">%1$s・%2$dページ</string>
+    <string name="error_title">問題が発生しました</string>
+    <string name="camera_import_gallery">ギャラリーからインポート</string>
+    <string name="camera_capture_page">ページを撮影</string>
+    <string name="camera_access">カメラへのアクセス</string>
+    <string name="camera_scan_mode">スキャンモード：%1$s</string>
+    <string name="crop_page_image">切り抜くページ画像</string>
+    <string name="crop_boundary_description">切り抜き範囲を調整できます。角または辺をゆっくりドラッグしてください。</string>
+    <string name="preview_processed_page">処理済みページのプレビュー</string>
+    <string name="preview_treatment">補正</string>
+    <string name="editor_page_title">%1$dページ目を編集</string>
+    <string name="dialog_error_title">エラー</string>
+    <string name="vault_move_out_title">金庫から取り出しますか？</string>
+    <string name="vault_move_out_body">この書類はメインライブラリに移動し、金庫の暗号化保護から外れます。</string>
+    <string name="vault_move_library">ライブラリに移動</string>
+    <string name="vault_fingerprint_setup">指紋を設定</string>
+    <string name="vault_fingerprint_enable">指紋認証を有効にする</string>
+    <string name="vault_setup_title">金庫を設定</string>
+    <string name="vault_protect_sensitive">機密書類を保護</string>
+    <string name="vault_create_passcode">パスコードを作成（6～12桁）</string>
+    <string name="vault_create">金庫を作成</string>
+    <string name="vault_locked_title">金庫はロックされています</string>
+    <string name="vault_fingerprint_unlock">指紋でロック解除</string>
+    <string name="vault_passcode">パスコード</string>
+    <string name="vault_forgot_passcode">パスコードを忘れた場合</string>
+    <string name="vault_reset_title">金庫をリセットして削除しますか？</string>
+    <string name="vault_reset_body">忘れたパスコードをOScanが復元することはできません。リセットすると暗号化されたすべての書類が完全に削除されます。</string>
+    <string name="vault_reset_action">金庫をリセットして削除</string>
+    <string name="vault_search_hint">金庫内の書類を検索…</string>
+    <string name="vault_empty_title">金庫は空です</string>
+    <string name="vault_empty_body">既存の書類を金庫に移すか、金庫へ直接スキャンまたはインポートしてください。</string>
+    <string name="vault_no_pages">ページがありません</string>
+    <string name="vault_no_pages_body">この金庫内の書類には読み取れるページがありません。</string>
+    <string name="vault_page_cd">%1$dページ目</string>
+    <string name="vault_page_missing_cd">%1$dページ目を表示できませんでした</string>
+    <string name="vault_move_out">金庫から取り出す</string>
+    <string name="vault_move_trash">金庫のゴミ箱に移動</string>
+    <string name="vault_trash_title">金庫のゴミ箱</string>
+    <string name="vault_empty_trash">ゴミ箱を空にする</string>
+    <string name="vault_trash_empty">金庫のゴミ箱は空です</string>
+    <string name="vault_trash_empty_body">金庫から削除した項目は、空にするまでここに残ります。</string>
+    <string name="vault_empty_trash_title">金庫のゴミ箱を空にしますか？</string>
+    <string name="vault_empty_trash_body">金庫のゴミ箱にある項目はすべて完全に削除されます。</string>
+    <string name="vault_settings_title">金庫の設定</string>
+    <string name="vault_change_passcode">金庫のパスコードを変更</string>
+    <string name="vault_change_passcode_desc">新しいパスコードで暗号鍵を再保護します</string>
+    <string name="vault_disable">金庫を無効にする</string>
+    <string name="vault_disable_desc">書類をライブラリに移すか金庫を削除します</string>
+    <string name="vault_current_passcode">現在のパスコード</string>
+    <string name="vault_new_passcode">新しいパスコード（6～12桁）</string>
+    <string name="vault_confirm_new_passcode">新しいパスコードを確認</string>
+    <string name="vault_change_passcode_action">パスコードを変更</string>
+    <string name="vault_disable_prompt">金庫内の書類をどう処理するか選択してください：</string>
+    <string name="vault_disable_move">書類をライブラリに移して無効化</string>
+    <string name="vault_disable_delete">金庫とすべての書類を削除</string>
+    <string name="vault_enter_current_passcode">現在のパスコードを入力</string>
+    <string name="library_search_names">名前を検索</string>
+    <string name="cd_search">検索</string>
+    <string name="cd_clear_search">検索をクリア</string>
+    <string name="favorites_empty_title">お気に入りの書類がありません</string>
+    <string name="favorites_empty_body">書類のハートをタップするとお気に入りに追加できます。</string>
+    <string name="filter_all">すべて</string>
+    <string name="filter_favorites">お気に入り</string>
+    <string name="filter_vault">金庫</string>
+    <string name="library_no_matches">一致する書類がありません</string>
+    <string name="library_no_matches_query">「%1$s」に一致する書類やフォルダはありません</string>
+    <string name="folders_title">フォルダ</string>
+    <string name="folders_empty_title">フォルダがありません</string>
+    <string name="folders_empty_body">フォルダを作成して書類を整理できます。</string>
+    <string name="folder_create">フォルダを作成</string>
+    <string name="folder_rename">フォルダ名を変更</string>
+    <string name="folder_delete">フォルダを削除</string>
+    <string name="folder_empty_title">このフォルダは空です</string>
+    <string name="folder_empty_body">既存の書類をここに移すか、このフォルダへスキャンしてください。</string>
+    <string name="trash_title_count">ゴミ箱（%1$d）</string>
+    <string name="trash_empty_body">ゴミ箱に移した書類は完全に削除するまでここに残ります。</string>
+    <string name="trash_empty_confirm">ゴミ箱を空にしますか？</string>
+    <string name="trash_empty_confirm_body">ゴミ箱内の%1$d件の書類を端末から完全に削除します。この操作は取り消せません。</string>
+    <string name="folder_new">新規フォルダ</string>
+    <string name="folder_name">フォルダ名</string>
+    <string name="folder_delete_title">フォルダ「%1$s」を削除しますか？</string>
+    <string name="folder_delete_body">このフォルダを削除すると%1$d件の書類が未分類に移動します。書類自体は削除されません。</string>
+    <string name="folder_delete_action">フォルダを削除</string>
+    <string name="document_export_save">エクスポート / 保存</string>
+    <string name="document_move_folder">フォルダに移動</string>
+    <string name="document_folder_name">フォルダ：%1$s</string>
+    <string name="document_pages">ページ</string>
+    <string name="document_add_page">ページを追加</string>
+    <string name="page_rotate_left">左に回転</string>
+    <string name="page_rotate_right">右に回転</string>
+    <string name="page_recrop_treatment">切り抜きと補正をやり直す</string>
+    <string name="page_remove">ページを削除</string>
+    <string name="document_exporting">書類をエクスポート中…</string>
+    <string name="document_trash_title">書類をゴミ箱に移動しますか？</string>
+    <string name="document_trash_body">ホームから削除され、端末内のゴミ箱に保管されます。</string>
+    <string name="document_rename">書類名を変更</string>
+    <string name="document_unavailable">書類を利用できません</string>
+    <string name="document_unavailable_body">この端末から削除された可能性があります。</string>
+    <string name="page_image_missing">このページの画像がありません</string>
+    <string name="page_count_position">%1$d / %2$d</string>
+    <string name="export_format">形式</string>
+    <string name="export_image_quality">画像品質</string>
+    <string name="privacy_local_body">OScanはローカル優先の書類管理アプリです。輪郭検出、遠近補正、画像補正、PDF生成はすべてこのAndroid端末上で実行されます。</string>
+    <string name="privacy_accounts_body">OScanにはアカウント、リモート同期、分析、バックグラウンド送信、広告がありません。明示的に共有した場合のみ書類データが端末外へ送られます。</string>
+    <string name="privacy_sharing_body">PDFの共有にはAndroid標準の共有画面を使用します。共有先と相手はユーザーが管理できます。</string>
+    <string name="help_camera_title">カメラとインポート</string>
+    <string name="help_camera_body">紙の書類にカメラを向けるか既存の写真を取り込みます。OScanが角を検出してスキャン範囲を示します。</string>
+    <string name="help_corners_title">角の調整</string>
+    <string name="help_corners_body">切り抜き画面の4つのハンドルを紙の端に合わせてドラッグします。「リセット」で検出した輪郭に戻せます。</string>
+    <string name="help_treatment_title">オリジナルとMagic</string>
+    <string name="help_treatment_body">文書を鮮明な高コントラストにするにはMagic、カラー写真を編集せず残すにはオリジナルを選びます。</string>
+    <string name="help_multipage_title">複数ページのスキャン</string>
+    <string name="help_multipage_body">1回のセッションで複数ページを撮影または取り込み、1つの書類として保存する前に並べ替えや置き換えができます。</string>
+    <string name="help_folders_title">フォルダとゴミ箱</string>
+    <string name="help_folders_body">フォルダで書類を整理できます。削除した書類はゴミ箱へ移動し、復元または完全削除できます。</string>
+    <string name="help_export_title">PDFのエクスポート</string>
+    <string name="help_export_body">ページサイズと圧縮設定を選び、複数ページの書類をPDFとして保存できます。</string>
+    <string name="about_version">バージョン %1$s（ビルド %2$d）</string>
+    <string name="about_tagline">Android向けローカル優先書類管理アプリ</string>
+    <string name="about_oss_title">オープンソースライブラリと通知</string>
+    <string name="about_oss_body">OScanはオープンソースのソフトウェアとフレームワークを使用しています。</string>
+    <string name="about_repository">リポジトリ</string>
+    <string name="oss_compose_desc">宣言型UIフレームワークとMaterial 3デザインシステム</string>
+    <string name="oss_room_desc">ローカルSQLiteのオブジェクトマッピングとリアクティブクエリ</string>
+    <string name="oss_opencv_desc">輪郭検出と遠近変換のためのコンピュータービジョン</string>
+    <string name="oss_onnx_desc">書類境界予測のための端末内機械学習推論</string>
+    <string name="oss_camerax_desc">カメラ連携とリアクティブな設定保存</string>
+    <string name="oss_pdfbox_desc">PDFの描画と書類作成ライブラリ</string>
+    <string name="camera_starting">カメラを起動中</string>
+    <string name="camera_flash_unavailable">フラッシュを利用できません</string>
+    <string name="camera_flash_off_action">フラッシュをオフにする</string>
+    <string name="camera_flash_on_action">フラッシュをオンにする</string>
+    <string name="state_on">オン</string>
+    <string name="state_off">オフ</string>
+    <string name="camera_mode_label">モード</string>
+    <string name="camera_capturing">撮影中</string>
+    <string name="state_ready">準備完了</string>
+    <string name="state_unavailable">利用不可</string>
+    <string name="camera_access_off">カメラへのアクセスがオフです</string>
+    <string name="camera_allow_access">カメラへのアクセスを許可</string>
+    <string name="crop_valid">有効な切り抜き範囲</string>
+    <string name="crop_invalid">切り抜き範囲が無効です。辺が交差しています</string>
+    <string name="scanner_adjust_edges">輪郭を調整</string>
+    <string name="scanner_enhance_page">ページを補正</string>
+    <string name="scanner_review_pages">ページを確認</string>
+    <string name="scanner_save_document">書類を保存</string>
+    <string name="scanner_document_saved">書類を保存しました</string>
+    <string name="scanner_restoring">スキャンを復元中</string>
+    <string name="scanner_crop_ready">ページの準備ができました。切り抜き範囲を調整してください。</string>
+    <string name="scanner_processing_complete">処理が完了しました。補正を選択してください。</string>
+    <string name="scanner_review_ready">確認の準備ができました。%1$dページ確定済みです。</string>
+    <string name="scanner_saved_announcement">書類を端末に保存しました</string>
+    <string name="status_accepted">確定済み</string>
+    <string name="status_needs_review">確認が必要</string>
+    <string name="status_needs_attention">対応が必要</string>
+    <string name="status_importing">インポート中</string>
+    <string name="status_finding_edges">輪郭を検出中</string>
+    <string name="status_processing">処理中</string>
+    <string name="document_export_options_body">形式、画像品質、保存または共有方法を選択してください。</string>
+    <string name="editor_save_page">ページを保存</string>
+    <string name="library_sort_created_desc">作成日時（新しい順）</string>
+    <string name="library_sort_created_asc">作成日時（古い順）</string>
+    <string name="selection_count">%1$d件選択中</string>
+    <string name="crop_drag_hint">辺をドラッグ • ゆっくり動かすと正確に調整できます</string>
+    <string name="crop_edges_cross">辺を交差させることはできません</string>
+    <string name="crop_fine_adjust">微調整</string>
+    <string name="scanner_review_count">%2$dページ中%1$dページ確定済み</string>
+    <string name="biometric_secure_key_missing">指紋認証から安全な鍵を取得できませんでした</string>
+    <string name="biometric_unavailable">この画面では指紋認証を利用できません</string>
+    <string name="biometric_subtitle">暗号化された金庫の鍵にアクセスするため指紋を確認します</string>
+    <string name="biometric_use_passcode">パスコードを使用</string>
+    <string name="vault_fingerprint_faster">指紋ですばやくロック解除</string>
+    <string name="vault_fingerprint_body">指紋を主な解除方法として使用します。パスコードも引き続き使用できます。</string>
+    <string name="vault_fingerprint_unavailable_body">この端末には強力な指紋が登録されていません。後で金庫の設定から有効にできます。</string>
+    <string name="vault_setup_body">金庫内の書類はこの端末上で暗号化されます。アクセスには6～12桁のパスコードが必要です。</string>
+    <string name="vault_recovery_ack">パスコードを忘れた場合、OScanが金庫内の書類を復元できないことを理解しました。</string>
+    <string name="vault_unlock_body">暗号化された書類を表示するには金庫のパスコードを入力してください。</string>
+    <string name="vault_lockout">失敗回数が多すぎます。%1$d秒後にもう一度お試しください。</string>
+    <string name="vault_moving">暗号化して書類を金庫に移動中…</string>
+    <string name="vault_fingerprint_enrolled">登録済みの指紋ですばやくロック解除</string>
+    <string name="vault_fingerprint_enroll_first">先にAndroidの設定で強力な指紋を登録してください</string>
+    <string name="vault_passcode_fallback">金庫のパスコードも引き続き使用できます</string>
+    <string name="settings_capture_row">撮影</string>
+    <string name="settings_capture_row_desc">自動撮影の初期設定とシャッター通知</string>
+    <string name="settings_enhancement_row">補正</string>
+    <string name="settings_enhancement_row_desc">初期補正（Magicまたはオリジナル）</string>
+    <string name="settings_export_row">エクスポート</string>
+    <string name="settings_export_row_desc">ファイル名、PDFページサイズ、品質</string>
+    <string name="settings_appearance_row">外観</string>
+    <string name="settings_appearance_row_desc">OScanのテーマを変更</string>
+    <string name="settings_storage_row_desc">端末内の使用量とキャッシュ消去</string>
+    <string name="settings_privacy_row_desc">100%ローカル、テレメトリやアカウントなし</string>
+    <string name="settings_help_row_desc">スキャン、切り抜き調整、複数ページ編集</string>
+    <string name="settings_about_row_desc">バージョン%1$sとオープンソース通知</string>
+    <string name="camera_permission_denied_body">書類のスキャンにはカメラへのアクセスが必要です。</string>
+    <string name="camera_permission_body">書類をスキャンするためカメラへのアクセスを許可してください。</string>
+    <string name="action_try_again">もう一度試す</string>
+    <string name="action_continue">続ける</string>
+    <string name="camera_point_document">カメラを書類に向けてください</string>
+    <string name="camera_no_rear">この端末には利用できる背面カメラがありません。</string>
+    <string name="camera_start_failed">カメラを起動できませんでした。画像のインポートは利用できます。</string>
+    <string name="camera_capture_failed">写真を撮影できませんでした。もう一度お試しください。</string>
+    <string name="camera_more_light">明るくするかフラッシュをオンにしてください</string>
+    <string name="camera_hold_sharp">鮮明に撮影するため端末を固定してください</string>
+    <string name="camera_whole_document">書類全体が見える位置まで移動してください</string>
+    <string name="camera_move_back">すべての辺が入るよう少し離してください</string>
+    <string name="camera_hold_steady">端末を固定してください</string>
+    <string name="camera_document_found">書類を検出しました。シャッターをタップしてください</string>
+    <string name="scan_photo_add_failed">この写真を追加できませんでした。削除するかもう一度お試しください。</string>
+    <string name="scan_photo_retry">写真を追加できませんでした。もう一度お試しください。</string>
+    <string name="scan_name_required">書類名を入力してください。</string>
+    <string name="scan_image_import_failed">この画像をインポートできませんでした。選び直すか削除してください。</string>
+    <string name="scan_image_prepare_failed">この画像を準備できませんでした。再試行するか削除してください。</string>
+    <string name="scan_image_open_failed">この画像を開けませんでした。再試行するか削除してください。</string>
+    <string name="scan_save_failed">書類を保存できませんでした。もう一度お試しください。</string>
+    <string name="vault_configured">金庫を設定しました</string>
+    <string name="vault_setup_failed">金庫を設定できませんでした</string>
+    <string name="vault_unlock_failed">金庫のロック解除に失敗しました</string>
+    <string name="vault_reset_complete">金庫をリセットしました</string>
+    <string name="vault_passcode_updated">金庫のパスコードを更新しました</string>
+    <string name="vault_current_incorrect">現在のパスコードが正しくありません</string>
+    <string name="vault_passcode_change_failed">パスコードを変更できませんでした</string>
+    <string name="vault_disabled">金庫を無効にしました</string>
+    <string name="vault_disable_failed">金庫を無効にできませんでした</string>
+    <string name="vault_move_in_complete">書類を金庫に移動しました</string>
+    <string name="vault_move_in_failed">書類を金庫に移動できませんでした</string>
+    <string name="vault_move_out_complete">書類を通常のライブラリに移動しました</string>
+    <string name="vault_move_out_failed">書類を金庫から移動できませんでした</string>
+    <string name="vault_unlock_before_fingerprint">指紋認証を有効にする前に金庫を解除してください</string>
+    <string name="vault_fingerprint_enabled">指紋認証を有効にしました</string>
+    <string name="vault_fingerprint_failed">指紋認証に失敗しました。パスコードを使用してください</string>
+    <string name="vault_fingerprint_disabled">指紋認証を無効にしました</string>
+    <string name="operation_failed">操作を完了できませんでした。</string>
+    <string name="scan_straightening">ページの傾きを補正中…</string>
+    <string name="scan_applying_treatment">補正を適用中…</string>
+    <string name="scan_saving_page">ページをスキャンに保存中…</string>
+    <string name="scan_loading_page">ページを読み込み中…</string>
+    <string name="scan_restoring_page">ページを復元中…</string>
+    <string name="scan_saving_document">書類を保存中</string>
+    <string name="scan_ready_save">書類を保存できます</string>
+    <string name="msg_cache_cleaned">キャッシュを消去しました</string>
+    <string name="msg_document_trashed">書類をゴミ箱に移動しました</string>
+    <string name="msg_documents_trashed">書類をゴミ箱に移動しました</string>
+    <string name="msg_folder_created">フォルダを作成しました</string>
+    <string name="msg_folder_renamed">フォルダ名を変更しました</string>
+    <string name="msg_folder_deleted">フォルダを削除し、書類を未分類に移動しました。</string>
+    <string name="msg_documents_moved">書類を移動しました</string>
+    <string name="msg_favorite_added">お気に入りに追加しました</string>
+    <string name="msg_favorite_removed">お気に入りから削除しました</string>
+    <string name="msg_document_restored">書類を復元しました</string>
+    <string name="msg_document_deleted">書類を完全に削除しました</string>
+    <string name="msg_documents_restored">書類を復元しました</string>
+    <string name="msg_documents_deleted">書類を完全に削除しました</string>
+    <string name="msg_trash_emptied">ゴミ箱を空にしました</string>
+    <string name="msg_page_removed">ページを削除しました</string>
+    <string name="msg_export_success">エクスポートが完了しました</string>
+    <string name="msg_export_failed">エクスポートに失敗しました</string>
+    <string name="msg_share_failed">共有に失敗しました</string>
+    <string name="avatar_teal">ティール（デフォルト）</string>
+    <string name="avatar_indigo">インディゴ</string>
+    <string name="avatar_amber">アンバー</string>
+    <string name="avatar_green">グリーン</string>
+    <string name="avatar_purple">パープル</string>
+    <string name="treatment_magic_desc">紙を白くして文字を鮮明にしながら、書類の色を維持します。</string>
+    <string name="treatment_original_desc">補正せずフルカラーの撮影画像を維持します。</string>
+    <string name="treatment_grayscale_desc">色を除き、滑らかな階調と細部を維持します。</string>
+    <string name="treatment_bw_desc">文字書類向けに高コントラストの白黒ページを作成します。</string>
+    <string name="cd_document_thumbnail">%1$sのサムネイル</string>
+
+    <!-- Plural Quantity Resources -->
+    <plurals name="plural_documents">
+        <item quantity="other">%1$d 件のドキュメント</item>
+    </plurals>
+
+    <plurals name="plural_folders">
+        <item quantity="other">%1$d 件のフォルダー</item>
+    </plurals>
+
+    <plurals name="plural_pages">
+        <item quantity="other">%1$d ページ</item>
+    </plurals>
+
+    <plurals name="plural_trash_items">
+        <item quantity="other">ゴミ箱に %1$d 件のアイテム</item>
+    </plurals>
+</resources>

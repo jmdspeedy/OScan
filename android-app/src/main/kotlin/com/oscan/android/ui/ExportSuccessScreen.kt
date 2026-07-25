@@ -9,7 +9,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.oscan.android.R
 import com.oscan.android.ui.theme.OScanTheme
 
 @Composable
@@ -44,20 +46,19 @@ fun ExportSuccessScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "PDF created",
+            text = stringResource(R.string.export_success_title),
             style = MaterialTheme.typography.titleLarge
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = pdfUri.lastPathSegment ?: pdfUri.toString(),
+            text = stringResource(R.string.export_saved_to, pdfUri.lastPathSegment ?: pdfUri.toString()),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(32.dp))
-
 
         Button(
             onClick = onShareClicked,
@@ -67,7 +68,7 @@ fun ExportSuccessScreen(
         ) {
             Icon(imageVector = Icons.Default.Share, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Share PDF")
+            Text(stringResource(R.string.export_action_share))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -78,7 +79,7 @@ fun ExportSuccessScreen(
                 .fillMaxWidth(0.8f)
                 .height(48.dp)
         ) {
-            Text("Scan another")
+            Text(stringResource(R.string.action_done))
         }
     }
 }

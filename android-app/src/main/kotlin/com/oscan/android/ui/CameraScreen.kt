@@ -1,5 +1,7 @@
 package com.oscan.android.ui
 
+import com.oscan.android.R
+
 import android.Manifest
 import android.media.MediaActionSound
 import android.content.pm.PackageManager
@@ -58,6 +60,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -144,7 +147,7 @@ fun LiveCameraScreen(
     DisposableEffect(Unit) { onDispose(cameraViewModel::unbind) }
 
     val currentStatus = state.errorMessage ?: captureState.message ?: state.guidance
-    var announcedStatus by remember { mutableStateOf("Camera starting") }
+    var announcedStatus by remember { mutableStateOf(context.getString(R.string.camera_starting)) }
     LaunchedEffect(state.isStarting, currentStatus) {
         if (!state.isStarting) {
             delay(1_200)
@@ -270,9 +273,9 @@ fun LiveCameraScreen(
                 Modifier.align(Alignment.Center).padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(state.errorMessage ?: "Camera unavailable", color = Color.White)
+                Text(state.errorMessage ?: stringResource(R.string.error_camera_unavailable), color = Color.White)
                 Spacer(Modifier.height(16.dp))
-                OutlinedButton(onClick = onImport) { Text("Import images", color = Color.White) }
+                OutlinedButton(onClick = onImport) { Text(stringResource(R.string.action_import_images), color = Color.White) }
             }
         }
     }
@@ -321,10 +324,11 @@ private fun BoxScope.CameraTopControls(
     onToggleTorch: () -> Unit
 ) {
     val flashDescription = when {
-        !torchAvailable -> "Flash unavailable"
-        torchEnabled -> "Turn flash off"
-        else -> "Turn flash on"
+        !torchAvailable -> stringResource(R.string.camera_flash_unavailable)
+        torchEnabled -> stringResource(R.string.camera_flash_off_action)
+        else -> stringResource(R.string.camera_flash_on_action)
     }
+    val flashState = if (torchEnabled) stringResource(R.string.state_on) else stringResource(R.string.state_off)
     Box(
         modifier = Modifier
             .align(Alignment.TopEnd)
@@ -337,7 +341,7 @@ private fun BoxScope.CameraTopControls(
             )
             .semantics {
                 contentDescription = flashDescription
-                stateDescription = if (torchEnabled) "On" else "Off"
+                stateDescription = flashState
             }
     ) {
         Surface(
@@ -439,6 +443,7 @@ private fun ScanModeButton(
     modifier: Modifier = Modifier
 ) {
     var selectedMode by remember { mutableStateOf(CameraScanMode.Document) }
+    val scanModeDescription = stringResource(R.string.camera_scan_mode, selectedMode.label)
     val scope = rememberCoroutineScope()
     val buttonScale = remember { Animatable(1f) }
 
@@ -450,7 +455,7 @@ private fun ScanModeButton(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "MODE",
+            text = stringResource(R.string.camera_mode_label),
             color = chrome.onPanel.copy(alpha = 0.5f),
             fontWeight = FontWeight.Bold,
             fontSize = if (compact) 7.sp else 8.sp,
@@ -476,7 +481,7 @@ private fun ScanModeButton(
                     scaleY = buttonScale.value
                 }
                 .semantics {
-                    contentDescription = "Scan mode, ${selectedMode.label}"
+                    contentDescription = scanModeDescription
                 }
         ) {
             Box(
@@ -519,6 +524,13 @@ private fun CaptureDock(
     val shutterSize = if (compact) 56.dp else 68.dp
     val shutterInnerSize = if (compact) 40.dp else 50.dp
     val sideControlSize = if (compact) 40.dp else 48.dp
+    val importDescription = stringResource(R.string.camera_import_gallery)
+    val captureDescription = stringResource(R.string.camera_capture_page)
+    val captureStateDescription = when {
+        isCapturing -> stringResource(R.string.camera_capturing)
+        captureEnabled -> stringResource(R.string.state_ready)
+        else -> stringResource(R.string.state_unavailable)
+    }
 
     Box(modifier.fillMaxWidth().height(dockHeight)) {
         Canvas(Modifier.matchParentSize()) {
@@ -560,7 +572,7 @@ private fun CaptureDock(
                     bottom = if (compact) 6.dp else 12.dp
                 )
                 .size(sideControlSize)
-                .semantics { contentDescription = "Import from gallery" }
+                .semantics { contentDescription = importDescription }
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
@@ -593,12 +605,8 @@ private fun CaptureDock(
                 .align(Alignment.TopCenter)
                 .size(shutterSize)
                 .semantics {
-                    contentDescription = "Capture page"
-                    stateDescription = when {
-                        isCapturing -> "Capturing"
-                        captureEnabled -> "Ready"
-                        else -> "Unavailable"
-                    }
+                    contentDescription = captureDescription
+                    stateDescription = captureStateDescription
                 }
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -644,7 +652,7 @@ private fun CameraPermissionCard(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.PhotoCamera,
-                            contentDescription = "Camera Access",
+                            contentDescription = stringResource(R.string.camera_access),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(38.dp)
                         )
@@ -652,7 +660,7 @@ private fun CameraPermissionCard(
                 }
                 Spacer(Modifier.height(20.dp))
                 Text(
-                    text = if (denied) "Camera access is off" else "Allow camera access",
+                    text = if (denied) stringResource(R.string.camera_access_off) else stringResource(R.string.camera_allow_access),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -660,8 +668,8 @@ private fun CameraPermissionCard(
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = if (denied) "OScan requires camera access to scan documents."
-                    else "OScan needs camera access only while you scan. Processing stays on this device.",
+                    text = if (denied) stringResource(R.string.camera_permission_denied_body)
+                    else stringResource(R.string.camera_permission_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -679,7 +687,7 @@ private fun CameraPermissionCard(
                     )
                 ) {
                     Text(
-                        text = if (denied) "Try again" else "Continue",
+                        text = if (denied) stringResource(R.string.action_try_again) else stringResource(R.string.action_continue),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(horizontal = 12.dp)

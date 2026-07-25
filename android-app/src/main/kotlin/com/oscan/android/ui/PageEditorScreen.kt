@@ -1,5 +1,7 @@
 package com.oscan.android.ui
 
+import com.oscan.android.R
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,6 +11,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -34,7 +37,7 @@ fun PageEditorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit page ${viewModel.page.position + 1}") },
+                title = { Text(stringResource(R.string.editor_page_title, viewModel.page.position + 1)) },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Cancel")
@@ -49,7 +52,7 @@ fun PageEditorScreen(
                             TextButton(
                                 onClick = viewModel::onCropConfirmed,
                                 enabled = current.isValidGeometry
-                            ) { Text("Done") }
+                            ) { Text(stringResource(R.string.action_done)) }
                         }
                         is PageEditorUiState.PreviewReady -> {
                             Button(
@@ -58,7 +61,7 @@ fun PageEditorScreen(
                             ) {
                                 Icon(Icons.Default.Check, null)
                                 Spacer(Modifier.width(4.dp))
-                                Text("Save")
+                                Text(stringResource(R.string.action_save))
                             }
                         }
                         else -> {}
@@ -101,17 +104,17 @@ fun PageEditorScreen(
                         onFilterSelected = viewModel::onFilterSelected,
                         onBackToCrop = viewModel::onBackToCrop,
                         onExportPdfRequested = viewModel::saveEdits,
-                        primaryActionLabel = "Save page"
+                    primaryActionLabel = stringResource(R.string.editor_save_page)
                     )
                 }
                 is PageEditorUiState.Error -> {
                     AlertDialog(
                         onDismissRequest = viewModel::dismissError,
-                        title = { Text("Error") },
+                        title = { Text(stringResource(R.string.dialog_error_title)) },
                         text = { Text(current.message) },
                         confirmButton = {
                             TextButton(onClick = viewModel::dismissError) {
-                                Text("OK")
+                                Text(stringResource(R.string.action_ok))
                             }
                         }
                     )

@@ -23,6 +23,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewModelScope
+import com.oscan.android.R
 import com.oscan.android.engine.AndroidScannerEngine
 import java.io.File
 import java.nio.ByteBuffer
@@ -48,7 +49,7 @@ data class CameraUiState(
     val torchAvailable: Boolean = false,
     val torchEnabled: Boolean = false,
     val corners: List<PreviewPoint>? = null,
-    val guidance: String = "Point the camera at a document",
+    val guidance: String = "",
     val errorMessage: String? = null
 )
 
@@ -58,7 +59,7 @@ class CameraViewModel(
 ) : AndroidViewModel(application) {
     private val analysisExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private val analysisBusy = AtomicBoolean(false)
-    private val _uiState = MutableStateFlow(CameraUiState())
+    private val _uiState = MutableStateFlow(CameraUiState(guidance = application.getString(R.string.camera_point_document)))
     val uiState: StateFlow<CameraUiState> = _uiState.asStateFlow()
 
     private var provider: ProcessCameraProvider? = null
@@ -79,7 +80,7 @@ class CameraViewModel(
                 val cameraProvider = future.get()
                 val selector = CameraSelector.DEFAULT_BACK_CAMERA
                 if (!cameraProvider.hasCamera(selector)) {
-                    _uiState.value = CameraUiState(isStarting = false, isAvailable = false, errorMessage = "No rear camera is available on this device.")
+                    _uiState.value = CameraUiState(isStarting = false, isAvailable = false, errorMessage = getApplication<Application>().getString(R.string.camera_no_rear))
                     return@addListener
                 }
                 val preview = Preview.Builder().setTargetRotation(rotation).build().also {
@@ -117,7 +118,7 @@ class CameraViewModel(
                     errorMessage = null
                 )
             }.onFailure {
-                _uiState.value = CameraUiState(isStarting = false, isAvailable = false, errorMessage = "The camera could not be started. You can still import images.")
+                _uiState.value = CameraUiState(isStarting = false, isAvailable = false, errorMessage = getApplication<Application>().getString(R.string.camera_start_failed))
             }
         }, ContextCompat.getMainExecutor(getApplication()))
     }
@@ -158,7 +159,7 @@ class CameraViewModel(
 
                 override fun onError(exception: ImageCaptureException) {
                     destination.delete()
-                    _uiState.value = _uiState.value.copy(isCapturing = false, errorMessage = "The photo could not be captured. Try again.")
+                    _uiState.value = _uiState.value.copy(isCapturing = false, errorMessage = getApplication<Application>().getString(R.string.camera_capture_failed))
                     onResult(null)
                 }
             }
@@ -209,19 +210,19 @@ class CameraViewModel(
                     it.x < 28f || it.y < 28f || it.x > (preview?.width ?: Int.MAX_VALUE) - 28f || it.y > (preview?.height ?: Int.MAX_VALUE) - 28f
                 } == true
                 val guidance = when {
-                    quality.brightness < 42 -> "Add more light or turn on the torch"
-                    quality.sharpness < 7 -> "Hold steady for a sharper photo"
-                    mapped == null -> "Move until the whole document is visible"
-                    nearEdge -> "Move back to include every edge"
-                    motion -> "Hold steady"
-                    else -> "Document found — tap the shutter"
+                    quality.brightness < 42 -> getApplication<Application>().getString(R.string.camera_more_light)
+                    quality.sharpness < 7 -> getApplication<Application>().getString(R.string.camera_hold_sharp)
+                    mapped == null -> getApplication<Application>().getString(R.string.camera_whole_document)
+                    nearEdge -> getApplication<Application>().getString(R.string.camera_move_back)
+                    motion -> getApplication<Application>().getString(R.string.camera_hold_steady)
+                    else -> getApplication<Application>().getString(R.string.camera_document_found)
                 }
                 _uiState.value = _uiState.value.copy(
                     corners = smoothedCorners,
                     guidance = guidance
                 )
             } catch (_: Throwable) {
-                _uiState.value = _uiState.value.copy(corners = null, guidance = "Point the camera at a document")
+                _uiState.value = _uiState.value.copy(corners = null, guidance = getApplication<Application>().getString(R.string.camera_point_document))
             } finally {
                 bitmap.recycle()
                 analysisBusy.set(false)

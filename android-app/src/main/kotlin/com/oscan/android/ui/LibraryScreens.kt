@@ -1,5 +1,7 @@
 package com.oscan.android.ui
 
+import com.oscan.android.R
+
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -41,6 +43,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -158,12 +161,12 @@ fun HomeLibraryScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(padding),
-                placeholder = { Text("Search names") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search icon") },
+                placeholder = { Text(stringResource(R.string.library_search_names)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = stringResource(R.string.cd_search)) },
                 trailingIcon = {
                     if (state.searchQuery.isNotEmpty()) {
                         IconButton(onClick = { onSearchQueryChange("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.cd_clear_search))
                         }
                     }
                 },
@@ -214,8 +217,8 @@ fun HomeLibraryScreen(
 private fun EmptyFavoritesState() {
     EmptyStateLayout(
         icon = Icons.Default.Favorite,
-        title = "No favorite documents",
-        supportingText = "Tap the heart icon on any document to add it to your favorites."
+        title = stringResource(R.string.favorites_empty_title),
+        supportingText = stringResource(R.string.favorites_empty_body)
     ) {}
 }
 
@@ -235,14 +238,14 @@ private fun FilterChipsRow(
             FilterChip(
                 selected = currentFilter == DocumentFilter.ALL,
                 onClick = { onFilterChange(DocumentFilter.ALL) },
-                label = { Text("All") }
+                label = { Text(stringResource(R.string.filter_all)) }
             )
         }
         item {
             FilterChip(
                 selected = currentFilter == DocumentFilter.FAVORITES,
                 onClick = { onFilterChange(DocumentFilter.FAVORITES) },
-                label = { Text("Favorites") },
+                label = { Text(stringResource(R.string.filter_favorites)) },
                 leadingIcon = { Icon(Icons.Default.Favorite, null, modifier = Modifier.size(16.dp)) }
             )
         }
@@ -251,7 +254,7 @@ private fun FilterChipsRow(
                 FilterChip(
                     selected = false,
                     onClick = onOpenVault,
-                    label = { Text("Vault") },
+                    label = { Text(stringResource(R.string.filter_vault)) },
                     leadingIcon = { Icon(Icons.Default.Lock, null, modifier = Modifier.size(16.dp)) }
                 )
             }
@@ -265,9 +268,9 @@ private fun NoSearchResultsState(query: String) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(Icons.Default.Search, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(16.dp))
-            Text("No matching documents", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.library_no_matches), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
-            Text("No documents or folders match \"$query\"", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.library_no_matches_query, query), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -412,7 +415,7 @@ private fun DocumentCard(
                 Thumbnail(
                     path = document.pages.firstOrNull()?.thumbnailAsset,
                     fileStore = fileStore,
-                    description = "${document.name} thumbnail",
+                    description = stringResource(R.string.cd_document_thumbnail, document.name),
                     modifier = Modifier.fillMaxWidth().aspectRatio(3f / 4f)
                 )
                 Column(Modifier.padding(12.dp)) {
@@ -482,7 +485,7 @@ private fun DocumentRow(
         Thumbnail(
             path = document.pages.firstOrNull()?.thumbnailAsset,
             fileStore = fileStore,
-            description = "${document.name} thumbnail",
+            description = stringResource(R.string.cd_document_thumbnail, document.name),
             modifier = Modifier.size(width = 72.dp, height = 96.dp)
         )
         Spacer(Modifier.width(16.dp))
@@ -514,7 +517,7 @@ fun FolderOverviewScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Folders") },
+                title = { Text(stringResource(R.string.folders_title)) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }
             )
         },
@@ -528,13 +531,13 @@ fun FolderOverviewScreen(
             if (folders.isEmpty()) {
                 EmptyStateLayout(
                     icon = Icons.Default.Folder,
-                    title = "No folders yet",
-                    supportingText = "Organize your documents by creating folders."
+                    title = stringResource(R.string.folders_empty_title),
+                    supportingText = stringResource(R.string.folders_empty_body)
                 ) {
                     Button(onClick = { createDialogOpen = true }) {
                         Icon(Icons.Default.CreateNewFolder, null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Create Folder")
+                        Text(stringResource(R.string.folder_create))
                     }
                 }
             } else {
@@ -601,12 +604,12 @@ private fun FolderCard(
                     IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, "Folder options") }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         DropdownMenuItem(
-                            text = { Text("Rename") },
+                            text = { Text(stringResource(R.string.action_rename)) },
                             leadingIcon = { Icon(Icons.Default.Edit, null) },
                             onClick = { menuOpen = false; onRename() }
                         )
                         DropdownMenuItem(
-                            text = { Text("Delete folder") },
+                            text = { Text(stringResource(R.string.folder_delete)) },
                             leadingIcon = { Icon(Icons.Default.Delete, null) },
                             onClick = { menuOpen = false; onDelete() }
                         )
@@ -654,8 +657,8 @@ fun FolderDetailScreen(
                     Box {
                         IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, "Folder actions") }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                            DropdownMenuItem(text = { Text("Rename folder") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuOpen = false; renameOpen = true })
-                            DropdownMenuItem(text = { Text("Delete folder") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuOpen = false; deleteOpen = true })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.folder_rename)) }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuOpen = false; renameOpen = true })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.folder_delete)) }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuOpen = false; deleteOpen = true })
                         }
                     }
                 }
@@ -666,10 +669,10 @@ fun FolderDetailScreen(
             if (folderDocs.isEmpty()) {
                 EmptyStateLayout(
                     icon = Icons.Default.Folder,
-                    title = "This folder is empty",
-                    supportingText = "Move existing documents here or scan into this folder."
+                    title = stringResource(R.string.folder_empty_title),
+                    supportingText = stringResource(R.string.folder_empty_body)
                 ) {
-                    Button(onClick = onBack) { Text("Back to Folders") }
+                    Button(onClick = onBack) { Text(stringResource(R.string.action_back_folders)) }
                 }
             } else if (presentation == LibraryPresentation.GRID) {
                 LazyVerticalGrid(
@@ -735,12 +738,12 @@ fun TrashScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Trash (${trashDocuments.size})") },
+                title = { Text(stringResource(R.string.trash_title_count, trashDocuments.size)) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
                 actions = {
                     if (trashDocuments.isNotEmpty()) {
                         TextButton(onClick = { emptyTrashDialogOpen = true }) {
-                            Text("Empty Trash", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.vault_empty_trash), color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -751,10 +754,10 @@ fun TrashScreen(
             if (trashDocuments.isEmpty()) {
                 EmptyStateLayout(
                     icon = Icons.Default.Delete,
-                    title = "Trash is empty",
-                    supportingText = "Documents moved to Trash will appear here until permanently deleted."
+                    title = stringResource(R.string.library_trash_empty),
+                    supportingText = stringResource(R.string.trash_empty_body)
                 ) {
-                    Button(onClick = onBack) { Text("Back to Home") }
+                    Button(onClick = onBack) { Text(stringResource(R.string.action_back_home)) }
                 }
             } else {
                 LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
@@ -779,14 +782,14 @@ fun TrashScreen(
     if (emptyTrashDialogOpen) {
         AlertDialog(
             onDismissRequest = { emptyTrashDialogOpen = false },
-            title = { Text("Empty Trash?") },
-            text = { Text("All ${trashDocuments.size} document(s) in Trash will be permanently deleted from this device. This action cannot be undone.") },
+            title = { Text(stringResource(R.string.trash_empty_confirm)) },
+            text = { Text(stringResource(R.string.trash_empty_confirm_body, trashDocuments.size)) },
             confirmButton = {
                 TextButton(onClick = { emptyTrashDialogOpen = false; onEmptyTrash() }) {
-                    Text("Empty Trash", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.vault_empty_trash), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { emptyTrashDialogOpen = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { emptyTrashDialogOpen = false }) { Text(stringResource(R.string.action_cancel)) } }
         )
     }
 }
@@ -826,7 +829,7 @@ private fun TrashDocumentRow(
         Thumbnail(
             path = document.pages.firstOrNull()?.thumbnailAsset,
             fileStore = fileStore,
-            description = "${document.name} thumbnail",
+            description = stringResource(R.string.cd_document_thumbnail, document.name),
             modifier = Modifier.size(width = 72.dp, height = 96.dp)
         )
         Spacer(Modifier.width(16.dp))
@@ -847,10 +850,10 @@ fun CreateFolderDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New folder") },
-        text = { TextField(name, { name = it }, label = { Text("Folder name") }, singleLine = true) },
-        confirmButton = { TextButton(onClick = { onConfirm(name.trim()) }, enabled = name.isNotBlank()) { Text("Create") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        title = { Text(stringResource(R.string.folder_new)) },
+        text = { TextField(name, { name = it }, label = { Text(stringResource(R.string.folder_name)) }, singleLine = true) },
+        confirmButton = { TextButton(onClick = { onConfirm(name.trim()) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.action_create)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } }
     )
 }
 
@@ -859,10 +862,10 @@ fun RenameFolderDialog(currentName: String, onDismiss: () -> Unit, onConfirm: (S
     var name by rememberSaveable(currentName) { mutableStateOf(currentName) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename folder") },
-        text = { TextField(name, { name = it }, label = { Text("Folder name") }, singleLine = true) },
-        confirmButton = { TextButton(onClick = { onConfirm(name.trim()) }, enabled = name.isNotBlank() && name.trim() != currentName) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        title = { Text(stringResource(R.string.folder_rename)) },
+        text = { TextField(name, { name = it }, label = { Text(stringResource(R.string.folder_name)) }, singleLine = true) },
+        confirmButton = { TextButton(onClick = { onConfirm(name.trim()) }, enabled = name.isNotBlank() && name.trim() != currentName) { Text(stringResource(R.string.action_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } }
     )
 }
 
@@ -870,10 +873,10 @@ fun RenameFolderDialog(currentName: String, onDismiss: () -> Unit, onConfirm: (S
 fun DeleteFolderDialog(folderName: String, documentCount: Int, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete folder \"$folderName\"?") },
-        text = { Text("Deleting this folder will move its $documentCount document(s) to Unfiled. The documents will not be deleted.") },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Delete Folder", color = MaterialTheme.colorScheme.error) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        title = { Text(stringResource(R.string.folder_delete_title, folderName)) },
+        text = { Text(stringResource(R.string.folder_delete_body, documentCount)) },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.folder_delete_action), color = MaterialTheme.colorScheme.error) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } }
     )
 }
 
@@ -954,12 +957,12 @@ fun DocumentDetailScreen(
                             }
                             DropdownMenu(expanded = overflowOpen, onDismissRequest = { overflowOpen = false }) {
                                 DropdownMenuItem(
-                                    text = { Text("Add pages") },
+            text = { Text(stringResource(R.string.action_add_pages)) },
                                     leadingIcon = { Icon(Icons.Default.AddPhotoAlternate, null) },
                                     onClick = { overflowOpen = false; onAddPages() }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Export / Save") },
+                                    text = { Text(stringResource(R.string.document_export_save)) },
                                     leadingIcon = { Icon(Icons.AutoMirrored.Filled.DriveFileMove, null) },
                                     onClick = { overflowOpen = false; exportDialogOpen = true },
                                     enabled = !isExporting
@@ -970,14 +973,14 @@ fun DocumentDetailScreen(
                                     onClick = { overflowOpen = false; onFavorite(!document.isFavorite) }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Move to Vault") },
+                                    text = { Text(stringResource(R.string.vault_move_to_vault)) },
                                     leadingIcon = { Icon(Icons.Default.Lock, null) },
                                     onClick = { overflowOpen = false; onMoveToVault() }
                                 )
                                 if (folders.isNotEmpty() || document.folder != null) {
-                                    DropdownMenuItem(text = { Text("Move to folder") }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.DriveFileMove, null) }, onClick = { overflowOpen = false; moveOpen = true })
+                                    DropdownMenuItem(text = { Text(stringResource(R.string.document_move_folder)) }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.DriveFileMove, null) }, onClick = { overflowOpen = false; moveOpen = true })
                                 }
-                                DropdownMenuItem(text = { Text("Move to Trash") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { overflowOpen = false; trashOpen = true })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.action_move_to_trash)) }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { overflowOpen = false; trashOpen = true })
                             }
                         }
                     }
@@ -1007,19 +1010,19 @@ fun DocumentDetailScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(4.dp))
-                                    .clickable(onClickLabel = "Rename document") { renameOpen = true }
+                    .clickable(onClickLabel = stringResource(R.string.document_rename)) { renameOpen = true }
                                     .padding(vertical = 4.dp)
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(document.metadataLine(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            document.folder?.let { Text("Folder: ${it.name}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                            document.folder?.let { Text(stringResource(R.string.document_folder_name, it.name), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                             Spacer(Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Pages", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                                Text(stringResource(R.string.document_pages), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                                 TextButton(onClick = onAddPages) {
                                     Icon(Icons.Default.AddPhotoAlternate, null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(4.dp))
-                                    Text("Add page")
+                                    Text(stringResource(R.string.document_add_page))
                                 }
                             }
                         }
@@ -1036,7 +1039,7 @@ fun DocumentDetailScreen(
                                     Thumbnail(
                                         path = page.thumbnailAsset,
                                         fileStore = fileStore,
-                                        description = "Page ${position + 1}",
+                                        description = stringResource(R.string.scanner_page_number, position + 1),
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .aspectRatio(page.safeAspectRatio())
@@ -1058,22 +1061,22 @@ fun DocumentDetailScreen(
                                     }
                                     DropdownMenu(expanded = pageMenuOpen, onDismissRequest = { pageMenuOpen = false }) {
                                         DropdownMenuItem(
-                                            text = { Text("Rotate left") },
+                                            text = { Text(stringResource(R.string.page_rotate_left)) },
                                             leadingIcon = { Icon(Icons.Default.RotateLeft, null) },
                                             onClick = { pageMenuOpen = false; onRotatePage(page.id, -90) }
                                         )
                                         DropdownMenuItem(
-                                            text = { Text("Rotate right") },
+                                            text = { Text(stringResource(R.string.page_rotate_right)) },
                                             leadingIcon = { Icon(Icons.Default.RotateRight, null) },
                                             onClick = { pageMenuOpen = false; onRotatePage(page.id, 90) }
                                         )
                                         DropdownMenuItem(
-                                            text = { Text("Re-crop & treatment") },
+                                            text = { Text(stringResource(R.string.page_recrop_treatment)) },
                                             leadingIcon = { Icon(Icons.Default.Crop, null) },
                                             onClick = { pageMenuOpen = false; onEditPage(page) }
                                         )
                                         DropdownMenuItem(
-                                            text = { Text("Remove page") },
+                                            text = { Text(stringResource(R.string.page_remove)) },
                                             leadingIcon = { Icon(Icons.Default.Delete, null) },
                                             onClick = { pageMenuOpen = false; pageToDelete = page }
                                         )
@@ -1084,7 +1087,7 @@ fun DocumentDetailScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        "Page ${position + 1}",
+                                                        stringResource(R.string.scanner_page_number, position + 1),
                                         style = MaterialTheme.typography.labelLarge,
                                         modifier = Modifier.weight(1f).padding(start = 4.dp)
                                     )
@@ -1137,7 +1140,7 @@ fun DocumentDetailScreen(
                     Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
                         Spacer(Modifier.width(16.dp))
-                        Text("Exporting document…", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.document_exporting), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
@@ -1168,10 +1171,10 @@ fun DocumentDetailScreen(
     if (moveOpen && document != null) MoveDialog(document.folder?.id, folders, { moveOpen = false }) { onMove(it); moveOpen = false }
     if (trashOpen) AlertDialog(
         onDismissRequest = { trashOpen = false },
-        title = { Text("Move document to Trash?") },
-        text = { Text("It will be removed from Home and kept in local Trash.") },
-        confirmButton = { TextButton(onClick = { trashOpen = false; onTrash() }) { Text("Move to Trash") } },
-        dismissButton = { TextButton(onClick = { trashOpen = false }) { Text("Cancel") } }
+        title = { Text(stringResource(R.string.document_trash_title)) },
+        text = { Text(stringResource(R.string.document_trash_body)) },
+        confirmButton = { TextButton(onClick = { trashOpen = false; onTrash() }) { Text(stringResource(R.string.action_move_to_trash)) } },
+        dismissButton = { TextButton(onClick = { trashOpen = false }) { Text(stringResource(R.string.action_cancel)) } }
     )
 
     pageToDelete?.let { targetPage ->
@@ -1198,7 +1201,7 @@ fun DocumentDetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = { pageToDelete = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -1210,10 +1213,10 @@ private fun RenameDialog(currentName: String, onDismiss: () -> Unit, onConfirm: 
     var name by rememberSaveable(currentName) { mutableStateOf(currentName) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename document") },
-        text = { TextField(name, { name = it }, label = { Text("Document name") }, singleLine = true) },
-        confirmButton = { TextButton(onClick = { onConfirm(name.trim()) }, enabled = name.isNotBlank()) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        title = { Text(stringResource(R.string.document_rename)) },
+        text = { TextField(name, { name = it }, label = { Text(stringResource(R.string.scanner_document_name)) }, singleLine = true) },
+        confirmButton = { TextButton(onClick = { onConfirm(name.trim()) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.action_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } }
     )
 }
 
@@ -1222,15 +1225,15 @@ fun MoveDialog(currentFolderId: FolderId?, folders: List<Folder>, onDismiss: () 
     var selected by rememberSaveable { mutableStateOf(currentFolderId?.value) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Move to folder") },
+        title = { Text(stringResource(R.string.document_move_folder)) },
         text = {
             LazyColumn {
                 item { FolderChoice("No folder (Unfiled)", selected == null) { selected = null } }
                 items(folders, key = { it.id.value }) { folder -> FolderChoice(folder.name, selected == folder.id.value) { selected = folder.id.value } }
             }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(selected?.let(::FolderId)) }) { Text("Move") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+            confirmButton = { TextButton(onClick = { onConfirm(selected?.let(::FolderId)) }) { Text(stringResource(R.string.action_move)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } }
     )
 }
 
@@ -1248,10 +1251,10 @@ private fun MissingDocument(modifier: Modifier, onBack: () -> Unit) {
     Column(modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Icon(Icons.Default.Description, null, modifier = Modifier.size(56.dp))
         Spacer(Modifier.height(16.dp))
-        Text("Document unavailable", style = MaterialTheme.typography.titleLarge)
-        Text("It may have been removed from this device.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.document_unavailable), style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.document_unavailable_body), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onBack) { Text("Back to Home") }
+        Button(onClick = onBack) { Text(stringResource(R.string.action_back_home)) }
     }
 }
 
@@ -1279,11 +1282,11 @@ fun PageViewerScreen(
             ManagedBitmap.Missing -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(Icons.Default.BrokenImage, null, tint = OScanTheme.colors.onWorkspace, modifier = Modifier.size(56.dp))
                 Spacer(Modifier.height(12.dp))
-                Text("This page image is missing", color = OScanTheme.colors.onWorkspace)
+                Text(stringResource(R.string.page_image_missing), color = OScanTheme.colors.onWorkspace)
             }
             is ManagedBitmap.Ready -> Image(
                 bitmap = image.bitmap.asImageBitmap(),
-                contentDescription = "Page ${pageIndex + 1} of ${document.pages.size}",
+                contentDescription = stringResource(R.string.page_position_format, pageIndex + 1, document.pages.size),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize()
                     .graphicsLayer(scaleX = scale, scaleY = scale, translationX = offset.x, translationY = offset.y)
@@ -1310,7 +1313,7 @@ fun PageViewerScreen(
                 IconButton(onClick = { pageIndex--; scale = 1f; offset = Offset.Zero }, enabled = pageIndex > 0) {
                     Icon(Icons.AutoMirrored.Filled.NavigateBefore, "Previous page")
                 }
-                Text("${pageIndex + 1} of ${document.pages.size}", modifier = Modifier.padding(horizontal = 12.dp))
+                Text(stringResource(R.string.page_count_position, pageIndex + 1, document.pages.size), modifier = Modifier.padding(horizontal = 12.dp))
                 IconButton(onClick = { pageIndex++; scale = 1f; offset = Offset.Zero }, enabled = pageIndex < document.pages.lastIndex) {
                     Icon(Icons.AutoMirrored.Filled.NavigateNext, "Next page")
                 }
@@ -1434,18 +1437,18 @@ fun ExportAndSaveDialog(
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(Modifier.width(12.dp))
-                Text("Export / Save")
+                Text(stringResource(R.string.document_export_save))
             }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
-                    text = "Select format, image quality, and target action to save or share your document.",
+        text = stringResource(R.string.document_export_options_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Text("Format", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.export_format), style = MaterialTheme.typography.titleMedium)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1469,7 +1472,7 @@ fun ExportAndSaveDialog(
                     }
                 }
 
-                Text("Image Quality", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.export_image_quality), style = MaterialTheme.typography.titleMedium)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1494,7 +1497,7 @@ fun ExportAndSaveDialog(
                 ) {
                     Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Share")
+                    Text(stringResource(R.string.action_share))
                 }
                 Button(
                     onClick = { onSave(selectedFormat, selectedQuality) },
@@ -1502,15 +1505,14 @@ fun ExportAndSaveDialog(
                 ) {
                     Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Save")
+                    Text(stringResource(R.string.action_save))
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
 }
-

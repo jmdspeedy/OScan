@@ -12,6 +12,8 @@ import com.oscan.android.data.vault.LocalVaultRepository
 import com.oscan.android.data.vault.VaultBiometricManager
 import com.oscan.android.data.vault.VaultRepository
 import com.oscan.android.data.vault.VaultSessionManager
+import com.oscan.android.localization.AndroidAppLocaleController
+import com.oscan.android.localization.AppLocaleController
 
 class OScanApplication : Application() {
     lateinit var appContainer: AppContainer
@@ -36,4 +38,5 @@ class AppContainer(application: Application) {
     val vaultRepository: VaultRepository by lazy { LocalVaultRepository(application) }
     val vaultSessionManager: VaultSessionManager by lazy { VaultSessionManager() }
     val vaultBiometricManager: VaultBiometricManager by lazy { VaultBiometricManager(application) }
+    val appLocaleController: AppLocaleController by lazy { AndroidAppLocaleController() }
 }

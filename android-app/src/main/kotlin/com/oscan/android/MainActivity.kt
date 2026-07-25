@@ -10,7 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.fragment.app.FragmentActivity
+import androidx.appcompat.app.AppCompatActivity
 import com.oscan.android.engine.AndroidScannerEngine
 import com.oscan.android.ui.CameraViewModel
 import com.oscan.android.ui.LibraryViewModel
@@ -21,7 +21,7 @@ import com.oscan.android.ui.vault.VaultViewModel
 import com.oscan.core.model.FilterType
 import kotlinx.coroutines.flow.first
 
-class MainActivity : FragmentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private val scannerEngine by lazy { AndroidScannerEngine(applicationContext) }
     private val container by lazy { (application as OScanApplication).appContainer }
@@ -93,6 +93,7 @@ class MainActivity : FragmentActivity() {
                         viewModel = viewModel,
                         cameraViewModel = cameraViewModel,
                         libraryViewModel = libraryViewModel,
+                        appLocaleController = container.appLocaleController,
                         vaultViewModel = vaultViewModel,
                         fileStore = container.fileStore,
                         scannerEngine = scannerEngine,

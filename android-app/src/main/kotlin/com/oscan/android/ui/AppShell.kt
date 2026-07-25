@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PhotoCamera
@@ -54,6 +55,11 @@ import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.oscan.android.R
+import com.oscan.android.data.preferences.AppLanguage
+import com.oscan.android.localization.AppLocaleController
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
@@ -108,16 +114,24 @@ import com.oscan.android.data.preferences.LibraryPresentation
 import com.oscan.android.data.storage.DocumentFileStore
 import kotlinx.coroutines.launch
 
-private enum class AppDestination(val label: String, val selectedIcon: ImageVector, val icon: ImageVector) {
-    Home("Home", Icons.Filled.Home, Icons.Outlined.Home),
-    Scan("Scan", Icons.Filled.PhotoCamera, Icons.Outlined.PhotoCamera),
-    Me("Me", Icons.Filled.Person, Icons.Outlined.Person)
+private enum class AppDestination(val selectedIcon: ImageVector, val icon: ImageVector) {
+    Home(Icons.Filled.Home, Icons.Outlined.Home),
+    Scan(Icons.Filled.PhotoCamera, Icons.Outlined.PhotoCamera),
+    Me(Icons.Filled.Person, Icons.Outlined.Person)
+}
+
+@Composable
+private fun AppDestination.label(): String = when (this) {
+    AppDestination.Home -> stringResource(R.string.nav_library)
+    AppDestination.Scan -> stringResource(R.string.nav_camera)
+    AppDestination.Me -> stringResource(R.string.nav_me)
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OScanAppShell(
     libraryViewModel: LibraryViewModel,
+    appLocaleController: AppLocaleController? = null,
     vaultViewModel: com.oscan.android.ui.vault.VaultViewModel? = null,
     cameraViewModel: CameraViewModel? = null,
     captureState: CameraCaptureState? = null,
@@ -155,9 +169,10 @@ fun OScanAppShell(
     val gridState = rememberLazyGridState()
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val localizedMessage = state.message?.let { localizedRuntimeMessage(it) }
 
-    LaunchedEffect(state.message) {
-        state.message?.let {
+    LaunchedEffect(localizedMessage) {
+        localizedMessage?.let {
             snackbarHostState.showSnackbar(it)
             libraryViewModel.clearMessage()
         }
@@ -211,6 +226,13 @@ fun OScanAppShell(
                 onThemeChoiceSelected = libraryViewModel::setThemeChoice,
                 onAccentThemeSelected = libraryViewModel::setAccentTheme,
                 onBack = { activeSubRoute = SettingsSubRoute.NONE }
+            )
+            SettingsSubRoute.LANGUAGE -> LanguageSettingsScreen(
+                selectedLanguage = appLocaleController?.currentLanguage() ?: AppLanguage.SYSTEM,
+                onLanguageSelected = { lang ->
+                    appLocaleController?.setLanguage(lang)
+                },
+                onBackClick = { activeSubRoute = SettingsSubRoute.NONE }
             )
             SettingsSubRoute.STORAGE -> StorageSettingsScreen(
                 fileStore = fileStore,
@@ -302,15 +324,15 @@ fun OScanAppShell(
             val doc = state.selectedDocument!!
             AlertDialog(
                 onDismissRequest = { addPagesDialogOpen = false },
-                title = { Text("Add pages to \"${doc.name}\"") },
-                text = { Text("Choose how you want to add pages to this document.") },
+                title = { Text(stringResource(R.string.dialog_add_pages_title, doc.name)) },
+                text = { Text(stringResource(R.string.dialog_add_pages_body)) },
                 confirmButton = {
                     TextButton(onClick = {
                         addPagesDialogOpen = false
                         scannerViewModel.prepareAddPagesToDocument(doc.id, doc.name)
                         destination = AppDestination.Scan
                     }) {
-                        Text("Open camera")
+                        Text(stringResource(R.string.action_open_camera))
                     }
                 },
                 dismissButton = {
@@ -319,7 +341,7 @@ fun OScanAppShell(
                         scannerViewModel.prepareAddPagesToDocument(doc.id, doc.name)
                         onImportImages()
                     }) {
-                        Text("Import images")
+                        Text(stringResource(R.string.action_import_images))
                     }
                 }
             )
@@ -417,6 +439,7 @@ fun OScanAppShell(
                     },
                     onOpenSubRoute = { activeSubRoute = it },
                     libraryViewModel = libraryViewModel,
+                    appLocaleController = appLocaleController,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -448,6 +471,7 @@ fun OScanAppShell(
                 },
                 onOpenSubRoute = { activeSubRoute = it },
                 libraryViewModel = libraryViewModel,
+                appLocaleController = appLocaleController,
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
                     NavigationBar {
@@ -456,7 +480,7 @@ fun OScanAppShell(
                                 selected = destination == item,
                                 onClick = { selectDestination(item) },
                                 icon = { Icon(if (destination == item) item.selectedIcon else item.icon, null) },
-                                label = { Text(item.label) }
+                                label = { Text(item.label()) }
                             )
                         }
                     }
@@ -478,7 +502,7 @@ private fun LibraryMasterPane(
 ) {
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text("Library") }) }
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.library_title)) }) }
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             HomeLibraryScreen(
@@ -495,7 +519,7 @@ private fun LibraryMasterPane(
                 onCreateFolderRequested = {},
                 emptyContent = {
                     Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                        Text("No documents", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.library_no_documents), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             )
@@ -512,7 +536,7 @@ private fun OScanNavigationRail(selected: AppDestination, onDestinationSelected:
                 selected = selected == item,
                 onClick = { onDestinationSelected(item) },
                 icon = { Icon(if (selected == item) item.selectedIcon else item.icon, null) },
-                label = { Text(item.label) }
+                label = { Text(item.label()) }
             )
         }
     }
@@ -539,6 +563,7 @@ private fun DestinationScaffold(
     onMoveSelectedToVault: () -> Unit = {},
     onOpenSubRoute: (SettingsSubRoute) -> Unit,
     libraryViewModel: LibraryViewModel,
+    appLocaleController: AppLocaleController? = null,
     modifier: Modifier,
     bottomBar: @Composable () -> Unit = {}
 ) {
@@ -555,7 +580,7 @@ private fun DestinationScaffold(
                     TopAppBar(
                         title = {
                             Text(
-                                "${state.selectedDocumentIds.size} selected",
+                            stringResource(R.string.selection_count, state.selectedDocumentIds.size),
                                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                             )
                         },
@@ -581,7 +606,7 @@ private fun DestinationScaffold(
                     )
                 } else {
                     TopAppBar(
-                        title = { Text(if (destination == AppDestination.Home) "OScan" else destination.label) },
+                        title = { Text(if (destination == AppDestination.Home) "OScan" else destination.label()) },
                         actions = {
                             if (destination == AppDestination.Home) {
                                 IconButton(onClick = onOpenFolders) {
@@ -669,6 +694,7 @@ private fun DestinationScaffold(
                 }
                 AppDestination.Me -> MeScreen(
                     userPreferences = state.userPreferences,
+                    appLocaleController = appLocaleController,
                     trashCount = state.trashDocuments.size,
                     foldersCount = state.folders.size,
                     onOpenFolders = onOpenFolders,
@@ -698,17 +724,17 @@ private fun DestinationScaffold(
         val count = state.selectedDocumentIds.size
         AlertDialog(
             onDismissRequest = { bulkTrashConfirmOpen = false },
-            title = { Text("Move $count document(s) to Trash?") },
-            text = { Text("Selected documents will be moved to local Trash.") },
+            title = { Text(stringResource(R.string.dialog_move_selected_trash_title)) },
+            text = { Text(stringResource(R.string.dialog_move_selected_trash_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     libraryViewModel.bulkMoveToTrash()
                     bulkTrashConfirmOpen = false
                 }) {
-                    Text("Move to Trash")
+                    Text(stringResource(R.string.action_move_to_trash))
                 }
             },
-            dismissButton = { TextButton(onClick = { bulkTrashConfirmOpen = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { bulkTrashConfirmOpen = false }) { Text(stringResource(R.string.action_cancel)) } }
         )
     }
 
@@ -724,29 +750,30 @@ private fun DestinationScaffold(
 }
 
 private enum class SettingsSubRoute {
-    NONE, CAPTURE, ENHANCEMENT, EXPORT, APPEARANCE, STORAGE, PRIVACY, HELP, ABOUT
+    NONE, CAPTURE, ENHANCEMENT, EXPORT, APPEARANCE, LANGUAGE, STORAGE, PRIVACY, HELP, ABOUT
 }
 
+@Composable
 private fun DocumentSort.label(): String = when (this) {
-    DocumentSort.MODIFIED_DESC -> "Modified: newest"
-    DocumentSort.MODIFIED_ASC -> "Modified: oldest"
-    DocumentSort.CREATED_DESC -> "Created: newest"
-    DocumentSort.CREATED_ASC -> "Created: oldest"
-    DocumentSort.NAME_ASC -> "Name: A–Z"
-    DocumentSort.NAME_DESC -> "Name: Z–A"
+    DocumentSort.MODIFIED_DESC -> stringResource(R.string.library_sort_date_desc)
+    DocumentSort.MODIFIED_ASC -> stringResource(R.string.library_sort_date_asc)
+    DocumentSort.CREATED_DESC -> stringResource(R.string.library_sort_created_desc)
+    DocumentSort.CREATED_ASC -> stringResource(R.string.library_sort_created_asc)
+    DocumentSort.NAME_ASC -> stringResource(R.string.library_sort_name_asc)
+    DocumentSort.NAME_DESC -> stringResource(R.string.library_sort_name_desc)
 }
 
 @Composable
 private fun EmptyHomeScreen(onScanDocument: () -> Unit) {
     EmptyStateLayout(
         icon = Icons.Default.Description,
-        title = "Your documents will appear here",
-        supportingText = "Scan with the camera. Everything stays on this device."
+        title = stringResource(R.string.library_home_empty_title),
+        supportingText = stringResource(R.string.library_home_empty_body)
     ) {
         Button(onClick = onScanDocument, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.PhotoCamera, null)
             Spacer(Modifier.width(8.dp))
-            Text("Scan document")
+            Text(stringResource(R.string.action_scan_document))
         }
     }
 }
@@ -755,19 +782,19 @@ private fun EmptyHomeScreen(onScanDocument: () -> Unit) {
 private fun ScanEntryScreen(onOpenCamera: () -> Unit, onImportImages: () -> Unit) {
     EmptyStateLayout(
         icon = Icons.Default.PhotoCamera,
-        title = "Scan a document",
-        supportingText = "Capture pages with the camera or import images. Everything is processed and saved locally."
+        title = stringResource(R.string.scan_entry_title),
+        supportingText = stringResource(R.string.scan_entry_body)
     ) {
         Button(onClick = onOpenCamera, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.PhotoCamera, null)
             Spacer(Modifier.width(8.dp))
-            Text("Open camera")
+            Text(stringResource(R.string.action_open_camera))
         }
         Spacer(Modifier.height(12.dp))
         OutlinedButton(onClick = onImportImages, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.PhotoLibrary, null)
             Spacer(Modifier.width(8.dp))
-            Text("Import images")
+            Text(stringResource(R.string.action_import_images))
         }
     }
 }
@@ -775,6 +802,7 @@ private fun ScanEntryScreen(onOpenCamera: () -> Unit, onImportImages: () -> Unit
 @Composable
 private fun MeScreen(
     userPreferences: com.oscan.android.data.preferences.UserPreferences,
+    appLocaleController: AppLocaleController?,
     trashCount: Int,
     foldersCount: Int,
     onOpenFolders: () -> Unit,
@@ -820,7 +848,7 @@ private fun MeScreen(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         Icons.Default.Person,
-                        contentDescription = "Avatar",
+                        contentDescription = stringResource(R.string.cd_avatar),
                         tint = avatarFgColor,
                         modifier = Modifier.size(40.dp)
                     )
@@ -838,7 +866,7 @@ private fun MeScreen(
             IconButton(onClick = { editNameDialogOpen = true }, modifier = Modifier.size(32.dp)) {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit name",
+                    contentDescription = stringResource(R.string.cd_edit_name),
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -859,8 +887,8 @@ private fun MeScreen(
                 Icon(Icons.Default.Folder, null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Folders overview", style = MaterialTheme.typography.titleMedium)
-                    Text("$foldersCount folder(s)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.folders_overview), style = MaterialTheme.typography.titleMedium)
+                    Text(pluralStringResource(R.plurals.plural_folders, foldersCount, foldersCount), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -878,7 +906,7 @@ private fun MeScreen(
                 Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Trash", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.library_tab_trash), style = MaterialTheme.typography.titleMedium)
                     Text(if (trashCount == 1) "1 item in Trash" else "$trashCount items in Trash", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -888,26 +916,38 @@ private fun MeScreen(
 
         // Settings Section
         Column(Modifier.fillMaxWidth()) {
-            Text("Settings", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
 
-            MeSettingRow("Capture", "Auto-capture default, shutter feedback", Icons.Default.CameraAlt) { onOpenSubRoute(SettingsSubRoute.CAPTURE) }
-            MeSettingRow("Enhancement", "Default treatment (Magic / Original)", Icons.Default.AutoAwesome) { onOpenSubRoute(SettingsSubRoute.ENHANCEMENT) }
-            MeSettingRow("Export", "Filename pattern, PDF page size & quality", Icons.Default.PictureAsPdf) { onOpenSubRoute(SettingsSubRoute.EXPORT) }
-            MeSettingRow("Appearance", "Change the theme of OScan", Icons.Default.Palette) { onOpenSubRoute(SettingsSubRoute.APPEARANCE) }
-            MeSettingRow("Storage", "Local usage summary & cache cleanup", Icons.Default.Storage) { onOpenSubRoute(SettingsSubRoute.STORAGE) }
+            MeSettingRow(stringResource(R.string.settings_capture_row), stringResource(R.string.settings_capture_row_desc), Icons.Default.CameraAlt) { onOpenSubRoute(SettingsSubRoute.CAPTURE) }
+            MeSettingRow(stringResource(R.string.settings_enhancement_row), stringResource(R.string.settings_enhancement_row_desc), Icons.Default.AutoAwesome) { onOpenSubRoute(SettingsSubRoute.ENHANCEMENT) }
+            MeSettingRow(stringResource(R.string.settings_export_row), stringResource(R.string.settings_export_row_desc), Icons.Default.PictureAsPdf) { onOpenSubRoute(SettingsSubRoute.EXPORT) }
+            MeSettingRow(stringResource(R.string.settings_appearance_row), stringResource(R.string.settings_appearance_row_desc), Icons.Default.Palette) { onOpenSubRoute(SettingsSubRoute.APPEARANCE) }
+            val currentLang = appLocaleController?.currentLanguage() ?: AppLanguage.SYSTEM
+            val langSubtitle = when (currentLang) {
+                AppLanguage.SYSTEM -> stringResource(R.string.language_system)
+                AppLanguage.ENGLISH -> stringResource(R.string.language_english)
+                AppLanguage.SIMPLIFIED_CHINESE -> stringResource(R.string.language_simplified_chinese)
+                AppLanguage.JAPANESE -> stringResource(R.string.language_japanese)
+            }
+            MeSettingRow(
+                title = stringResource(R.string.settings_language_title),
+                subtitle = langSubtitle,
+                icon = Icons.Default.Language
+            ) { onOpenSubRoute(SettingsSubRoute.LANGUAGE) }
+            MeSettingRow(stringResource(R.string.settings_storage_title), stringResource(R.string.settings_storage_row_desc), Icons.Default.Storage) { onOpenSubRoute(SettingsSubRoute.STORAGE) }
         }
 
         Spacer(Modifier.height(24.dp))
 
         // Product Info Section
         Column(Modifier.fillMaxWidth()) {
-            Text("Product Information", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.product_information), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
 
-            MeSettingRow("Privacy Policy", "100% local, no telemetry or accounts", Icons.Default.PrivacyTip) { onOpenSubRoute(SettingsSubRoute.PRIVACY) }
-            MeSettingRow("Help & User Guide", "Scanning, crop adjustments, multi-page editing", Icons.Default.HelpOutline) { onOpenSubRoute(SettingsSubRoute.HELP) }
-            MeSettingRow("About OScan", "Version $versionName, open-source notices", Icons.Default.Info) { onOpenSubRoute(SettingsSubRoute.ABOUT) }
+            MeSettingRow(stringResource(R.string.privacy_title), stringResource(R.string.settings_privacy_row_desc), Icons.Default.PrivacyTip) { onOpenSubRoute(SettingsSubRoute.PRIVACY) }
+            MeSettingRow(stringResource(R.string.help_title), stringResource(R.string.settings_help_row_desc), Icons.Default.HelpOutline) { onOpenSubRoute(SettingsSubRoute.HELP) }
+            MeSettingRow(stringResource(R.string.about_title), stringResource(R.string.settings_about_row_desc, versionName), Icons.Default.Info) { onOpenSubRoute(SettingsSubRoute.ABOUT) }
         }
     }
 
@@ -915,12 +955,12 @@ private fun MeScreen(
         var tempName by remember { mutableStateOf(userPreferences.displayName) }
         AlertDialog(
             onDismissRequest = { editNameDialogOpen = false },
-            title = { Text("Edit display name") },
+            title = { Text(stringResource(R.string.profile_edit_name)) },
             text = {
                 androidx.compose.material3.OutlinedTextField(
                     value = tempName,
                     onValueChange = { tempName = it },
-                    label = { Text("Local display name") },
+                    label = { Text(stringResource(R.string.profile_display_name_label)) },
                     singleLine = true
                 )
             },
@@ -929,25 +969,25 @@ private fun MeScreen(
                     if (tempName.isNotBlank()) onUpdateDisplayName(tempName.trim())
                     editNameDialogOpen = false
                 }) {
-                    Text("Save")
+                    Text(stringResource(R.string.action_save))
                 }
             },
-            dismissButton = { TextButton(onClick = { editNameDialogOpen = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { editNameDialogOpen = false }) { Text(stringResource(R.string.action_cancel)) } }
         )
     }
 
     if (editAvatarDialogOpen) {
         AlertDialog(
             onDismissRequest = { editAvatarDialogOpen = false },
-            title = { Text("Choose Avatar Color") },
+            title = { Text(stringResource(R.string.profile_avatar_color)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
-                        "TEAL" to "Teal (Default)",
-                        "INDIGO" to "Indigo",
-                        "AMBER" to "Amber",
-                        "GREEN" to "Green",
-                        "PURPLE" to "Purple"
+                        "TEAL" to stringResource(R.string.avatar_teal),
+                        "INDIGO" to stringResource(R.string.avatar_indigo),
+                        "AMBER" to stringResource(R.string.avatar_amber),
+                        "GREEN" to stringResource(R.string.avatar_green),
+                        "PURPLE" to stringResource(R.string.avatar_purple)
                     ).forEach { (presetKey, label) ->
                         Row(
                             modifier = Modifier
@@ -972,7 +1012,7 @@ private fun MeScreen(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { editAvatarDialogOpen = false }) { Text("Close") } }
+            confirmButton = { TextButton(onClick = { editAvatarDialogOpen = false }) { Text(stringResource(R.string.action_close)) } }
         )
     }
 }

@@ -73,6 +73,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.res.stringResource
+import com.oscan.android.R
 import com.oscan.android.data.preferences.AccentTheme
 import com.oscan.android.data.preferences.CameraLensPreference
 import com.oscan.android.data.preferences.JpegQuality
@@ -84,6 +86,42 @@ import com.oscan.android.ui.theme.createColorScheme
 import com.oscan.android.ui.theme.swatchColors
 import com.oscan.core.model.FilterType
 import java.io.File
+
+@Composable
+fun AccentTheme.label(): String = when (this) {
+    AccentTheme.TEAL -> stringResource(R.string.accent_teal)
+    AccentTheme.MINT -> stringResource(R.string.accent_mint)
+    AccentTheme.BLUE -> stringResource(R.string.accent_blue)
+    AccentTheme.INDIGO -> stringResource(R.string.accent_indigo)
+    AccentTheme.PURPLE -> stringResource(R.string.accent_purple)
+    AccentTheme.PINK -> stringResource(R.string.accent_pink)
+    AccentTheme.CRIMSON -> stringResource(R.string.accent_crimson)
+    AccentTheme.AMBER -> stringResource(R.string.accent_amber)
+    AccentTheme.LIME -> stringResource(R.string.accent_lime)
+    AccentTheme.SLATE -> stringResource(R.string.accent_slate)
+}
+
+@Composable
+fun PdfPageSize.label(): String = when (this) {
+    PdfPageSize.A4 -> stringResource(R.string.page_size_a4)
+    PdfPageSize.LETTER -> stringResource(R.string.page_size_us_letter)
+    PdfPageSize.MATCH_PAGE -> stringResource(R.string.page_size_auto)
+}
+
+@Composable
+fun JpegQuality.label(): String = when (this) {
+    JpegQuality.HIGH -> stringResource(R.string.jpeg_quality_high)
+    JpegQuality.MEDIUM -> stringResource(R.string.jpeg_quality_medium)
+    JpegQuality.LOW -> stringResource(R.string.jpeg_quality_low)
+}
+
+@Composable
+fun FilterType.displayName(): String = when (this) {
+    FilterType.MAGIC -> stringResource(R.string.treatment_magic)
+    FilterType.ORIGINAL -> stringResource(R.string.treatment_photo)
+    FilterType.GRAYSCALE -> stringResource(R.string.treatment_grayscale)
+    FilterType.BLACK_WHITE -> stringResource(R.string.treatment_bw)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,10 +135,10 @@ fun CaptureSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Capture settings") },
+                title = { Text(stringResource(R.string.settings_capture_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back_button))
                     }
                 }
             )
@@ -115,20 +153,20 @@ fun CaptureSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             SettingSwitchRow(
-                title = "Auto-capture default",
-                subtitle = "Automatically capture when a stable document boundary is detected.",
+                title = stringResource(R.string.settings_auto_capture_default),
+                subtitle = stringResource(R.string.settings_auto_capture_default_desc),
                 checked = preferences.autoCaptureDefault,
                 onCheckedChange = onAutoCaptureChanged
             )
             HorizontalDivider()
             SettingSwitchRow(
-                title = "Shutter feedback",
-                subtitle = "Provide visual and audio/haptic feedback when taking a capture.",
+                title = stringResource(R.string.settings_shutter_feedback),
+                subtitle = stringResource(R.string.settings_shutter_feedback_desc),
                 checked = preferences.shutterFeedback,
                 onCheckedChange = onShutterFeedbackChanged
             )
             HorizontalDivider()
-            Text("Camera Preference", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_camera_preference), style = MaterialTheme.typography.titleMedium)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -142,8 +180,8 @@ fun CaptureSettingsScreen(
                 )
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text("Rear camera (Recommended)", style = MaterialTheme.typography.bodyLarge)
-                    Text("Optimal focus and edge detection", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.settings_rear_camera), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.settings_rear_camera_desc), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Row(
@@ -159,8 +197,8 @@ fun CaptureSettingsScreen(
                 )
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text("Front camera", style = MaterialTheme.typography.bodyLarge)
-                    Text("Secondary camera input", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.settings_front_camera), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.settings_front_camera_desc), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -177,10 +215,10 @@ fun EnhancementSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Enhancement settings") },
+                title = { Text(stringResource(R.string.settings_enhancement_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back_button))
                     }
                 }
             )
@@ -194,14 +232,14 @@ fun EnhancementSettingsScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Default Enhancement Treatment", style = MaterialTheme.typography.titleMedium)
-            Text("Choose the default processing applied when scanning pages.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.settings_default_enhancement), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_default_enhancement_desc), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             
             val descriptions = mapOf(
-                FilterType.MAGIC to "Whitens paper and sharpens text while preserving document colours.",
-                FilterType.ORIGINAL to "Keeps the full-colour capture without enhancement.",
-                FilterType.GRAYSCALE to "Removes colour while retaining smooth tones and fine detail.",
-                FilterType.BLACK_WHITE to "Creates a high-contrast binary page for plain text documents."
+                FilterType.MAGIC to stringResource(R.string.treatment_magic_desc),
+                FilterType.ORIGINAL to stringResource(R.string.treatment_original_desc),
+                FilterType.GRAYSCALE to stringResource(R.string.treatment_grayscale_desc),
+                FilterType.BLACK_WHITE to stringResource(R.string.treatment_bw_desc)
             )
             FilterType.entries.forEachIndexed { index, filter ->
                 Row(
@@ -249,10 +287,10 @@ fun ExportSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Export settings") },
+                title = { Text(stringResource(R.string.settings_export_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back_button))
                     }
                 }
             )
@@ -269,21 +307,21 @@ fun ExportSettingsScreen(
             OutlinedTextField(
                 value = preferences.defaultExportFilenamePattern,
                 onValueChange = onFilenamePatternChanged,
-                label = { Text("Default document filename prefix") },
+                label = { Text(stringResource(R.string.settings_filename_prefix)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            Text("Placeholder date will automatically format into your saved document default name.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.settings_filename_prefix_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             HorizontalDivider()
 
-            Text("PDF Page Size", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_pdf_page_size), style = MaterialTheme.typography.titleMedium)
             Box {
                 OutlinedButton(
                     onClick = { pageSizeExpanded = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(preferences.defaultPageSize.label)
+                    Text(preferences.defaultPageSize.label())
                 }
                 DropdownMenu(
                     expanded = pageSizeExpanded,
@@ -291,7 +329,7 @@ fun ExportSettingsScreen(
                 ) {
                     PdfPageSize.entries.forEach { size ->
                         DropdownMenuItem(
-                            text = { Text(size.label) },
+                            text = { Text(size.label()) },
                             onClick = {
                                 onPageSizeChanged(size)
                                 pageSizeExpanded = false
@@ -304,13 +342,13 @@ fun ExportSettingsScreen(
 
             HorizontalDivider()
 
-            Text("Export Image Quality", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_export_image_quality), style = MaterialTheme.typography.titleMedium)
             Box {
                 OutlinedButton(
                     onClick = { qualityExpanded = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(preferences.defaultJpegQuality.label)
+                    Text(preferences.defaultJpegQuality.label())
                 }
                 DropdownMenu(
                     expanded = qualityExpanded,
@@ -318,7 +356,7 @@ fun ExportSettingsScreen(
                 ) {
                     JpegQuality.entries.forEach { quality ->
                         DropdownMenuItem(
-                            text = { Text(quality.label) },
+                            text = { Text(quality.label()) },
                             onClick = {
                                 onJpegQualityChanged(quality)
                                 qualityExpanded = false
@@ -351,10 +389,10 @@ fun AppearanceSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Appearance settings") },
+                title = { Text(stringResource(R.string.settings_appearance_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back_button))
                     }
                 }
             )
@@ -370,7 +408,7 @@ fun AppearanceSettingsScreen(
         ) {
             // Theme Mode Section (Matching Image 2)
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text("Theme", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleLarge)
                 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -378,7 +416,7 @@ fun AppearanceSettingsScreen(
                 ) {
                     PrimaryThemeCardOption(
                         modifier = Modifier.weight(1f),
-                        title = "Light",
+                        title = stringResource(R.string.settings_theme_light),
                         selected = themeChoice == ThemeChoice.LIGHT,
                         accentTheme = accentTheme,
                         previewMode = PreviewMode.LIGHT,
@@ -386,7 +424,7 @@ fun AppearanceSettingsScreen(
                     )
                     PrimaryThemeCardOption(
                         modifier = Modifier.weight(1f),
-                        title = "Dark",
+                        title = stringResource(R.string.settings_theme_dark),
                         selected = themeChoice == ThemeChoice.DARK,
                         accentTheme = accentTheme,
                         previewMode = PreviewMode.DARK,
@@ -394,7 +432,7 @@ fun AppearanceSettingsScreen(
                     )
                     PrimaryThemeCardOption(
                         modifier = Modifier.weight(1f),
-                        title = "Auto",
+                        title = stringResource(R.string.settings_theme_auto),
                         selected = themeChoice == ThemeChoice.SYSTEM,
                         accentTheme = accentTheme,
                         previewMode = PreviewMode.AUTO,
@@ -407,7 +445,7 @@ fun AppearanceSettingsScreen(
 
             // Color Palette Section (Matching Image 1)
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Color palette", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.settings_color_palette), style = MaterialTheme.typography.titleLarge)
 
                 val themeRows = AccentTheme.entries.chunked(3)
                 themeRows.forEach { rowEntries ->
@@ -664,7 +702,7 @@ private fun AccentThemeOptionCard(
             ) {
                 RadioButton(selected = selected, onClick = onSelect)
                 Column {
-                    Text(accentTheme.label, style = MaterialTheme.typography.titleMedium)
+                    Text(accentTheme.label(), style = MaterialTheme.typography.titleMedium)
                     Text(
                         if (selected) "Active color scheme" else "Tap to apply palette",
                         style = MaterialTheme.typography.bodySmall,
@@ -741,10 +779,10 @@ fun StorageSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Storage") },
+                title = { Text(stringResource(R.string.settings_storage_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back_button))
                     }
                 }
             )
@@ -763,13 +801,13 @@ fun StorageSettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Local Usage Summary", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_local_usage), style = MaterialTheme.typography.titleMedium)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Saved Documents")
+                        Text(stringResource(R.string.settings_saved_documents))
                         Text(docsSizeMb, style = MaterialTheme.typography.bodyLarge)
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Temporary Cache")
+                        Text(stringResource(R.string.settings_temporary_cache))
                         Text(cacheSizeMb, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
@@ -783,27 +821,27 @@ fun StorageSettingsScreen(
             ) {
                 Icon(Icons.Default.CleaningServices, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Clean temporary cache")
+                Text(stringResource(R.string.settings_clean_cache_title))
             }
-            Text("Removes leftover temporary preview files and export caches. Your saved local documents remain completely safe.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.settings_clean_cache_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         if (showConfirmDialog) {
             AlertDialog(
                 onDismissRequest = { showConfirmDialog = false },
-                title = { Text("Clean temporary cache?") },
-                text = { Text("Temporary preview files and export caches will be cleared. Saved documents will not be affected.") },
+                title = { Text(stringResource(R.string.settings_clean_cache_confirm)) },
+                text = { Text(stringResource(R.string.settings_clean_cache_confirm_body)) },
                 confirmButton = {
                     TextButton(onClick = {
                         showConfirmDialog = false
                         onCleanCache()
                     }) {
-                        Text("Clean cache")
+                        Text(stringResource(R.string.action_clean_cache))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showConfirmDialog = false }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.action_cancel))
                     }
                 }
             )
@@ -817,10 +855,10 @@ fun PrivacyScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Privacy Policy") },
+                title = { Text(stringResource(R.string.privacy_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back_button))
                     }
                 }
             )
@@ -838,25 +876,25 @@ fun PrivacyScreen(onBack: () -> Unit) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.PrivacyTip, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
                     Spacer(Modifier.width(16.dp))
-                    Text("Processing stays on this device", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text(stringResource(R.string.privacy_on_device), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
             }
 
-            Text("100% Local & Offline", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.privacy_local_offline), style = MaterialTheme.typography.titleLarge)
             Text(
-                "OScan is engineered as a local-first document manager. Document edges, perspective warping, image enhancement, and PDF generation are executed entirely on your Android device using on-device native libraries.",
+                stringResource(R.string.privacy_local_body),
                 style = MaterialTheme.typography.bodyMedium
             )
 
-            Text("No Accounts or Cloud Dependencies", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.privacy_no_accounts), style = MaterialTheme.typography.titleLarge)
             Text(
-                "OScan contains no user accounts, no remote server sync, no analytics tracking, no background reporting, and no advertisements. Your document data never leaves your device unless you explicitly share a PDF.",
+                stringResource(R.string.privacy_accounts_body),
                 style = MaterialTheme.typography.bodyMedium
             )
 
-            Text("Explicit System Sharing", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.privacy_explicit_sharing), style = MaterialTheme.typography.titleLarge)
             Text(
-                "When you tap Share PDF, OScan utilizes the standard Android system share sheet. You remain in full control of where and with whom your files are shared.",
+                stringResource(R.string.privacy_sharing_body),
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -869,10 +907,10 @@ fun HelpScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Help & User Guide") },
+                title = { Text(stringResource(R.string.help_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back_button))
                     }
                 }
             )
@@ -886,12 +924,12 @@ fun HelpScreen(onBack: () -> Unit) {
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            HelpTopic("Camera & Import", "Point the camera at any paper document or import existing photos. OScan automatically identifies document corners and outlines the scan region.")
-            HelpTopic("Adjusting Corners", "Drag the 4 boundary handles on the Crop screen to align exactly with your paper edges. Use Reset to restore initial edge detection.")
-            HelpTopic("Original vs Magic", "Choose Magic for high-contrast, clean document text or Original for unretouched color photos.")
-            HelpTopic("Multi-Page Scanning", "Capture or import multiple pages into one session. Reorder or replace pages before saving as a single local document.")
-            HelpTopic("Folders & Trash", "Organize documents into custom folders. Deleting documents moves them to Trash where they can be restored or permanently removed.")
-            HelpTopic("Exporting PDF", "Save multi-page documents as standard PDF files using your preferred page size and compression settings.")
+            HelpTopic(stringResource(R.string.help_camera_title), stringResource(R.string.help_camera_body))
+            HelpTopic(stringResource(R.string.help_corners_title), stringResource(R.string.help_corners_body))
+            HelpTopic(stringResource(R.string.help_treatment_title), stringResource(R.string.help_treatment_body))
+            HelpTopic(stringResource(R.string.help_multipage_title), stringResource(R.string.help_multipage_body))
+            HelpTopic(stringResource(R.string.help_folders_title), stringResource(R.string.help_folders_body))
+            HelpTopic(stringResource(R.string.help_export_title), stringResource(R.string.help_export_body))
         }
     }
 }
@@ -926,54 +964,52 @@ fun AboutScreen(onBack: () -> Unit) {
     val versionName = remember(context) { com.oscan.android.util.AppVersionUtils.getVersionName(context) }
     val versionCode = remember(context) { com.oscan.android.util.AppVersionUtils.getVersionCode(context) }
 
-    val libraries = remember {
-        listOf(
+    val libraries = listOf(
             OpenSourceLibrary(
                 name = "Android Jetpack Compose & Material 3",
-                description = "Modern declarative UI framework & Material 3 design system",
+                description = stringResource(R.string.oss_compose_desc),
                 repoUrl = "https://github.com/androidx/androidx",
                 icon = Icons.Default.Palette
             ),
             OpenSourceLibrary(
                 name = "Room Persistence Library (SQLite)",
-                description = "Robust local SQLite database object mapping & async reactive queries",
+                description = stringResource(R.string.oss_room_desc),
                 repoUrl = "https://github.com/androidx/androidx",
                 icon = Icons.Default.Storage
             ),
             OpenSourceLibrary(
                 name = "OpenCV Android Native Library",
-                description = "Computer vision engine for document edge detection & perspective transformation",
+                description = stringResource(R.string.oss_opencv_desc),
                 repoUrl = "https://github.com/opencv/opencv",
                 icon = Icons.Default.AutoAwesome
             ),
             OpenSourceLibrary(
                 name = "Microsoft ONNX Runtime Android",
-                description = "On-device ML inference engine for document boundary prediction",
+                description = stringResource(R.string.oss_onnx_desc),
                 repoUrl = "https://github.com/microsoft/onnxruntime",
                 icon = Icons.Default.Psychology
             ),
             OpenSourceLibrary(
                 name = "AndroidX CameraX & DataStore",
-                description = "Hardware camera stream integration & reactive preference storage",
+                description = stringResource(R.string.oss_camerax_desc),
                 repoUrl = "https://github.com/androidx/androidx",
                 icon = Icons.Default.CameraAlt
             ),
             OpenSourceLibrary(
                 name = "Apache PDFBox",
-                description = "High performance PDF rendering & document creation library",
+                description = stringResource(R.string.oss_pdfbox_desc),
                 repoUrl = "https://github.com/apache/pdfbox",
                 icon = Icons.Default.PictureAsPdf
             )
         )
-    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("About OScan") },
+                title = { Text(stringResource(R.string.about_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back_button))
                     }
                 }
             )
@@ -1028,7 +1064,7 @@ fun AboutScreen(onBack: () -> Unit) {
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Text(
-                            text = "Version $versionName (Build $versionCode)",
+                            text = stringResource(R.string.about_version, versionName, versionCode),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -1036,7 +1072,7 @@ fun AboutScreen(onBack: () -> Unit) {
                     }
 
                     Text(
-                        text = "Local-first document manager for Android",
+                        text = stringResource(R.string.about_tagline),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1057,7 +1093,7 @@ fun AboutScreen(onBack: () -> Unit) {
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("View App Repository (GitHub)")
+                        Text(stringResource(R.string.about_github))
                     }
                 }
             }
@@ -1068,12 +1104,12 @@ fun AboutScreen(onBack: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Open-Source Libraries & Notices",
+                    text = stringResource(R.string.about_oss_title),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "OScan is built using open-source software and frameworks.",
+                    text = stringResource(R.string.about_oss_body),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1165,7 +1201,7 @@ private fun LibraryCard(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "Repository",
+                        text = stringResource(R.string.about_repository),
                         style = MaterialTheme.typography.labelMedium
                     )
                 }

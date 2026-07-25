@@ -1,5 +1,7 @@
 package com.oscan.android.ui
 
+import com.oscan.android.R
+
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,6 +28,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -52,7 +55,7 @@ fun PreviewScreen(
             Box(modifier.padding(16.dp), contentAlignment = Alignment.Center) {
                 Image(
                     bitmap = croppedBitmap.asImageBitmap(),
-                    contentDescription = "Processed page preview",
+                    contentDescription = stringResource(R.string.preview_processed_page),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit
                 )
@@ -64,7 +67,7 @@ fun PreviewScreen(
                     Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("Treatment", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.preview_treatment), style = MaterialTheme.typography.titleMedium)
                     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                         FilterType.entries.forEachIndexed { index, filter ->
                             SegmentedButton(

@@ -1,0 +1,582 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Application Name -->
+    <string name="app_name" translatable="false">OScan</string>
+
+    <!-- General / Common UI -->
+    <string name="action_cancel">取消</string>
+    <string name="action_confirm">确认</string>
+    <string name="action_save">保存</string>
+    <string name="action_delete">删除</string>
+    <string name="action_done">完成</string>
+    <string name="action_back">返回</string>
+    <string name="action_close">关闭</string>
+    <string name="action_retry">重试</string>
+    <string name="action_share">分享</string>
+    <string name="action_export">导出</string>
+    <string name="action_edit">编辑</string>
+    <string name="action_rename">重命名</string>
+    <string name="action_move">移动</string>
+    <string name="action_restore">还原</string>
+    <string name="cd_back_button">返回上页</string>
+    <string name="cd_close_button">关闭界面</string>
+    <string name="cd_more_options">更多选项</string>
+
+    <!-- Navigation items -->
+    <string name="nav_library">文档库</string>
+    <string name="nav_camera">扫描</string>
+    <string name="nav_me">我的</string>
+
+    <!-- Language Settings -->
+    <string name="settings_language_title">语言</string>
+    <string name="settings_language_heading">应用语言</string>
+    <string name="settings_language_subtitle">选择 OScan 中使用的语言。</string>
+    <string name="language_system">跟随系统</string>
+    <string name="language_system_current">当前：%1$s</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_simplified_chinese" translatable="false">简体中文</string>
+    <string name="language_japanese" translatable="false">日本語</string>
+
+    <!-- Me / Settings Screen Groups & Items -->
+    <string name="settings_section_capture">扫描与采集</string>
+    <string name="settings_section_appearance">外观设置</string>
+    <string name="settings_section_storage">存储管理</string>
+    <string name="settings_section_security">安全与保险箱</string>
+    <string name="settings_section_about">关于</string>
+
+    <!-- Settings items -->
+    <string name="settings_default_treatment">默认滤镜处理</string>
+    <string name="settings_default_page_size">默认 PDF 页面尺寸</string>
+    <string name="settings_jpeg_quality">JPEG 导出质量</string>
+    <string name="settings_grid_lines">相机网格线</string>
+    <string name="settings_grid_lines_desc">在相机视图中显示构图网格</string>
+    <string name="settings_auto_capture">自动拍照</string>
+    <string name="settings_auto_capture_desc">文档稳定时自动拍摄</string>
+    <string name="settings_edge_guidance">边缘检测引导</string>
+    <string name="settings_edge_guidance_desc">显示文档边缘的视觉提示</string>
+
+    <string name="settings_theme">主题模式</string>
+    <string name="settings_accent">主题配色</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_theme_light">浅色模式</string>
+    <string name="settings_theme_dark">深色模式</string>
+
+    <string name="settings_trash_retention">回收站自动清理</string>
+    <string name="settings_clear_cache">清理图片缓存</string>
+    <string name="settings_clear_cache_desc">释放临时处理文件</string>
+    <string name="settings_cache_cleared">缓存已成功清理</string>
+
+    <string name="settings_vault_setup">设置加密保险箱</string>
+    <string name="settings_vault_status_enabled">已受保护</string>
+    <string name="settings_vault_status_disabled">未配置</string>
+    <string name="settings_biometrics">生物识别解锁</string>
+    <string name="settings_biometrics_desc">使用指纹或人脸识别解锁保险箱</string>
+
+    <string name="settings_version">版本信息</string>
+    <string name="settings_licenses">开源许可协议</string>
+    <string name="settings_privacy_policy">隐私政策</string>
+
+    <!-- Treatments / Filters -->
+    <string name="treatment_magic">神奇色彩</string>
+    <string name="treatment_color">彩色</string>
+    <string name="treatment_grayscale">灰度</string>
+    <string name="treatment_bw">黑白</string>
+    <string name="treatment_photo">原图</string>
+
+    <!-- PDF Page Sizes -->
+    <string name="page_size_auto">自动（匹配图像）</string>
+    <string name="page_size_a4" translatable="false">A4</string>
+    <string name="page_size_us_letter" translatable="false">US Letter</string>
+    <string name="page_size_legal" translatable="false">Legal</string>
+
+    <!-- JPEG Quality -->
+    <string name="jpeg_quality_low">低 (60%)</string>
+    <string name="jpeg_quality_medium">中 (80%)</string>
+    <string name="jpeg_quality_high">高 (95%)</string>
+
+    <!-- Accent Themes -->
+    <string name="accent_teal">青翠色</string>
+    <string name="accent_mint">薄荷绿</string>
+    <string name="accent_blue">海洋蓝</string>
+    <string name="accent_indigo">薰衣草靛</string>
+    <string name="accent_purple">高雅紫</string>
+    <string name="accent_pink">玫瑰粉</string>
+    <string name="accent_crimson">珊瑚红</string>
+    <string name="accent_amber">夕阳琥珀</string>
+    <string name="accent_lime">橄榄青</string>
+    <string name="accent_slate">木炭灰</string>
+
+    <!-- Trash Retention options -->
+    <string name="retention_never">从不</string>
+    <string name="retention_7_days">7 天后</string>
+    <string name="retention_30_days">30 天后</string>
+    <string name="retention_90_days">90 天后</string>
+
+    <!-- Start / Welcome Screen -->
+    <string name="start_welcome_title">欢迎使用 OScan</string>
+    <string name="start_welcome_subtitle">快速、私密的本地文档扫描工具。</string>
+    <string name="start_action_scan">开始扫描</string>
+    <string name="start_action_import">导入文件</string>
+
+    <!-- Library Screen -->
+    <string name="library_title">文档库</string>
+    <string name="library_search_placeholder">搜索文档与文件夹…</string>
+    <string name="library_tab_all">全部</string>
+    <string name="library_tab_documents">文档</string>
+    <string name="library_tab_folders">文件夹</string>
+    <string name="library_tab_trash">回收站</string>
+    <string name="library_empty_title">暂无文档</string>
+    <string name="library_empty_subtitle">扫描您的第一份文档或导入文件开始使用。</string>
+    <string name="library_trash_empty">回收站为空</string>
+
+    <string name="library_sort_by">排序方式</string>
+    <string name="library_sort_date_desc">更新时间（最新）</string>
+    <string name="library_sort_date_asc">更新时间（最旧）</string>
+    <string name="library_sort_name_asc">名称（A 到 Z）</string>
+    <string name="library_sort_name_desc">名称（Z 到 A）</string>
+    <string name="library_sort_pages_desc">页数</string>
+
+    <string name="library_action_new_folder">新建文件夹</string>
+    <string name="library_action_empty_trash">清空回收站</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_new_folder_title">新建文件夹</string>
+    <string name="dialog_folder_name_hint">文件夹名称</string>
+    <string name="dialog_rename_title">重命名</string>
+    <string name="dialog_rename_hint">名称</string>
+    <string name="dialog_delete_doc_title">删除文档</string>
+    <string name="dialog_delete_doc_msg">确定将“%1$s”移至回收站？</string>
+    <string name="dialog_delete_folder_title">删除文件夹</string>
+    <string name="dialog_delete_folder_msg">确定将文件夹“%1$s”及其所有内容移至回收站？</string>
+    <string name="dialog_empty_trash_title">清空回收站</string>
+    <string name="dialog_empty_trash_msg">确定永久删除回收站中的所有项目？此操作不可撤销。</string>
+
+    <!-- Document Page position -->
+    <string name="page_position_format">第 %1$d 页，共 %2$d 页</string>
+
+    <!-- Camera Screen & Guidance -->
+    <string name="camera_guidance_steady">请保持设备稳定</string>
+    <string name="camera_guidance_position">请将文档对准框内</string>
+    <string name="camera_guidance_ready">就绪</string>
+    <string name="camera_guidance_processing">正在处理页面…</string>
+    <string name="camera_mode_single">单页</string>
+    <string name="camera_mode_batch">连续</string>
+    <string name="camera_flash_auto">闪光灯 自动</string>
+    <string name="camera_flash_on">闪光灯 开启</string>
+    <string name="camera_flash_off">闪光灯 关闭</string>
+    <string name="camera_permission_title">需要相机权限</string>
+    <string name="camera_permission_msg">OScan 需要访问相机才能扫描文档。</string>
+    <string name="camera_permission_grant">授予权限</string>
+    <string name="cd_shutter">拍摄照片</string>
+    <string name="cd_toggle_flash">切换闪光灯</string>
+    <string name="cd_switch_mode">切换扫描模式</string>
+
+    <!-- Crop Screen -->
+    <string name="crop_title">裁剪与边缘微调</string>
+    <string name="crop_rotate_left">向左旋转</string>
+    <string name="crop_rotate_right">向右旋转</string>
+    <string name="crop_reset">重置</string>
+    <string name="cd_crop_handle">调整边缘顶点</string>
+
+    <!-- Preview / Editor Screen -->
+    <string name="preview_title">预览扫描</string>
+    <string name="preview_retake">重拍</string>
+    <string name="preview_keep_scanning">加页</string>
+    <string name="preview_save_document">保存文档</string>
+    <string name="editor_title">编辑文档</string>
+    <string name="editor_reorder">调整页序</string>
+    <string name="editor_apply_all">应用滤镜至所有页面</string>
+
+    <!-- Export Screen -->
+    <string name="export_success_title">导出完成</string>
+    <string name="export_saved_to">已保存至：%1$s</string>
+    <string name="export_action_open">打开文件</string>
+    <string name="export_action_share">分享文件</string>
+
+    <!-- Vault Screens -->
+    <string name="vault_title">加密保险箱</string>
+    <string name="vault_subtitle">安全加密存储敏感文档</string>
+    <string name="vault_enter_passcode">输入密码</string>
+    <string name="vault_set_passcode">设置密码</string>
+    <string name="vault_confirm_passcode">确认密码</string>
+    <string name="vault_passcode_mismatch">两次输入的密码不一致，请重试。</string>
+    <string name="vault_incorrect_passcode">密码错误</string>
+    <string name="vault_locked">保险箱已锁定</string>
+    <string name="vault_unlock">解锁保险箱</string>
+    <string name="vault_move_to_vault">移入保险箱</string>
+    <string name="vault_remove_from_vault">移出保险箱</string>
+    <string name="vault_empty">保险箱中暂无文档</string>
+
+    <!-- Errors and Status Messages -->
+    <string name="error_generic">发生未知错误</string>
+    <string name="error_file_not_found">文件未找到</string>
+    <string name="error_storage_full">存储空间不足</string>
+    <string name="error_import_failed">导入文档失败</string>
+    <string name="error_export_failed">导出文档失败</string>
+    <string name="error_camera_unavailable">相机不可用</string>
+    <string name="error_vault_access">保险箱访问被拒绝</string>
+
+    <string name="action_ok">确定</string>
+    <string name="action_create">创建</string>
+    <string name="action_remove">移除</string>
+    <string name="action_finish">完成</string>
+    <string name="action_discard">放弃</string>
+    <string name="action_keep_editing">继续编辑</string>
+    <string name="action_open_camera">打开相机</string>
+    <string name="action_import_images">导入图片</string>
+    <string name="action_scan_document">扫描文档</string>
+    <string name="action_add_pages">添加页面</string>
+    <string name="action_open_document">打开文档</string>
+    <string name="action_move_to_trash">移至回收站</string>
+    <string name="action_back_home">返回主页</string>
+    <string name="action_back_folders">返回文件夹</string>
+    <string name="action_clean_cache">清理缓存</string>
+    <string name="library_no_documents">暂无文档</string>
+    <string name="library_home_empty_title">您的文档会显示在这里</string>
+    <string name="library_home_empty_body">使用相机扫描。所有内容都保留在此设备上。</string>
+    <string name="scan_entry_title">扫描文档</string>
+    <string name="scan_entry_body">使用相机拍摄页面或导入图片。所有内容均在本地处理和保存。</string>
+    <string name="folders_overview">文件夹概览</string>
+    <string name="settings_title">设置</string>
+    <string name="product_information">产品信息</string>
+    <string name="profile_edit_name">编辑显示名称</string>
+    <string name="profile_display_name_label">本地显示名称</string>
+    <string name="profile_avatar_color">选择头像颜色</string>
+    <string name="cd_avatar">头像</string>
+    <string name="cd_edit_name">编辑名称</string>
+    <string name="dialog_add_pages_title">向“%1$s”添加页面</string>
+    <string name="dialog_add_pages_body">选择向此文档添加页面的方式。</string>
+    <string name="dialog_move_selected_trash_title">将所选文档移至回收站？</string>
+    <string name="dialog_move_selected_trash_body">所选文档将移至本地回收站。</string>
+    <string name="settings_capture_title">拍摄设置</string>
+    <string name="settings_auto_capture_default">默认自动拍摄</string>
+    <string name="settings_auto_capture_default_desc">检测到稳定的文档边界时自动拍摄。</string>
+    <string name="settings_shutter_feedback">快门反馈</string>
+    <string name="settings_shutter_feedback_desc">拍摄时提供视觉、声音或触觉反馈。</string>
+    <string name="settings_camera_preference">相机偏好</string>
+    <string name="settings_rear_camera">后置相机（推荐）</string>
+    <string name="settings_rear_camera_desc">最佳对焦与边缘检测效果</string>
+    <string name="settings_front_camera">前置相机</string>
+    <string name="settings_front_camera_desc">辅助相机输入</string>
+    <string name="settings_enhancement_title">增强设置</string>
+    <string name="settings_default_enhancement">默认增强处理</string>
+    <string name="settings_default_enhancement_desc">选择扫描页面时默认应用的处理方式。</string>
+    <string name="settings_export_title">导出设置</string>
+    <string name="settings_filename_prefix">默认文档文件名前缀</string>
+    <string name="settings_filename_prefix_desc">保存文档时，日期占位符会自动格式化。</string>
+    <string name="settings_pdf_page_size">PDF 页面尺寸</string>
+    <string name="settings_export_image_quality">导出图片质量</string>
+    <string name="settings_appearance_title">外观设置</string>
+    <string name="settings_color_palette">配色方案</string>
+    <string name="settings_theme_auto">自动</string>
+    <string name="settings_storage_title">存储</string>
+    <string name="settings_local_usage">本地用量概览</string>
+    <string name="settings_saved_documents">已保存文档</string>
+    <string name="settings_temporary_cache">临时缓存</string>
+    <string name="settings_clean_cache_title">清理临时缓存</string>
+    <string name="settings_clean_cache_desc">移除临时预览和导出缓存，不会影响已保存的本地文档。</string>
+    <string name="settings_clean_cache_confirm">清理临时缓存？</string>
+    <string name="settings_clean_cache_confirm_body">将清除临时预览和导出缓存。已保存的文档不会受到影响。</string>
+    <string name="privacy_title">隐私政策</string>
+    <string name="privacy_on_device">所有处理均在此设备上完成</string>
+    <string name="privacy_local_offline">100% 本地离线</string>
+    <string name="privacy_no_accounts">无需账户或云服务</string>
+    <string name="privacy_explicit_sharing">仅通过系统明确分享</string>
+    <string name="help_title">帮助与用户指南</string>
+    <string name="about_title">关于 OScan</string>
+    <string name="about_github">查看应用代码仓库（GitHub）</string>
+    <string name="scanner_discard_title">放弃此次扫描？</string>
+    <string name="scanner_discard_body">已接受的页面将从此设备中移除。</string>
+    <string name="scanner_reset_edges">重置边缘</string>
+    <string name="scanner_accepted_count">已接受 %1$d 页</string>
+    <string name="scanner_page_number">第 %1$d 页</string>
+    <string name="scanner_save_summary">将 %1$d 页保存为一个本地文档。</string>
+    <string name="scanner_document_name">文档名称</string>
+    <string name="scanner_no_folder">无文件夹</string>
+    <string name="scanner_saved_locally">已保存到本地</string>
+    <string name="scanner_saved_summary">%1$s · %2$d 页</string>
+    <string name="error_title">出现问题</string>
+    <string name="camera_import_gallery">从图库导入</string>
+    <string name="camera_capture_page">拍摄页面</string>
+    <string name="camera_access">相机访问权限</string>
+    <string name="camera_scan_mode">扫描模式：%1$s</string>
+    <string name="crop_page_image">待裁剪的页面图片</string>
+    <string name="crop_boundary_description">可调整的裁剪边界。拖动角点或边缘，缓慢移动可获得更高精度。</string>
+    <string name="preview_processed_page">处理后的页面预览</string>
+    <string name="preview_treatment">处理效果</string>
+    <string name="editor_page_title">编辑第 %1$d 页</string>
+    <string name="dialog_error_title">错误</string>
+    <string name="vault_move_out_title">移出保险箱？</string>
+    <string name="vault_move_out_body">此文档将移至主文档库，并且不再受保险箱加密保护。</string>
+    <string name="vault_move_library">移至文档库</string>
+    <string name="vault_fingerprint_setup">设置指纹</string>
+    <string name="vault_fingerprint_enable">启用指纹解锁</string>
+    <string name="vault_setup_title">设置保险箱</string>
+    <string name="vault_protect_sensitive">保护敏感文档</string>
+    <string name="vault_create_passcode">创建密码（6–12 位数字）</string>
+    <string name="vault_create">创建保险箱</string>
+    <string name="vault_locked_title">保险箱已锁定</string>
+    <string name="vault_fingerprint_unlock">使用指纹解锁</string>
+    <string name="vault_passcode">密码</string>
+    <string name="vault_forgot_passcode">忘记密码？</string>
+    <string name="vault_reset_title">重置并删除保险箱？</string>
+    <string name="vault_reset_body">OScan 无法找回忘记的密码。重置保险箱将永久删除其中所有加密文档。</string>
+    <string name="vault_reset_action">重置并删除保险箱</string>
+    <string name="vault_search_hint">搜索保险箱文档…</string>
+    <string name="vault_empty_title">保险箱为空</string>
+    <string name="vault_empty_body">将现有文档移入保险箱，或直接扫描或导入以保持加密。</string>
+    <string name="vault_no_pages">无页面</string>
+    <string name="vault_no_pages_body">此保险箱文档没有可读取的页面。</string>
+    <string name="vault_page_cd">第 %1$d 页</string>
+    <string name="vault_page_missing_cd">无法显示第 %1$d 页</string>
+    <string name="vault_move_out">移出保险箱</string>
+    <string name="vault_move_trash">移至保险箱回收站</string>
+    <string name="vault_trash_title">保险箱回收站</string>
+    <string name="vault_empty_trash">清空回收站</string>
+    <string name="vault_trash_empty">保险箱回收站为空</string>
+    <string name="vault_trash_empty_body">从保险箱删除的项目会保留在这里，直至清空。</string>
+    <string name="vault_empty_trash_title">清空保险箱回收站？</string>
+    <string name="vault_empty_trash_body">保险箱回收站中的所有项目都将被永久删除。</string>
+    <string name="vault_settings_title">保险箱设置</string>
+    <string name="vault_change_passcode">更改保险箱密码</string>
+    <string name="vault_change_passcode_desc">使用新密码重新封装加密密钥</string>
+    <string name="vault_disable">停用保险箱</string>
+    <string name="vault_disable_desc">将文档移至文档库或删除保险箱</string>
+    <string name="vault_current_passcode">当前密码</string>
+    <string name="vault_new_passcode">新密码（6–12 位数字）</string>
+    <string name="vault_confirm_new_passcode">确认新密码</string>
+    <string name="vault_change_passcode_action">更改密码</string>
+    <string name="vault_disable_prompt">选择如何处理保险箱中的文档：</string>
+    <string name="vault_disable_move">将文档移至文档库并停用</string>
+    <string name="vault_disable_delete">删除保险箱及所有文档</string>
+    <string name="vault_enter_current_passcode">输入当前密码</string>
+    <string name="library_search_names">搜索名称</string>
+    <string name="cd_search">搜索</string>
+    <string name="cd_clear_search">清除搜索</string>
+    <string name="favorites_empty_title">暂无收藏文档</string>
+    <string name="favorites_empty_body">轻触文档上的心形图标即可添加收藏。</string>
+    <string name="filter_all">全部</string>
+    <string name="filter_favorites">收藏</string>
+    <string name="filter_vault">保险箱</string>
+    <string name="library_no_matches">没有匹配的文档</string>
+    <string name="library_no_matches_query">没有文档或文件夹匹配“%1$s”</string>
+    <string name="folders_title">文件夹</string>
+    <string name="folders_empty_title">暂无文件夹</string>
+    <string name="folders_empty_body">创建文件夹来整理文档。</string>
+    <string name="folder_create">创建文件夹</string>
+    <string name="folder_rename">重命名文件夹</string>
+    <string name="folder_delete">删除文件夹</string>
+    <string name="folder_empty_title">此文件夹为空</string>
+    <string name="folder_empty_body">将现有文档移至此处，或扫描到此文件夹。</string>
+    <string name="trash_title_count">回收站（%1$d）</string>
+    <string name="trash_empty_body">移至回收站的文档会保留在这里，直至永久删除。</string>
+    <string name="trash_empty_confirm">清空回收站？</string>
+    <string name="trash_empty_confirm_body">回收站中的 %1$d 份文档将从此设备永久删除。此操作无法撤销。</string>
+    <string name="folder_new">新建文件夹</string>
+    <string name="folder_name">文件夹名称</string>
+    <string name="folder_delete_title">删除文件夹“%1$s”？</string>
+    <string name="folder_delete_body">删除此文件夹会将其中 %1$d 份文档移至“未归档”，文档不会被删除。</string>
+    <string name="folder_delete_action">删除文件夹</string>
+    <string name="document_export_save">导出 / 保存</string>
+    <string name="document_move_folder">移至文件夹</string>
+    <string name="document_folder_name">文件夹：%1$s</string>
+    <string name="document_pages">页面</string>
+    <string name="document_add_page">添加页面</string>
+    <string name="page_rotate_left">向左旋转</string>
+    <string name="page_rotate_right">向右旋转</string>
+    <string name="page_recrop_treatment">重新裁剪和处理</string>
+    <string name="page_remove">移除页面</string>
+    <string name="document_exporting">正在导出文档…</string>
+    <string name="document_trash_title">将文档移至回收站？</string>
+    <string name="document_trash_body">文档将从主页移除并保留在本地回收站中。</string>
+    <string name="document_rename">重命名文档</string>
+    <string name="document_unavailable">文档不可用</string>
+    <string name="document_unavailable_body">文档可能已从此设备移除。</string>
+    <string name="page_image_missing">此页面图片缺失</string>
+    <string name="page_count_position">%1$d / %2$d</string>
+    <string name="export_format">格式</string>
+    <string name="export_image_quality">图片质量</string>
+    <string name="privacy_local_body">OScan 是本地优先的文档管理器。边缘检测、透视校正、图像增强和 PDF 生成均完全在此 Android 设备上运行。</string>
+    <string name="privacy_accounts_body">OScan 没有用户账户、远程同步、分析统计、后台上报或广告。只有在您明确分享时，文档数据才会离开设备。</string>
+    <string name="privacy_sharing_body">分享 PDF 时，OScan 使用标准 Android 系统分享面板。文件分享给谁、分享到哪里完全由您控制。</string>
+    <string name="help_camera_title">相机与导入</string>
+    <string name="help_camera_body">将相机对准纸质文档或导入现有照片。OScan 会识别文档角点并标出扫描区域。</string>
+    <string name="help_corners_title">调整角点</string>
+    <string name="help_corners_body">拖动裁剪界面的四个边界控制点，使其与纸张边缘对齐。使用“重置”可恢复检测到的边缘。</string>
+    <string name="help_treatment_title">原图与 Magic</string>
+    <string name="help_treatment_body">选择 Magic 可获得干净的高对比度文档文字；选择原图可保留未经编辑的彩色照片。</string>
+    <string name="help_multipage_title">多页扫描</string>
+    <string name="help_multipage_body">在一次会话中拍摄或导入多个页面，保存为一个本地文档前可重新排序或替换页面。</string>
+    <string name="help_folders_title">文件夹与回收站</string>
+    <string name="help_folders_body">使用文件夹整理文档。删除的文档会移至回收站，可在其中恢复或永久删除。</string>
+    <string name="help_export_title">导出 PDF</string>
+    <string name="help_export_body">按照您选择的页面尺寸和压缩设置，将多页文档保存为 PDF 文件。</string>
+    <string name="about_version">版本 %1$s（内部版本 %2$d）</string>
+    <string name="about_tagline">Android 本地优先文档管理器</string>
+    <string name="about_oss_title">开源库与声明</string>
+    <string name="about_oss_body">OScan 使用开源软件和框架构建。</string>
+    <string name="about_repository">代码仓库</string>
+    <string name="oss_compose_desc">现代声明式界面框架与 Material 3 设计系统</string>
+    <string name="oss_room_desc">本地 SQLite 对象映射与响应式查询</string>
+    <string name="oss_opencv_desc">用于边缘检测和透视变换的计算机视觉引擎</string>
+    <string name="oss_onnx_desc">用于文档边界预测的本地机器学习推理引擎</string>
+    <string name="oss_camerax_desc">相机集成与响应式偏好设置存储</string>
+    <string name="oss_pdfbox_desc">PDF 渲染与文档创建库</string>
+    <string name="camera_starting">正在启动相机</string>
+    <string name="camera_flash_unavailable">闪光灯不可用</string>
+    <string name="camera_flash_off_action">关闭闪光灯</string>
+    <string name="camera_flash_on_action">打开闪光灯</string>
+    <string name="state_on">开启</string>
+    <string name="state_off">关闭</string>
+    <string name="camera_mode_label">模式</string>
+    <string name="camera_capturing">正在拍摄</string>
+    <string name="state_ready">就绪</string>
+    <string name="state_unavailable">不可用</string>
+    <string name="camera_access_off">相机访问权限已关闭</string>
+    <string name="camera_allow_access">允许访问相机</string>
+    <string name="crop_valid">裁剪区域有效</string>
+    <string name="crop_invalid">裁剪区域无效，边缘交叉</string>
+    <string name="scanner_adjust_edges">调整边缘</string>
+    <string name="scanner_enhance_page">增强页面</string>
+    <string name="scanner_review_pages">检查页面</string>
+    <string name="scanner_save_document">保存文档</string>
+    <string name="scanner_document_saved">文档已保存</string>
+    <string name="scanner_restoring">正在恢复扫描</string>
+    <string name="scanner_crop_ready">页面已就绪，请调整裁剪边界。</string>
+    <string name="scanner_processing_complete">处理完成，请选择处理效果。</string>
+    <string name="scanner_review_ready">检查已就绪，已接受 %1$d 页。</string>
+    <string name="scanner_saved_announcement">文档已保存到本地</string>
+    <string name="status_accepted">已接受</string>
+    <string name="status_needs_review">需要检查</string>
+    <string name="status_needs_attention">需要处理</string>
+    <string name="status_importing">正在导入</string>
+    <string name="status_finding_edges">正在查找边缘</string>
+    <string name="status_processing">正在处理</string>
+    <string name="document_export_options_body">选择格式、图片质量以及保存或分享文档的操作。</string>
+    <string name="editor_save_page">保存页面</string>
+    <string name="library_sort_created_desc">创建日期（最新优先）</string>
+    <string name="library_sort_created_asc">创建日期（最早优先）</string>
+    <string name="selection_count">已选择 %1$d 项</string>
+    <string name="crop_drag_hint">拖动边缘 · 缓慢移动以提高精度</string>
+    <string name="crop_edges_cross">边缘不能交叉</string>
+    <string name="crop_fine_adjust">精细调整</string>
+    <string name="scanner_review_count">已接受 %1$d / %2$d 页</string>
+    <string name="biometric_secure_key_missing">指纹验证未提供安全密钥</string>
+    <string name="biometric_unavailable">此界面无法使用指纹验证</string>
+    <string name="biometric_subtitle">验证指纹以访问加密的保险箱密钥</string>
+    <string name="biometric_use_passcode">使用密码</string>
+    <string name="vault_fingerprint_faster">使用指纹更快解锁</string>
+    <string name="vault_fingerprint_body">将指纹作为主要解锁方式。密码始终可作为备用方式。</string>
+    <string name="vault_fingerprint_unavailable_body">此设备尚未录入高安全性指纹。您可稍后在保险箱设置中启用指纹解锁。</string>
+    <string name="vault_setup_body">保险箱中的文档在此设备上加密。访问需要 6–12 位数字密码。</string>
+    <string name="vault_recovery_ack">我明白，如果忘记密码，OScan 无法恢复保险箱中的文档。</string>
+    <string name="vault_unlock_body">输入保险箱密码以查看加密文档。</string>
+    <string name="vault_lockout">失败次数过多，请在 %1$d 秒后重试。</string>
+    <string name="vault_moving">正在加密并将文档移入保险箱…</string>
+    <string name="vault_fingerprint_enrolled">使用已录入的指纹快速解锁</string>
+    <string name="vault_fingerprint_enroll_first">请先在 Android 设置中录入高安全性指纹</string>
+    <string name="vault_passcode_fallback">保险箱密码始终可作为备用方式</string>
+    <string name="settings_capture_row">拍摄</string>
+    <string name="settings_capture_row_desc">默认自动拍摄与快门反馈</string>
+    <string name="settings_enhancement_row">增强</string>
+    <string name="settings_enhancement_row_desc">默认处理效果（Magic 或原图）</string>
+    <string name="settings_export_row">导出</string>
+    <string name="settings_export_row_desc">文件名格式、PDF 页面尺寸与质量</string>
+    <string name="settings_appearance_row">外观</string>
+    <string name="settings_appearance_row_desc">更改 OScan 主题</string>
+    <string name="settings_storage_row_desc">本地用量概览与缓存清理</string>
+    <string name="settings_privacy_row_desc">100% 本地，无遥测或账户</string>
+    <string name="settings_help_row_desc">扫描、裁剪调整与多页编辑</string>
+    <string name="settings_about_row_desc">版本 %1$s 与开源声明</string>
+    <string name="camera_permission_denied_body">OScan 需要相机访问权限才能扫描文档。</string>
+    <string name="camera_permission_body">允许访问相机以扫描文档。</string>
+    <string name="action_try_again">重试</string>
+    <string name="action_continue">继续</string>
+    <string name="camera_point_document">将相机对准文档</string>
+    <string name="camera_no_rear">此设备没有可用的后置相机。</string>
+    <string name="camera_start_failed">无法启动相机，您仍可导入图片。</string>
+    <string name="camera_capture_failed">无法拍摄照片，请重试。</string>
+    <string name="camera_more_light">增加光线或打开闪光灯</string>
+    <string name="camera_hold_sharp">保持稳定以获得更清晰的照片</string>
+    <string name="camera_whole_document">移动相机，直到整个文档可见</string>
+    <string name="camera_move_back">向后移动以包含所有边缘</string>
+    <string name="camera_hold_steady">保持稳定</string>
+    <string name="camera_document_found">已找到文档，轻触快门</string>
+    <string name="scan_photo_add_failed">无法添加此照片，请移除后重试。</string>
+    <string name="scan_photo_retry">无法添加该照片，请重试。</string>
+    <string name="scan_name_required">请输入文档名称。</string>
+    <string name="scan_image_import_failed">无法导入此图片，请重新选择或移除。</string>
+    <string name="scan_image_prepare_failed">无法准备此图片，请重试或移除。</string>
+    <string name="scan_image_open_failed">无法打开此图片，请重试或移除。</string>
+    <string name="scan_save_failed">无法保存文档，请重试。</string>
+    <string name="vault_configured">保险箱配置成功</string>
+    <string name="vault_setup_failed">保险箱设置失败</string>
+    <string name="vault_unlock_failed">保险箱解锁失败</string>
+    <string name="vault_reset_complete">保险箱已重置</string>
+    <string name="vault_passcode_updated">保险箱密码已更新</string>
+    <string name="vault_current_incorrect">当前密码不正确</string>
+    <string name="vault_passcode_change_failed">更改密码失败</string>
+    <string name="vault_disabled">保险箱已停用</string>
+    <string name="vault_disable_failed">停用保险箱失败</string>
+    <string name="vault_move_in_complete">文档已移入保险箱</string>
+    <string name="vault_move_in_failed">文档移入保险箱失败</string>
+    <string name="vault_move_out_complete">文档已移至普通文档库</string>
+    <string name="vault_move_out_failed">文档移出保险箱失败</string>
+    <string name="vault_unlock_before_fingerprint">请先解锁保险箱，再启用指纹解锁</string>
+    <string name="vault_fingerprint_enabled">指纹解锁已启用</string>
+    <string name="vault_fingerprint_failed">指纹解锁失败，请使用密码</string>
+    <string name="vault_fingerprint_disabled">指纹解锁已停用</string>
+    <string name="operation_failed">无法完成此操作。</string>
+    <string name="scan_straightening">正在校正文档…</string>
+    <string name="scan_applying_treatment">正在应用处理效果…</string>
+    <string name="scan_saving_page">正在将页面保存到此次扫描…</string>
+    <string name="scan_loading_page">正在加载页面…</string>
+    <string name="scan_restoring_page">正在恢复页面…</string>
+    <string name="scan_saving_document">正在保存文档</string>
+    <string name="scan_ready_save">文档已准备好保存</string>
+    <string name="msg_cache_cleaned">缓存已清理</string>
+    <string name="msg_document_trashed">文档已移至回收站</string>
+    <string name="msg_documents_trashed">文档已移至回收站</string>
+    <string name="msg_folder_created">文件夹已创建</string>
+    <string name="msg_folder_renamed">文件夹已重命名</string>
+    <string name="msg_folder_deleted">文件夹已删除，文档已移至“未归档”。</string>
+    <string name="msg_documents_moved">文档已移动</string>
+    <string name="msg_favorite_added">已添加到收藏</string>
+    <string name="msg_favorite_removed">已从收藏移除</string>
+    <string name="msg_document_restored">文档已恢复</string>
+    <string name="msg_document_deleted">文档已永久删除</string>
+    <string name="msg_documents_restored">文档已恢复</string>
+    <string name="msg_documents_deleted">文档已永久删除</string>
+    <string name="msg_trash_emptied">回收站已清空</string>
+    <string name="msg_page_removed">页面已移除</string>
+    <string name="msg_export_success">导出成功</string>
+    <string name="msg_export_failed">导出失败</string>
+    <string name="msg_share_failed">分享失败</string>
+    <string name="avatar_teal">青绿色（默认）</string>
+    <string name="avatar_indigo">靛蓝</string>
+    <string name="avatar_amber">琥珀色</string>
+    <string name="avatar_green">绿色</string>
+    <string name="avatar_purple">紫色</string>
+    <string name="treatment_magic_desc">提亮纸张并锐化文字，同时保留文档颜色。</string>
+    <string name="treatment_original_desc">保留未经增强的全彩原始画面。</string>
+    <string name="treatment_grayscale_desc">去除颜色，同时保留平滑色调和精细细节。</string>
+    <string name="treatment_bw_desc">为文字文档生成高对比度黑白页面。</string>
+    <string name="cd_document_thumbnail">%1$s 的缩略图</string>
+
+    <!-- Plural Quantity Resources -->
+    <plurals name="plural_documents">
+        <item quantity="other">%1$d 份文档</item>
+    </plurals>
+
+    <plurals name="plural_folders">
+        <item quantity="other">%1$d 个文件夹</item>
+    </plurals>
+
+    <plurals name="plural_pages">
+        <item quantity="other">%1$d 页</item>
+    </plurals>
+
+    <plurals name="plural_trash_items">
+        <item quantity="other">回收站中包含 %1$d 个项目</item>
+    </plurals>
+</resources>

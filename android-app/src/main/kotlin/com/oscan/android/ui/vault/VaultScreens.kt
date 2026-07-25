@@ -1,5 +1,7 @@
 package com.oscan.android.ui.vault
 
+import com.oscan.android.R
+
 import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.BitmapFactory
@@ -81,6 +83,8 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -98,6 +102,7 @@ import com.oscan.android.data.vault.VaultRepository
 import com.oscan.android.data.vault.VaultSessionState
 import com.oscan.android.data.model.Document
 import com.oscan.android.ui.EmptyStateLayout
+import com.oscan.android.ui.localizedRuntimeMessage
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.Dispatchers
@@ -118,6 +123,13 @@ private fun rememberVaultBiometricPrompt(
     val executor = remember(context) { ContextCompat.getMainExecutor(context) }
     var pendingAction by remember { mutableStateOf<BiometricAction?>(null) }
     val currentAction = rememberUpdatedState(pendingAction)
+    val secureKeyMissing = stringResource(R.string.biometric_secure_key_missing)
+    val biometricUnavailable = stringResource(R.string.biometric_unavailable)
+    val biometricSubtitle = stringResource(R.string.biometric_subtitle)
+    val enableFingerprint = stringResource(R.string.vault_fingerprint_enable)
+    val unlockVault = stringResource(R.string.vault_unlock)
+    val cancel = stringResource(R.string.action_cancel)
+    val usePasscode = stringResource(R.string.biometric_use_passcode)
 
     val prompt = remember(activity, executor, viewModel) {
         activity?.let { host ->
@@ -130,7 +142,7 @@ private fun rememberVaultBiometricPrompt(
                         val action = currentAction.value
                         pendingAction = null
                         if (cipher == null || action == null) {
-                            viewModel.reportBiometricError("Fingerprint authentication did not provide a secure key")
+                            viewModel.reportBiometricError(secureKeyMissing)
                             return
                         }
                         when (action) {
@@ -154,23 +166,23 @@ private fun rememberVaultBiometricPrompt(
         }
     }
 
-    return remember(prompt) {
+    return remember(prompt, biometricUnavailable, biometricSubtitle, enableFingerprint, unlockVault, cancel, usePasscode) {
         { action, cipher ->
             if (prompt == null) {
-                viewModel.reportBiometricError("Fingerprint authentication is unavailable in this screen")
+                viewModel.reportBiometricError(biometricUnavailable)
             } else {
                 pendingAction = action
                 val promptInfo = BiometricPrompt.PromptInfo.Builder()
                     .setTitle(
                         if (action == BiometricAction.ENROLL) {
-                            "Enable fingerprint unlock"
+                            enableFingerprint
                         } else {
-                            "Unlock Vault"
+                            unlockVault
                         }
                     )
-                    .setSubtitle("Confirm your fingerprint to access the encrypted Vault key")
+                    .setSubtitle(biometricSubtitle)
                     .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                    .setNegativeButtonText(if (action == BiometricAction.ENROLL) "Cancel" else "Use passcode")
+                    .setNegativeButtonText(if (action == BiometricAction.ENROLL) cancel else usePasscode)
                     .setConfirmationRequired(false)
                     .build()
                 prompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(cipher))
@@ -336,9 +348,9 @@ fun VaultFlow(
     moveOutDocument?.let { document ->
         AlertDialog(
             onDismissRequest = { moveOutDocument = null },
-            title = { Text("Move out of Vault?") },
+            title = { Text(stringResource(R.string.vault_move_out_title)) },
             text = {
-                Text("This document will be moved to the main library and will no longer be protected by Vault encryption.")
+                Text(stringResource(R.string.vault_move_out_body))
             },
             confirmButton = {
                 Button(
@@ -347,12 +359,12 @@ fun VaultFlow(
                         moveOutDocument = null
                     }
                 ) {
-                    Text("Move to library")
+                    Text(stringResource(R.string.vault_move_library))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { moveOutDocument = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -371,7 +383,7 @@ fun VaultBiometricSetupScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Set up fingerprint") })
+            TopAppBar(title = { Text(stringResource(R.string.vault_fingerprint_setup)) })
         }
     ) { padding ->
         Column(
@@ -400,16 +412,16 @@ fun VaultBiometricSetupScreen(
 
             Spacer(Modifier.height(24.dp))
             Text(
-                "Unlock faster with your fingerprint",
+                stringResource(R.string.vault_fingerprint_faster),
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(12.dp))
             Text(
                 if (biometricAvailable) {
-                    "Use your fingerprint as the primary way to unlock Vault. Your passcode will always remain available as a fallback."
+                    stringResource(R.string.vault_fingerprint_body)
                 } else {
-                    "A strong fingerprint is not enrolled on this device. You can enable fingerprint unlock later in Vault Settings."
+                    stringResource(R.string.vault_fingerprint_unavailable_body)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -433,7 +445,7 @@ fun VaultBiometricSetupScreen(
             ) {
                 Icon(Icons.Default.Fingerprint, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Enable fingerprint unlock")
+                Text(stringResource(R.string.vault_fingerprint_enable))
             }
             Spacer(Modifier.height(8.dp))
             TextButton(onClick = onSkip, modifier = Modifier.fillMaxWidth()) {
@@ -459,7 +471,7 @@ fun VaultSetupScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Set up Vault") },
+                title = { Text(stringResource(R.string.vault_setup_title)) },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Cancel setup")
@@ -493,10 +505,10 @@ fun VaultSetupScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            Text("Protect Sensitive Documents", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.vault_protect_sensitive), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
             Spacer(Modifier.height(8.dp))
             Text(
-                "Documents in Vault are encrypted on this device. Access requires a 6–12 digit passcode.",
+                stringResource(R.string.vault_setup_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -507,7 +519,7 @@ fun VaultSetupScreen(
             OutlinedTextField(
                 value = passcode,
                 onValueChange = { if (it.length <= 12 && it.all { c -> c.isDigit() }) passcode = it },
-                label = { Text("Create passcode (6–12 digits)") },
+                label = { Text(stringResource(R.string.vault_create_passcode)) },
                 singleLine = true,
                 visualTransformation = if (showPasscode) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
@@ -524,7 +536,7 @@ fun VaultSetupScreen(
             OutlinedTextField(
                 value = confirmPasscode,
                 onValueChange = { if (it.length <= 12 && it.all { c -> c.isDigit() }) confirmPasscode = it },
-                label = { Text("Confirm passcode") },
+                label = { Text(stringResource(R.string.vault_confirm_passcode)) },
                 singleLine = true,
                 visualTransformation = if (showPasscode) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
@@ -542,7 +554,7 @@ fun VaultSetupScreen(
                     Checkbox(checked = ackNoRecovery, onCheckedChange = { ackNoRecovery = it })
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "I understand that if I forget my passcode, OScan cannot recover my Vault documents.",
+                        stringResource(R.string.vault_recovery_ack),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -552,7 +564,7 @@ fun VaultSetupScreen(
             val activeError = localError ?: errorMessage
             if (activeError != null) {
                 Spacer(Modifier.height(12.dp))
-                Text(activeError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                Text(localizedRuntimeMessage(activeError), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
             }
 
             Spacer(Modifier.height(24.dp))
@@ -573,7 +585,7 @@ fun VaultSetupScreen(
                 enabled = passcode.length >= 6 && confirmPasscode.length >= 6 && ackNoRecovery,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Create Vault")
+                Text(stringResource(R.string.vault_create))
             }
         }
     }
@@ -598,7 +610,7 @@ fun VaultUnlockScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Unlock Vault") },
+                title = { Text(stringResource(R.string.vault_unlock)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -632,10 +644,10 @@ fun VaultUnlockScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            Text("Vault is Locked", style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.vault_locked_title), style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(8.dp))
             Text(
-                "Enter your Vault passcode to view encrypted documents.",
+                stringResource(R.string.vault_unlock_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -651,7 +663,7 @@ fun VaultUnlockScreen(
                 ) {
                     Icon(Icons.Default.Fingerprint, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Unlock with fingerprint")
+                    Text(stringResource(R.string.vault_fingerprint_unlock))
                 }
                 Spacer(Modifier.height(12.dp))
             }
@@ -663,7 +675,7 @@ fun VaultUnlockScreen(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
                 ) {
                     Text(
-                        "Too many failed attempts. Try again in $lockoutRemaining seconds.",
+                        stringResource(R.string.vault_lockout, lockoutRemaining),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         textAlign = TextAlign.Center,
@@ -675,7 +687,7 @@ fun VaultUnlockScreen(
             OutlinedTextField(
                 value = passcode,
                 onValueChange = { if (it.length <= 12 && it.all { c -> c.isDigit() }) passcode = it },
-                label = { Text("Passcode") },
+                label = { Text(stringResource(R.string.vault_passcode)) },
                 singleLine = true,
                 enabled = lockoutRemaining == 0,
                 visualTransformation = PasswordVisualTransformation(),
@@ -685,7 +697,7 @@ fun VaultUnlockScreen(
 
             if (errorMessage != null) {
                 Spacer(Modifier.height(8.dp))
-                Text(errorMessage, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                Text(localizedRuntimeMessage(errorMessage), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
             }
 
             Spacer(Modifier.height(24.dp))
@@ -698,13 +710,13 @@ fun VaultUnlockScreen(
                 enabled = passcode.length >= 6 && lockoutRemaining == 0,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Unlock Vault")
+                Text(stringResource(R.string.vault_unlock))
             }
 
             Spacer(Modifier.height(12.dp))
 
             TextButton(onClick = { showResetDialog = true }) {
-                Text("Forgot passcode?")
+                Text(stringResource(R.string.vault_forgot_passcode))
             }
         }
     }
@@ -713,9 +725,9 @@ fun VaultUnlockScreen(
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
             icon = { Icon(Icons.Default.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Reset & Delete Vault?") },
+            title = { Text(stringResource(R.string.vault_reset_title)) },
             text = {
-                Text("If you forgot your passcode, OScan cannot recover your documents. Resetting Vault will permanently delete all encrypted Vault documents and reset Vault.")
+                Text(stringResource(R.string.vault_reset_body))
             },
             confirmButton = {
                 Button(
@@ -725,12 +737,12 @@ fun VaultUnlockScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Reset and Delete Vault")
+                    Text(stringResource(R.string.vault_reset_action))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showResetDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -751,11 +763,12 @@ fun VaultLibraryScreen(
     val uiState by viewModel.uiState.collectAsState()
     var searchOpen by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val rawSnackbarMessage = uiState.errorMessage ?: uiState.infoMessage
+    val snackbarMessage = rawSnackbarMessage?.let { localizedRuntimeMessage(it) }
 
-    LaunchedEffect(uiState.errorMessage, uiState.infoMessage) {
-        val message = uiState.errorMessage ?: uiState.infoMessage
-        if (message != null) {
-            snackbarHostState.showSnackbar(message)
+    LaunchedEffect(snackbarMessage) {
+        if (snackbarMessage != null) {
+            snackbarHostState.showSnackbar(snackbarMessage)
             if (uiState.errorMessage != null) {
                 viewModel.clearErrorMessage()
             } else {
@@ -767,7 +780,7 @@ fun VaultLibraryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Vault") },
+                title = { Text(stringResource(R.string.vault_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -796,7 +809,7 @@ fun VaultLibraryScreen(
             if (uiState.isMovingDocument) {
                 LinearProgressIndicator(Modifier.fillMaxWidth())
                 Text(
-                    "Encrypting and moving document into Vault…",
+                    stringResource(R.string.vault_moving),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -807,7 +820,7 @@ fun VaultLibraryScreen(
                 OutlinedTextField(
                     value = uiState.searchQuery,
                     onValueChange = viewModel::setSearchQuery,
-                    placeholder = { Text("Search Vault documents...") },
+                    placeholder = { Text(stringResource(R.string.vault_search_hint)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -819,8 +832,8 @@ fun VaultLibraryScreen(
             if (displayList.isEmpty()) {
                 EmptyStateLayout(
                     icon = Icons.Default.LockOpen,
-                    title = "Vault is empty",
-                    supportingText = "Move existing documents into Vault or scan/import directly to keep them encrypted."
+                    title = stringResource(R.string.vault_empty_title),
+                    supportingText = stringResource(R.string.vault_empty_body)
                 ) {}
             } else {
                 LazyVerticalGrid(
@@ -895,8 +908,8 @@ fun VaultDocumentScreen(
             Box(Modifier.fillMaxSize().padding(padding)) {
                 EmptyStateLayout(
                     icon = Icons.Default.BrokenImage,
-                    title = "No pages",
-                    supportingText = "This Vault document does not contain any readable pages."
+                    title = stringResource(R.string.vault_no_pages),
+                    supportingText = stringResource(R.string.vault_no_pages_body)
                 ) {}
             }
         } else {
@@ -941,14 +954,14 @@ fun VaultDocumentScreen(
                                 if (pageBitmap != null) {
                                     Image(
                                         bitmap = pageBitmap!!.asImageBitmap(),
-                                        contentDescription = "Page ${page.position + 1}",
+                                        contentDescription = stringResource(R.string.vault_page_cd, page.position + 1),
                                         contentScale = ContentScale.Fit,
                                         modifier = Modifier.fillMaxSize()
                                     )
                                 } else {
                                     Icon(
                                         Icons.Default.BrokenImage,
-                                        contentDescription = "Page ${page.position + 1} could not be displayed",
+                                        contentDescription = stringResource(R.string.vault_page_missing_cd, page.position + 1),
                                         tint = MaterialTheme.colorScheme.error
                                     )
                                 }
@@ -1024,7 +1037,7 @@ private fun VaultDocumentItem(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(doc.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text("${doc.pages.size} page(s)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(pluralStringResource(R.plurals.plural_pages, doc.pages.size, doc.pages.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Box {
                     IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(32.dp)) {
@@ -1037,12 +1050,12 @@ private fun VaultDocumentItem(
                             leadingIcon = { Icon(if (doc.isFavorite) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder, null) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Move out of Vault") },
+                            text = { Text(stringResource(R.string.vault_move_out)) },
                             onClick = { menuOpen = false; onMoveOut() },
                             leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Move to Vault Trash") },
+                            text = { Text(stringResource(R.string.vault_move_trash)) },
                             onClick = { menuOpen = false; onTrash() },
                             leadingIcon = { Icon(Icons.Default.Delete, null) }
                         )
@@ -1067,7 +1080,7 @@ fun VaultTrashScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Vault Trash") },
+                title = { Text(stringResource(R.string.vault_trash_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -1076,7 +1089,7 @@ fun VaultTrashScreen(
                 actions = {
                     if (trashDocuments.isNotEmpty()) {
                         TextButton(onClick = { showEmptyConfirm = true }) {
-                            Text("Empty Trash", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.vault_empty_trash), color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -1091,8 +1104,8 @@ fun VaultTrashScreen(
             if (trashDocuments.isEmpty()) {
                 EmptyStateLayout(
                     icon = Icons.Default.Delete,
-                    title = "Vault Trash is empty",
-                    supportingText = "Items deleted from Vault will stay here until emptied."
+                    title = stringResource(R.string.vault_trash_empty),
+                    supportingText = stringResource(R.string.vault_trash_empty_body)
                 ) {}
             } else {
                 LazyColumn(
@@ -1113,7 +1126,7 @@ fun VaultTrashScreen(
                                 Spacer(Modifier.width(16.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(doc.name, style = MaterialTheme.typography.titleMedium)
-                                    Text("${doc.pages.size} page(s)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(pluralStringResource(R.plurals.plural_pages, doc.pages.size, doc.pages.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 IconButton(onClick = { onRestore(doc.id) }) {
                                     Icon(Icons.Default.Restore, "Restore")
@@ -1132,8 +1145,8 @@ fun VaultTrashScreen(
     if (showEmptyConfirm) {
         AlertDialog(
             onDismissRequest = { showEmptyConfirm = false },
-            title = { Text("Empty Vault Trash?") },
-            text = { Text("All items in Vault Trash will be permanently deleted.") },
+            title = { Text(stringResource(R.string.vault_empty_trash_title)) },
+            text = { Text(stringResource(R.string.vault_empty_trash_body)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -1142,11 +1155,11 @@ fun VaultTrashScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Empty Trash")
+                    Text(stringResource(R.string.vault_empty_trash))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showEmptyConfirm = false }) { Text("Cancel") }
+                TextButton(onClick = { showEmptyConfirm = false }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -1166,7 +1179,7 @@ fun VaultSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Vault Settings") },
+                title = { Text(stringResource(R.string.vault_settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -1203,14 +1216,14 @@ fun VaultSettingsScreen(
                         Icon(Icons.Default.Fingerprint, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(16.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Unlock with fingerprint", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.vault_fingerprint_unlock), style = MaterialTheme.typography.titleMedium)
                             Text(
                                 if (uiState.biometricEnabled) {
-                                    "Use your enrolled fingerprint for quick unlock"
+                                    stringResource(R.string.vault_fingerprint_enrolled)
                                 } else if (!uiState.biometricAvailable) {
-                                    "Enroll a strong fingerprint in Android settings first"
+                                    stringResource(R.string.vault_fingerprint_enroll_first)
                                 } else {
-                                    "Your Vault passcode remains available as a fallback"
+                                    stringResource(R.string.vault_passcode_fallback)
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1241,8 +1254,8 @@ fun VaultSettingsScreen(
                     Icon(Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Change Vault Passcode", style = MaterialTheme.typography.titleMedium)
-                        Text("Re-wrap encryption keys with a new passcode", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.vault_change_passcode), style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.vault_change_passcode_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -1250,7 +1263,7 @@ fun VaultSettingsScreen(
             Spacer(Modifier.height(8.dp))
 
             uiState.errorMessage?.let { message ->
-                Text(message, color = MaterialTheme.colorScheme.error)
+                Text(localizedRuntimeMessage(message), color = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.height(8.dp))
             }
 
@@ -1266,8 +1279,8 @@ fun VaultSettingsScreen(
                     Icon(Icons.Default.Security, null, tint = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Disable Vault", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
-                        Text("Migrate documents to library or delete Vault repository", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.vault_disable), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.vault_disable_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -1282,13 +1295,13 @@ fun VaultSettingsScreen(
 
         AlertDialog(
             onDismissRequest = { showChangePasscodeDialog = false },
-            title = { Text("Change Vault Passcode") },
+            title = { Text(stringResource(R.string.vault_change_passcode)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = curPass,
                         onValueChange = { curPass = it },
-                        label = { Text("Current passcode") },
+                        label = { Text(stringResource(R.string.vault_current_passcode)) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
@@ -1296,7 +1309,7 @@ fun VaultSettingsScreen(
                     OutlinedTextField(
                         value = newPass,
                         onValueChange = { newPass = it },
-                        label = { Text("New passcode (6-12 digits)") },
+                        label = { Text(stringResource(R.string.vault_new_passcode)) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
@@ -1304,7 +1317,7 @@ fun VaultSettingsScreen(
                     OutlinedTextField(
                         value = confPass,
                         onValueChange = { confPass = it },
-                        label = { Text("Confirm new passcode") },
+                        label = { Text(stringResource(R.string.vault_confirm_new_passcode)) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
@@ -1323,11 +1336,11 @@ fun VaultSettingsScreen(
                     viewModel.changePasscode(curPass, newPass)
                     showChangePasscodeDialog = false
                 }) {
-                    Text("Change Passcode")
+                    Text(stringResource(R.string.vault_change_passcode_action))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showChangePasscodeDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showChangePasscodeDialog = false }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -1338,17 +1351,17 @@ fun VaultSettingsScreen(
 
         AlertDialog(
             onDismissRequest = { showDisableVaultDialog = false },
-            title = { Text("Disable Vault") },
+            title = { Text(stringResource(R.string.vault_disable)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Choose how to proceed with your Vault documents:")
+                    Text(stringResource(R.string.vault_disable_prompt))
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { migrateChoice = true },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(selected = migrateChoice, onClick = { migrateChoice = true })
                         Spacer(Modifier.width(8.dp))
-                        Text("Move documents to library & disable", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.vault_disable_move), style = MaterialTheme.typography.bodyMedium)
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { migrateChoice = false },
@@ -1356,12 +1369,12 @@ fun VaultSettingsScreen(
                     ) {
                         RadioButton(selected = !migrateChoice, onClick = { migrateChoice = false })
                         Spacer(Modifier.width(8.dp))
-                        Text("Delete Vault and all documents", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.vault_disable_delete), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
                     }
                     OutlinedTextField(
                         value = curPass,
                         onValueChange = { curPass = it },
-                        label = { Text("Enter current passcode") },
+                        label = { Text(stringResource(R.string.vault_enter_current_passcode)) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
@@ -1378,11 +1391,11 @@ fun VaultSettingsScreen(
                     enabled = curPass.length >= 6,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Disable Vault")
+                    Text(stringResource(R.string.vault_disable))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDisableVaultDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showDisableVaultDialog = false }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
