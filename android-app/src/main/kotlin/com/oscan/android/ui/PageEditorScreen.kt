@@ -94,7 +94,7 @@ fun PageEditorScreen(
                     ) {
                         CircularProgressIndicator()
                         Spacer(Modifier.height(16.dp))
-                        Text(current.message, style = MaterialTheme.typography.bodyMedium)
+                        Text(localizedRuntimeMessage(current.message), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
                 is PageEditorUiState.PreviewReady -> {

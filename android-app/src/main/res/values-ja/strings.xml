@@ -562,6 +562,26 @@
     <string name="treatment_grayscale_desc">色を除き、滑らかな階調と細部を維持します。</string>
     <string name="treatment_bw_desc">文字書類向けに高コントラストの白黒ページを作成します。</string>
     <string name="cd_document_thumbnail">%1$sのサムネイル</string>
+    <string name="library_recent">最近</string>
+    <string name="library_all_documents">すべての書類</string>
+    <string name="camera_mode_document">書類</string>
+    <string name="camera_mode_id_card">IDカード</string>
+    <string name="treatment_magic_recommended">Magic（推奨）</string>
+    <string name="scanner_restoring_progress">スキャンを復元中…</string>
+    <string name="scanner_importing_progress">%2$d枚中%1$d枚の画像をインポート中…</string>
+    <string name="action_review">確認</string>
+    <string name="action_choose_again">選び直す</string>
+    <string name="cd_page_thumbnail">%1$dページ目のサムネイル</string>
+    <string name="cd_move_page_up">ページを上へ移動</string>
+    <string name="cd_move_page_down">ページを下へ移動</string>
+    <string name="action_saving">保存中…</string>
+    <string name="editor_saving_updates">ページの更新を保存中…</string>
+    <string name="favorite">お気に入り</string>
+    <string name="favorite_add">お気に入りに追加</string>
+    <string name="favorite_remove">お気に入りから削除</string>
+    <string name="favorite_selected">選択した書類をお気に入りに追加</string>
+    <string name="vault_favorite_add">金庫のお気に入りに追加</string>
+    <string name="vault_favorite_remove">金庫のお気に入りから削除</string>
 
     <!-- Plural Quantity Resources -->
     <plurals name="plural_documents">

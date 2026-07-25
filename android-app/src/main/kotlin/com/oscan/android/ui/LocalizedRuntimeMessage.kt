@@ -24,6 +24,7 @@ internal fun localizedRuntimeMessage(message: String): String {
         message == "Saving page to this scan…" -> R.string.scan_saving_page
         message == "Loading page…" -> R.string.scan_loading_page
         message == "Restoring page…" -> R.string.scan_restoring_page
+        message == "Saving page updates…" -> R.string.editor_saving_updates
         message == "Cache cleaned" -> R.string.msg_cache_cleaned
         message == "Document moved to Trash" -> R.string.msg_document_trashed
         message.endsWith("documents moved to Trash") -> R.string.msg_documents_trashed

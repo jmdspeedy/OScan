@@ -256,7 +256,11 @@ fun EnhancementSettingsScreen(
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text(
-                            if (filter == FilterType.MAGIC) "Magic (Recommended)" else filter.displayName,
+                            if (filter == FilterType.MAGIC) {
+                                stringResource(R.string.treatment_magic_recommended)
+                            } else {
+                                filter.displayName()
+                            },
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(

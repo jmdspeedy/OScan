@@ -566,6 +566,26 @@
     <string name="treatment_grayscale_desc">Removes color while retaining smooth tones and fine detail.</string>
     <string name="treatment_bw_desc">Creates a high-contrast black-and-white page for text documents.</string>
     <string name="cd_document_thumbnail">%1$s thumbnail</string>
+    <string name="library_recent">Recent</string>
+    <string name="library_all_documents">All documents</string>
+    <string name="camera_mode_document">Document</string>
+    <string name="camera_mode_id_card">ID card</string>
+    <string name="treatment_magic_recommended">Magic (Recommended)</string>
+    <string name="scanner_restoring_progress">Restoring your scan…</string>
+    <string name="scanner_importing_progress">Importing images %1$d of %2$d…</string>
+    <string name="action_review">Review</string>
+    <string name="action_choose_again">Choose again</string>
+    <string name="cd_page_thumbnail">Page %1$d thumbnail</string>
+    <string name="cd_move_page_up">Move page up</string>
+    <string name="cd_move_page_down">Move page down</string>
+    <string name="action_saving">Saving…</string>
+    <string name="editor_saving_updates">Saving page updates…</string>
+    <string name="favorite">Favorite</string>
+    <string name="favorite_add">Add favorite</string>
+    <string name="favorite_remove">Remove favorite</string>
+    <string name="favorite_selected">Favorite selected documents</string>
+    <string name="vault_favorite_add">Add to Vault favorites</string>
+    <string name="vault_favorite_remove">Remove from Vault favorites</string>
 
     <!-- Plural Quantity Resources -->
     <plurals name="plural_documents">

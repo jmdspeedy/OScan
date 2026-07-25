@@ -293,7 +293,7 @@ private fun DocumentGrid(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         if (state.searchQuery.isEmpty() && state.recentDocuments.isNotEmpty() && !state.selectionMode) {
-            item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle("Recent") }
+            item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle(stringResource(R.string.library_recent)) }
             items(state.recentDocuments, key = { "recent-${it.id.value}" }) { document ->
                 DocumentCard(
                     document = document,
@@ -306,7 +306,7 @@ private fun DocumentGrid(
                 )
             }
             item(span = { GridItemSpan(maxLineSpan) }) {
-                SectionTitle("All documents", Modifier.padding(top = 12.dp))
+                SectionTitle(stringResource(R.string.library_all_documents), Modifier.padding(top = 12.dp))
             }
         }
         items(state.documents, key = { "all-${it.id.value}" }) { document ->
@@ -339,7 +339,7 @@ private fun DocumentList(
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
         if (state.searchQuery.isEmpty() && state.recentDocuments.isNotEmpty() && !state.selectionMode) {
-            item { SectionTitle("Recent", Modifier.padding(horizontal = 16.dp)) }
+            item { SectionTitle(stringResource(R.string.library_recent), Modifier.padding(horizontal = 16.dp)) }
             item {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -360,7 +360,7 @@ private fun DocumentList(
                     }
                 }
             }
-            item { SectionTitle("All documents", Modifier.padding(start = 16.dp, top = 24.dp, end = 16.dp)) }
+            item { SectionTitle(stringResource(R.string.library_all_documents), Modifier.padding(start = 16.dp, top = 24.dp, end = 16.dp)) }
         }
         items(state.documents, key = { it.id.value }) { document ->
             val isSelected = state.selectedDocumentIds.contains(document.id)
@@ -428,7 +428,12 @@ private fun DocumentCard(
                             modifier = Modifier.weight(1f)
                         )
                         if (document.isFavorite) {
-                            Icon(Icons.Filled.Favorite, "Favorite", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                            Icon(
+                                Icons.Filled.Favorite,
+                                stringResource(R.string.favorite),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
                     Spacer(Modifier.height(4.dp))
@@ -495,7 +500,13 @@ private fun DocumentRow(
             Text(document.metadataLine(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             document.folder?.let { Text(it.name, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
-        if (document.isFavorite) Icon(Icons.Filled.Favorite, "Favorite", tint = MaterialTheme.colorScheme.primary)
+        if (document.isFavorite) {
+            Icon(
+                Icons.Filled.Favorite,
+                stringResource(R.string.favorite),
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
     }
 }
 
@@ -946,7 +957,12 @@ fun DocumentDetailScreen(
                             }
                         }
                         IconButton(onClick = { onFavorite(!document.isFavorite) }) {
-                            Icon(if (document.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, "Favorite")
+                            Icon(
+                                if (document.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                stringResource(
+                                    if (document.isFavorite) R.string.favorite_remove else R.string.favorite_add
+                                )
+                            )
                         }
                         IconButton(onClick = { renameOpen = true }) {
                             Icon(Icons.Default.Edit, "Rename")
@@ -968,7 +984,13 @@ fun DocumentDetailScreen(
                                     enabled = !isExporting
                                 )
                                 DropdownMenuItem(
-                                    text = { Text(if (document.isFavorite) "Remove favorite" else "Add favorite") },
+                                    text = {
+                                        Text(
+                                            stringResource(
+                                                if (document.isFavorite) R.string.favorite_remove else R.string.favorite_add
+                                            )
+                                        )
+                                    },
                                     leadingIcon = { Icon(if (document.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, null) },
                                     onClick = { overflowOpen = false; onFavorite(!document.isFavorite) }
                                 )
@@ -1482,7 +1504,7 @@ fun ExportAndSaveDialog(
                         FilterChip(
                             selected = selectedQuality == quality,
                             onClick = { selectedQuality = quality },
-                            label = { Text(quality.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                            label = { Text(quality.label()) },
                             modifier = Modifier.weight(1f)
                         )
                     }

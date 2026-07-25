@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.oscan.core.model.CornerPoints
 import com.oscan.core.model.FilterType
 import java.io.File
+import java.time.ZoneOffset
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -33,6 +34,14 @@ class ScanSessionStoreTest {
     @AfterTest
     fun tearDown() {
         store.loadActive()?.let { store.discard(it.id) }
+    }
+
+    @Test
+    fun defaultDocumentNameUsesOScanDateAndTime() {
+        assertEquals(
+            "OScan 1970-01-01 00-00",
+            defaultScanDocumentName(epochMillis = 0L, zoneId = ZoneOffset.UTC)
+        )
     }
 
     @Test

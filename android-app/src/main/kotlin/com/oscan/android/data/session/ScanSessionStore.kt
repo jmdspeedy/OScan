@@ -7,6 +7,10 @@ import com.oscan.core.model.CornerPoints
 import com.oscan.core.model.FilterType
 import java.io.File
 import java.io.InputStream
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.UUID
 import org.json.JSONArray
 import org.json.JSONObject
@@ -45,13 +49,21 @@ data class ScanSession(
     val id: String,
     val pages: List<SessionPage>,
     val currentPageId: String? = null,
-    val documentName: String = "Scanned document",
+    val documentName: String = defaultScanDocumentName(),
     val selectedFolderId: String? = null,
     val updatedAtEpochMillis: Long = System.currentTimeMillis()
 ) {
     val acceptedPages: List<SessionPage>
         get() = pages.filter { it.status == SessionPageStatus.ACCEPTED }.sortedBy { it.position }
 }
+
+private val defaultDocumentNameFormatter =
+    DateTimeFormatter.ofPattern("yyyy-MM-dd HH-mm", Locale.ROOT)
+
+internal fun defaultScanDocumentName(
+    epochMillis: Long = System.currentTimeMillis(),
+    zoneId: ZoneId = ZoneId.systemDefault()
+): String = "OScan ${defaultDocumentNameFormatter.format(Instant.ofEpochMilli(epochMillis).atZone(zoneId))}"
 
 /** Durable, app-private scan draft storage. Metadata never retains picker URIs. */
 class ScanSessionStore(
@@ -224,7 +236,7 @@ class ScanSessionStore(
         id = getString("id"),
         pages = getJSONArray("pages").let { array -> (0 until array.length()).map { array.getJSONObject(it).toPage() } },
         currentPageId = nullableString("currentPageId"),
-        documentName = optString("documentName", "Scanned document"),
+        documentName = optString("documentName").takeIf(String::isNotBlank) ?: defaultScanDocumentName(),
         selectedFolderId = nullableString("selectedFolderId"),
         updatedAtEpochMillis = optLong("updatedAtEpochMillis", 0L)
     )

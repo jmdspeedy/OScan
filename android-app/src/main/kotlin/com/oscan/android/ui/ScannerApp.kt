@@ -218,8 +218,8 @@ fun ScannerApp(
             }
             when (state) {
                 ScannerUiState.Empty -> Unit
-                ScannerUiState.LoadingSession -> ProgressState("Restoring your scan…")
-                is ScannerUiState.Importing -> ProgressState("Importing images ${state.completed} of ${state.total}…")
+                ScannerUiState.LoadingSession -> ProgressState(stringResource(R.string.scanner_restoring_progress))
+                is ScannerUiState.Importing -> ProgressState(stringResource(R.string.scanner_importing_progress, state.completed, state.total))
                 is ScannerUiState.Processing -> ProgressState(localizedRuntimeMessage(state.message))
                 is ScannerUiState.CropReady -> Column(Modifier.fillMaxSize()) {
                     SessionPositionHeader(state.session, state.page.position, state.previewBitmap)
@@ -313,7 +313,7 @@ private fun SessionReviewScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (page.thumbnail != null) {
-                        Image(page.thumbnail.asImageBitmap(), "Page ${page.position + 1} thumbnail", Modifier.size(56.dp))
+                        Image(page.thumbnail.asImageBitmap(), stringResource(R.string.cd_page_thumbnail, page.position + 1), Modifier.size(56.dp))
                     } else {
                         Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.size(56.dp)) {
                             Box(contentAlignment = Alignment.Center) { Icon(Icons.AutoMirrored.Filled.InsertDriveFile, contentDescription = null) }
@@ -327,10 +327,26 @@ private fun SessionReviewScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             when (page.status) {
                                 SessionPageStatus.ACCEPTED, SessionPageStatus.CROP_REVIEW, SessionPageStatus.TREATMENT_REVIEW ->
-                                    TextButton(onClick = { onOpen(page.id) }) { Text(if (page.status == SessionPageStatus.ACCEPTED) "Edit" else "Review") }
+                                    TextButton(onClick = { onOpen(page.id) }) {
+                                        Text(
+                                            if (page.status == SessionPageStatus.ACCEPTED) {
+                                                stringResource(R.string.action_edit)
+                                            } else {
+                                                stringResource(R.string.action_review)
+                                            }
+                                        )
+                                    }
                                 SessionPageStatus.FAILED -> TextButton(onClick = {
                                     if (page.canRetryDirectly) onRetry(page.id) else onReplace(page.id)
-                                }) { Text(if (page.canRetryDirectly) "Try again" else "Choose again") }
+                                }) {
+                                    Text(
+                                        if (page.canRetryDirectly) {
+                                            stringResource(R.string.action_try_again)
+                                        } else {
+                                            stringResource(R.string.action_choose_again)
+                                        }
+                                    )
+                                }
                                 else -> Unit
                             }
                             TextButton(onClick = { onRemove(page.id) }) { Text(stringResource(R.string.action_remove)) }
@@ -338,10 +354,10 @@ private fun SessionReviewScreen(
                     }
                     Column {
                         IconButton(onClick = { onMove(page.id, -1) }, enabled = page.position > 0) {
-                            Icon(Icons.Default.ArrowUpward, "Move page up")
+                            Icon(Icons.Default.ArrowUpward, stringResource(R.string.cd_move_page_up))
                         }
                         IconButton(onClick = { onMove(page.id, 1) }, enabled = page.position < state.pages.lastIndex) {
-                            Icon(Icons.Default.ArrowDownward, "Move page down")
+                            Icon(Icons.Default.ArrowDownward, stringResource(R.string.cd_move_page_down))
                         }
                     }
                 }
@@ -410,7 +426,13 @@ private fun SaveDocumentScreen(
                 CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
             }
-            Text(if (state.isSaving) "Saving…" else "Save document")
+            Text(
+                if (state.isSaving) {
+                    stringResource(R.string.action_saving)
+                } else {
+                    stringResource(R.string.scanner_save_document)
+                }
+            )
         }
     }
 }

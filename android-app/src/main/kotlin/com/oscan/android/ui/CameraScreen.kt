@@ -99,9 +99,15 @@ private data class CameraChromeColors(
     val floatingSurface: Color
 )
 
-private enum class CameraScanMode(val label: String) {
-    Document("DOCUMENT"),
-    IdCard("ID CARD")
+private enum class CameraScanMode {
+    Document,
+    IdCard
+}
+
+@Composable
+private fun CameraScanMode.label(): String = when (this) {
+    CameraScanMode.Document -> stringResource(R.string.camera_mode_document)
+    CameraScanMode.IdCard -> stringResource(R.string.camera_mode_id_card)
 }
 
 @Composable
@@ -443,7 +449,7 @@ private fun ScanModeButton(
     modifier: Modifier = Modifier
 ) {
     var selectedMode by remember { mutableStateOf(CameraScanMode.Document) }
-    val scanModeDescription = stringResource(R.string.camera_scan_mode, selectedMode.label)
+    val scanModeDescription = stringResource(R.string.camera_scan_mode, selectedMode.label())
     val scope = rememberCoroutineScope()
     val buttonScale = remember { Animatable(1f) }
 
@@ -497,7 +503,7 @@ private fun ScanModeButton(
                     label = "ScanModeTransition"
                 ) { targetMode ->
                     Text(
-                        text = targetMode.label,
+                        text = targetMode.label(),
                         color = chrome.accent,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = if (compact) 9.sp else 10.sp,

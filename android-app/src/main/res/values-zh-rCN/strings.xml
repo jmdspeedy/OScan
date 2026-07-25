@@ -562,6 +562,26 @@
     <string name="treatment_grayscale_desc">去除颜色，同时保留平滑色调和精细细节。</string>
     <string name="treatment_bw_desc">为文字文档生成高对比度黑白页面。</string>
     <string name="cd_document_thumbnail">%1$s 的缩略图</string>
+    <string name="library_recent">最近</string>
+    <string name="library_all_documents">所有文档</string>
+    <string name="camera_mode_document">文档</string>
+    <string name="camera_mode_id_card">身份证件</string>
+    <string name="treatment_magic_recommended">Magic（推荐）</string>
+    <string name="scanner_restoring_progress">正在恢复扫描…</string>
+    <string name="scanner_importing_progress">正在导入图片 %1$d / %2$d…</string>
+    <string name="action_review">检查</string>
+    <string name="action_choose_again">重新选择</string>
+    <string name="cd_page_thumbnail">第 %1$d 页缩略图</string>
+    <string name="cd_move_page_up">向上移动页面</string>
+    <string name="cd_move_page_down">向下移动页面</string>
+    <string name="action_saving">正在保存…</string>
+    <string name="editor_saving_updates">正在保存页面更新…</string>
+    <string name="favorite">收藏</string>
+    <string name="favorite_add">添加收藏</string>
+    <string name="favorite_remove">取消收藏</string>
+    <string name="favorite_selected">收藏所选文档</string>
+    <string name="vault_favorite_add">添加到保险箱收藏</string>
+    <string name="vault_favorite_remove">从保险箱收藏中移除</string>
 
     <!-- Plural Quantity Resources -->
     <plurals name="plural_documents">

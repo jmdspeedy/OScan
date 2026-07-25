@@ -594,7 +594,7 @@ private fun DestinationScaffold(
                                 Icon(Icons.Default.Lock, "Move selected to Vault")
                             }
                             IconButton(onClick = { libraryViewModel.bulkSetFavorite(true) }) {
-                                Icon(Icons.Default.Favorite, "Favorite selected")
+                                Icon(Icons.Default.Favorite, stringResource(R.string.favorite_selected))
                             }
                             IconButton(onClick = { bulkMoveDialogOpen = true }) {
                                 Icon(Icons.AutoMirrored.Filled.DriveFileMove, "Move selected")
@@ -907,7 +907,7 @@ private fun MeScreen(
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.library_tab_trash), style = MaterialTheme.typography.titleMedium)
-                    Text(if (trashCount == 1) "1 item in Trash" else "$trashCount items in Trash", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(pluralStringResource(R.plurals.plural_trash_items, trashCount, trashCount), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

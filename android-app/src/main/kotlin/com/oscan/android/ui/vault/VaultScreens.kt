@@ -891,7 +891,9 @@ fun VaultDocumentScreen(
                     IconButton(onClick = onToggleFavorite) {
                         Icon(
                             if (document.isFavorite) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
-                            if (document.isFavorite) "Remove from Vault favorites" else "Add to Vault favorites"
+                            stringResource(
+                                if (document.isFavorite) R.string.vault_favorite_remove else R.string.vault_favorite_add
+                            )
                         )
                     }
                     IconButton(onClick = onMoveOut) {
@@ -1045,7 +1047,13 @@ private fun VaultDocumentItem(
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         DropdownMenuItem(
-                            text = { Text(if (doc.isFavorite) "Unfavorite" else "Favorite") },
+                            text = {
+                                Text(
+                                    stringResource(
+                                        if (doc.isFavorite) R.string.favorite_remove else R.string.favorite_add
+                                    )
+                                )
+                            },
                             onClick = { menuOpen = false; onToggleFavorite() },
                             leadingIcon = { Icon(if (doc.isFavorite) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder, null) }
                         )
