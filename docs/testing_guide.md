@@ -88,6 +88,6 @@ The scanner silently uses its OpenCV fallback if the bundled model or ONNX Runti
 
 Try a smaller source image. Classical detection works on a downscaled copy, but perspective crop, enhancement, diagnostic JPEGs, and PDF export still operate on the full detected crop.
 
-## Phase 2 testing handoff
+## Android testing handoff
 
-Phase 2 must keep this desktop regression check working. Follow the hands-on setup and validation steps in the [Android Studio run and testing guide](android_testing_guide.md). The original implementation requirements remain in [`phase2_instructions.md`](phase2_instructions.md).
+The Android application must keep this desktop regression check working. Follow the hands-on setup and validation steps in the [Android Studio run and testing guide](android_testing_guide.md). Android-specific unit and instrumentation checks supplement this desktop visual harness.

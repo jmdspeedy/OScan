@@ -2,89 +2,93 @@
 
 [![Build APK](https://github.com/jmdspeedy/OScan/actions/workflows/build-apk.yml/badge.svg)](https://github.com/jmdspeedy/OScan/actions/workflows/build-apk.yml)
 
-OScan is a privacy-first, offline document-scanning app written in Kotlin.
+OScan is a privacy-first Android document scanner and local document library. It turns photos into clean, perspective-corrected documents entirely on the device—no accounts, cloud processing, telemetry, or document uploads.
 
-All document detection and image processing run locally on-device using OpenCV and ONNX Runtime. Images and telemetry are never sent to a remote service.
+## What OScan can do
 
-## Current capabilities
+### Scan and enhance
 
-- **Offline Machine Learning & Classical Detection**: Hybrid four-corner detection using MakeACopy's DocQuadNet ONNX model with a robust OpenCV line-based classical fallback.
-- **Interactive Jetpack Compose UI**: 4 draggable corner handles clamped to image bounds, live polygon rendering, and corner geometry validation.
-- **Perspective Correction**: Projective aspect recovery and high-resolution 4-point warp from confirmed corners.
-- **Document Treatments**: Default colour-preserving Magic enhancement plus Original, Gray, and B&W modes.
-- **Recoverable Multi-page Imports**: Ordered image import, per-page review and retry, reordering, and durable local document saving.
-- **Local Document Library**: Recent and All documents collections, persistent grid/list and sort preferences, document metadata, rename, favorites, folder moves, and Trash moves.
-- **Document Inspection**: Multi-page detail grids and an edge-to-edge page viewer with zoom, pan, double-tap zoom, and accessible page navigation.
-- **Single-page PDF Export**: SAF (Storage Access Framework) saving and Android content URI sharing via system share sheet.
-- **Desktop Tester**: Desktop batch harness (`:desktop-tester`) preserving desktop visual regression testing.
+- Capture documents with a live CameraX preview or import several images at once.
+- Detect four document corners with the bundled DocQuadNet ONNX model and an OpenCV classical fallback.
+- Refine the crop with draggable corners, full-edge controls, geometry validation, and accessible non-drag adjustments.
+- Correct perspective at high resolution.
+- Apply Original, colour-preserving Magic, Gray, or B&W treatments.
+- Capture and align the front and back of an ID card, then create combined images or a PDF.
 
-## Repository layout
+### Organize a private local library
+
+- Save recoverable multi-page scan sessions as durable local documents.
+- Browse Recent and All documents in grid or list layouts.
+- Rename, favorite, search, sort, select, move into folders, and move documents to Trash.
+- Reorder, rotate, re-crop, reprocess, add, or remove individual pages.
+- Inspect pages in an edge-to-edge viewer with zoom, pan, and accessible navigation.
+
+### Export and protect
+
+- Export single-page or multi-page PDFs through Android's Storage Access Framework.
+- Export images and multi-page image ZIPs, or share through the Android system share sheet.
+- Protect sensitive documents in an encrypted local Vault with passcode and biometric unlock support.
+- Keep Vault metadata, thumbnails, pages, favorites, search, and Trash behind a separate encrypted storage boundary.
+
+### Fit the device and the reader
+
+- Use compact, landscape, tablet, split-screen, and resizable layouts.
+- Follow the system theme or select Light or Dark mode.
+- Use OScan in English, Simplified Chinese, or Japanese.
+- Navigate with TalkBack-friendly semantics, large touch targets, and alternatives to drag-only interactions.
+
+## Privacy by design
+
+Document detection, image enhancement, library management, encryption, and export all run locally. OScan does not require an account and does not send images or telemetry to a remote service.
+
+## Project structure
 
 ```text
-core-engine/      Platform-agnostic Kotlin detection, crop, filter, geometry & coordinate logic
-android-app/      Jetpack Compose Material 3 Android app module
-desktop-tester/   Phase 1 desktop batch runner for visual regression testing
-docs/             Design, testing, and Phase 2 implementation documentation
-test-images/      Inputs and manually approved visual references
+android-app/      Jetpack Compose Android application
+core-engine/      Shared detection, crop, enhancement, geometry, ID-card, and PDF logic
+desktop-tester/   Desktop visual-regression and ID-card verification harness
 ```
 
-## Requirements
+## Technology
 
-- JDK 17 or newer
-- Android SDK (API level 34 build-tools, minSdk 26)
-- Internet access on the first build to resolve Gradle dependencies
-- A compatible Microsoft Visual C++ runtime on Windows for desktop OpenCV native loading
+- Kotlin 1.9.22 and Java 17
+- Jetpack Compose and Material 3
+- CameraX
+- OpenCV 4.12.0 on Android and OpenPnP OpenCV 4.9 on desktop
+- ONNX Runtime 1.22.0 on Android and 1.24.1 on desktop
+- Room, DataStore, Android Keystore, and biometric authentication
+- Android `PdfDocument` and desktop Apache PDFBox
+- Gradle 8.7 and Android Gradle Plugin 8.5.2
+- Android minSdk 26, compileSdk/targetSdk 34
 
-The Gradle wrapper is included.
+## Build
 
-## Build and Run Instructions
-
-### 1. Build Android Debug APK
+Requirements: JDK 17 or newer, Android SDK 34, and internet access for the first dependency resolution.
 
 ```powershell
 .\gradlew.bat :android-app:assembleDebug
 ```
 
-The APK will be generated at `android-app/build/outputs/apk/debug/android-app-debug.apk`.
+The debug APK is written to `android-app/build/outputs/apk/debug/android-app-debug.apk`.
 
-### 2. Run Desktop Visual Tester
-
-```powershell
-.\gradlew.bat :desktop-tester:run
-```
-
-Output artifacts (boundary overlay, crop, magic filter, PDF) will be written to `test-images/output/`.
-
-To run the shared ID-card detector and front/back sheet generator against matching
-`card_test*_front.jpg` and `card_test*_back.jpg` fixtures:
-
-```powershell
-.\gradlew.bat :desktop-tester:runIdCard
-```
-
-The edge overlays, rectangular crops, rounded crops, combined sheets, and PDFs are written to
-`test-images/output/id-cards/`.
-
-### 3. Run Unit Tests
+Run the unit tests with:
 
 ```powershell
 .\gradlew.bat :core-engine:test :android-app:test
 ```
 
-## Documentation
+Run the desktop visual harness with:
 
-- [Product design specification](docs/DESIGN.md)
-- [Feature backlog and status](docs/FEATURES.md)
-- [Vault feature specification](docs/VAULT_SPEC.md)
-- [Phase 1 testing guide](docs/testing_guide.md)
-- [Android Studio run and testing guide](docs/android_testing_guide.md)
-- [Phase 2 Android implementation instructions](docs/phase2_instructions.md)
+```powershell
+.\gradlew.bat :desktop-tester:run
+```
 
-## Technology
+The desktop harness expects local test fixtures in the ignored `test-images/` directory.
 
-- Kotlin 1.9.22 & Java 17
-- Jetpack Compose & Material 3
-- Official OpenCV Android AAR 4.12.0 / Desktop OpenPnP OpenCV 4.9
-- ONNX Runtime for Android 1.22.0 / JVM 1.24.1
-- Android Platform `PdfDocument` / Desktop Apache PDFBox
-- Gradle 8.7 and Android Gradle Plugin 8.5.2
+## Ownership
+
+OScan is a personal project maintained by its owner. The repository is published as a showcase and is not accepting external contributions.
+
+## License
+
+OScan is released under the [MIT License](LICENSE). Third-party models and libraries retain their respective licenses and notices.

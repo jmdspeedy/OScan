@@ -22,5 +22,11 @@ desktop.ini
 .agents/
 .codex/
 
+# Internal product and development specifications
+docs/DESIGN.md
+docs/FEATURES.md
+docs/VAULT_SPEC.md
+docs/MULTI_LANGUAGE_SUPPORT_SPEC.md
+
 # Local test fixtures and generated artifacts may contain private documents.
 test-images/

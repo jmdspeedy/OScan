@@ -1,6 +1,6 @@
 # OScan Android Studio Run and Testing Guide
 
-This guide explains how to import, run, and manually test the Phase 2 Android app. The Android application module is `:android-app`, its application ID is `com.oscan.android`, and it requires Android API 26 or newer.
+This guide explains how to import, run, and manually test the OScan Android app. The Android application module is `:android-app`, its application ID is `com.oscan.android`, and it requires Android API 26 or newer.
 
 Use Android Studio's bundled JDK (JDK 21 is verified) when running Robolectric tests. Java 24 is not compatible with the current Robolectric 4.11.1 dependency.
 
