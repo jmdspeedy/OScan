@@ -287,6 +287,7 @@ fun OScanAppShell(
                 onMove = libraryViewModel::moveToFolder,
                 onTrash = libraryViewModel::moveToTrash,
                 defaultJpegQuality = state.userPreferences.defaultJpegQuality,
+                defaultPageSize = state.userPreferences.defaultPageSize,
                 onExport = { ctx, doc, uri, format, quality -> libraryViewModel.exportDocumentToUri(ctx, doc, fileStore, uri, format, quality) },
                 onShare = { ctx, doc, format, quality -> libraryViewModel.shareDocument(ctx, doc, fileStore, format, quality, context::startActivity) },
                 onOpenPage = { viewerPage = it },

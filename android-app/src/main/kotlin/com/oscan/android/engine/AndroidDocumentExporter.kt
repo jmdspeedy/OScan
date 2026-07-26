@@ -19,6 +19,18 @@ class AndroidDocumentExporter(
     private val pdfExporter: AndroidPdfExporter = AndroidPdfExporter()
 ) {
 
+    fun measureDocumentSize(
+        pages: List<PdfPageSpec>,
+        format: ExportFormat,
+        pageSize: PdfPageSize = PdfPageSize.A4,
+        quality: JpegQuality = JpegQuality.HIGH,
+        documentName: String = "document"
+    ): Long {
+        val counter = CountingOutputStream()
+        exportDocument(pages, counter, format, pageSize, quality, documentName)
+        return counter.byteCount
+    }
+
     fun exportDocument(
         pages: List<PdfPageSpec>,
         outputStream: OutputStream,
@@ -97,5 +109,19 @@ class AndroidDocumentExporter(
             bitmap.recycle()
         }
         return rotated
+    }
+}
+
+private class CountingOutputStream : OutputStream() {
+    var byteCount: Long = 0
+        private set
+
+    override fun write(value: Int) {
+        byteCount++
+    }
+
+    override fun write(buffer: ByteArray, offset: Int, length: Int) {
+        require(offset >= 0 && length >= 0 && offset + length <= buffer.size)
+        byteCount += length
     }
 }

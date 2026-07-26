@@ -92,7 +92,7 @@
     <!-- JPEG Quality -->
     <string name="jpeg_quality_low">低 (60%)</string>
     <string name="jpeg_quality_medium">中 (80%)</string>
-    <string name="jpeg_quality_high">高 (95%)</string>
+    <string name="jpeg_quality_high">高 (90%)</string>
 
     <!-- Accent Themes -->
     <string name="accent_teal">青翠色</string>
@@ -397,6 +397,8 @@
     <string name="page_count_position">%1$d / %2$d</string>
     <string name="export_format">格式</string>
     <string name="export_image_quality">图片质量</string>
+    <string name="export_size_calculating">正在计算…</string>
+    <string name="export_size_unavailable">无法获取大小</string>
     <string name="privacy_local_body">OScan 是本地优先的文档管理器。边缘检测、透视校正、图像增强和 PDF 生成均完全在此 Android 设备上运行。</string>
     <string name="privacy_accounts_body">OScan 没有用户账户、远程同步、分析统计、后台上报或广告。只有在您明确分享时，文档数据才会离开设备。</string>
     <string name="privacy_sharing_body">分享 PDF 时，OScan 使用标准 Android 系统分享面板。文件分享给谁、分享到哪里完全由您控制。</string>

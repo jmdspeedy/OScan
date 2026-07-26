@@ -92,7 +92,7 @@
     <!-- JPEG Quality -->
     <string name="jpeg_quality_low">低 (60%)</string>
     <string name="jpeg_quality_medium">中 (80%)</string>
-    <string name="jpeg_quality_high">高 (95%)</string>
+    <string name="jpeg_quality_high">高 (90%)</string>
 
     <!-- Accent Themes -->
     <string name="accent_teal">ティール</string>
@@ -397,6 +397,8 @@
     <string name="page_count_position">%1$d / %2$d</string>
     <string name="export_format">形式</string>
     <string name="export_image_quality">画像品質</string>
+    <string name="export_size_calculating">計算中…</string>
+    <string name="export_size_unavailable">サイズを取得できません</string>
     <string name="privacy_local_body">OScanはローカル優先の書類管理アプリです。輪郭検出、遠近補正、画像補正、PDF生成はすべてこのAndroid端末上で実行されます。</string>
     <string name="privacy_accounts_body">OScanにはアカウント、リモート同期、分析、バックグラウンド送信、広告がありません。明示的に共有した場合のみ書類データが端末外へ送られます。</string>
     <string name="privacy_sharing_body">PDFの共有にはAndroid標準の共有画面を使用します。共有先と相手はユーザーが管理できます。</string>

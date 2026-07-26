@@ -101,6 +101,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -127,7 +128,12 @@ import com.oscan.android.data.model.FolderId
 import com.oscan.android.data.model.Page
 import com.oscan.android.data.model.PageId
 import com.oscan.android.data.preferences.LibraryPresentation
+import com.oscan.android.data.preferences.JpegQuality
+import com.oscan.android.data.preferences.PdfPageSize
 import com.oscan.android.data.storage.DocumentFileStore
+import com.oscan.android.engine.AndroidDocumentExporter
+import com.oscan.android.engine.ExportFormat
+import com.oscan.android.engine.PdfPageSpec
 import com.oscan.android.ui.theme.OScanTheme
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -906,6 +912,7 @@ fun DocumentDetailScreen(
     onMove: (FolderId?) -> Unit,
     onTrash: () -> Unit,
     defaultJpegQuality: com.oscan.android.data.preferences.JpegQuality = com.oscan.android.data.preferences.JpegQuality.HIGH,
+    defaultPageSize: PdfPageSize = PdfPageSize.A4,
     onSavePdf: (Context, Document, Uri) -> Unit = { _, _, _ -> },
     onSharePdf: (Context, Document) -> Unit = { _, _ -> },
     onExport: (Context, Document, Uri, com.oscan.android.engine.ExportFormat, com.oscan.android.data.preferences.JpegQuality) -> Unit = { ctx, doc, uri, fmt, q -> onSavePdf(ctx, doc, uri) },
@@ -1175,7 +1182,9 @@ fun DocumentDetailScreen(
     if (exportDialogOpen && document != null) {
         ExportAndSaveDialog(
             document = document,
+            fileStore = fileStore,
             defaultQuality = defaultJpegQuality,
+            pageSize = defaultPageSize,
             isExporting = isExporting,
             onDismiss = { exportDialogOpen = false },
             onSave = { format, quality ->
@@ -1443,7 +1452,9 @@ private fun Page.safeAspectRatio(): Float =
 @Composable
 fun ExportAndSaveDialog(
     document: Document,
+    fileStore: DocumentFileStore,
     defaultQuality: com.oscan.android.data.preferences.JpegQuality = com.oscan.android.data.preferences.JpegQuality.HIGH,
+    pageSize: PdfPageSize = PdfPageSize.A4,
     isExporting: Boolean,
     onDismiss: () -> Unit,
     onSave: (com.oscan.android.engine.ExportFormat, com.oscan.android.data.preferences.JpegQuality) -> Unit,
@@ -1451,6 +1462,42 @@ fun ExportAndSaveDialog(
 ) {
     var selectedFormat by rememberSaveable { mutableStateOf(com.oscan.android.engine.ExportFormat.PDF) }
     var selectedQuality by rememberSaveable { mutableStateOf(defaultQuality) }
+    var sizeEstimates by remember { mutableStateOf<Map<JpegQuality, Long>?>(null) }
+    val documentExporter = remember { AndroidDocumentExporter() }
+
+    LaunchedEffect(document.id, document.modifiedAt, selectedFormat, pageSize) {
+        sizeEstimates = null
+        sizeEstimates = withContext(Dispatchers.IO) {
+            runCatching {
+                val pages = document.pages.sortedBy { it.position }.mapNotNull { page ->
+                    val file = fileStore.resolve(page.processedAsset).takeIf { it.isFile }
+                        ?: fileStore.resolve(page.originalAsset).takeIf { it.isFile }
+                    file?.let { PdfPageSpec(it, page.rotationDegrees) }
+                }
+                require(pages.isNotEmpty()) { "No page assets found for document" }
+                if (selectedFormat == ExportFormat.PNG) {
+                    val size = documentExporter.measureDocumentSize(
+                        pages = pages,
+                        format = selectedFormat,
+                        pageSize = pageSize,
+                        quality = JpegQuality.HIGH,
+                        documentName = document.name
+                    )
+                    JpegQuality.entries.associateWith { size }
+                } else {
+                    JpegQuality.entries.associateWith { quality ->
+                        documentExporter.measureDocumentSize(
+                            pages = pages,
+                            format = selectedFormat,
+                            pageSize = pageSize,
+                            quality = quality,
+                            documentName = document.name
+                        )
+                    }
+                }
+            }.getOrElse { emptyMap() }
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1507,7 +1554,21 @@ fun ExportAndSaveDialog(
                         FilterChip(
                             selected = selectedQuality == quality,
                             onClick = { selectedQuality = quality },
-                            label = { Text(quality.label()) },
+                            label = {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(quality.label(), maxLines = 1)
+                                    Text(
+                                        text = when (val estimates = sizeEstimates) {
+                                            null -> stringResource(R.string.export_size_calculating)
+                                            else -> estimates[quality]?.let(::formatFileSize)
+                                                ?: stringResource(R.string.export_size_unavailable)
+                                        },
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1
+                                    )
+                                }
+                            },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -1540,4 +1601,10 @@ fun ExportAndSaveDialog(
             }
         }
     )
+}
+
+private fun formatFileSize(bytes: Long): String = when {
+    bytes >= 1024L * 1024L -> String.format(Locale.getDefault(), "%.1f MB", bytes / (1024f * 1024f))
+    bytes >= 1024L -> String.format(Locale.getDefault(), "%.0f KB", bytes / 1024f)
+    else -> "$bytes B"
 }

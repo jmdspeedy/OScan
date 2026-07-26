@@ -25,7 +25,15 @@ enum class AccentTheme {
     SLATE
 }
 enum class PdfPageSize { A4, LETTER, MATCH_PAGE }
-enum class JpegQuality(val qualityInt: Int) { HIGH(90), MEDIUM(80), LOW(60) }
+enum class JpegQuality(
+    val qualityInt: Int,
+    val pdfMaxDimension: Int,
+    val pdfJpegQuality: Int
+) {
+    HIGH(90, 2_560, 90),
+    MEDIUM(80, 1_920, 78),
+    LOW(60, 1_280, 60)
+}
 enum class CameraLensPreference { BACK, FRONT }
 
 data class UserPreferences(
@@ -104,4 +112,3 @@ class UserPreferencesStore(private val context: Context) {
         val DEFAULT_JPEG_QUALITY = stringPreferencesKey("default_jpeg_quality")
     }
 }
-

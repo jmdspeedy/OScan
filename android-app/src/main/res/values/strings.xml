@@ -95,7 +95,7 @@
     <!-- JPEG Quality -->
     <string name="jpeg_quality_low">Low (60%)</string>
     <string name="jpeg_quality_medium">Medium (80%)</string>
-    <string name="jpeg_quality_high">High (95%)</string>
+    <string name="jpeg_quality_high">High (90%)</string>
 
     <!-- Accent Themes -->
     <string name="accent_teal">OScan Teal</string>
@@ -401,6 +401,8 @@
     <string name="page_count_position">%1$d of %2$d</string>
     <string name="export_format">Format</string>
     <string name="export_image_quality">Image quality</string>
+    <string name="export_size_calculating">Calculating…</string>
+    <string name="export_size_unavailable">Size unavailable</string>
     <string name="privacy_local_body">OScan is a local-first document manager. Edge detection, perspective correction, image enhancement, and PDF generation run entirely on this Android device.</string>
     <string name="privacy_accounts_body">OScan has no user accounts, remote sync, analytics, background reporting, or advertisements. Document data leaves the device only when you explicitly share it.</string>
     <string name="privacy_sharing_body">When you share a PDF, OScan uses the standard Android share sheet. You control where and with whom files are shared.</string>

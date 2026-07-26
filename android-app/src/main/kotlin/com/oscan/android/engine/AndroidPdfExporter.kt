@@ -7,8 +7,10 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
 import java.io.File
+import java.io.ByteArrayOutputStream
 import java.io.FileOutputStream
 import java.io.OutputStream
+import kotlin.math.max
 import kotlin.math.min
 
 data class PdfPageSpec(
@@ -106,7 +108,7 @@ class AndroidPdfExporter {
                 val file = spec.file
                 val rotation = (spec.rotationDegrees % 360 + 360) % 360
                 require(file.exists() && file.isFile) { "Page image file does not exist: ${file.path}" }
-                val bitmap = BitmapFactory.decodeFile(file.path)
+                val bitmap = decodePdfBitmap(file, quality)
                     ?: throw IllegalStateException("Could not decode image file: ${file.path}")
                 try {
                     val isRotated90 = (rotation % 180 != 0)
@@ -166,5 +168,47 @@ class AndroidPdfExporter {
             document.close()
         }
     }
-}
 
+    private fun decodePdfBitmap(
+        file: File,
+        quality: com.oscan.android.data.preferences.JpegQuality
+    ): Bitmap? {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.path, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+        var sampleSize = 1
+        while (max(bounds.outWidth / sampleSize, bounds.outHeight / sampleSize) > quality.pdfMaxDimension * 2) {
+            sampleSize *= 2
+        }
+        val decoded = BitmapFactory.decodeFile(
+            file.path,
+            BitmapFactory.Options().apply {
+                inSampleSize = sampleSize
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            }
+        ) ?: return null
+
+        val longestEdge = max(decoded.width, decoded.height)
+        val scaled = if (longestEdge > quality.pdfMaxDimension) {
+            val scale = quality.pdfMaxDimension.toFloat() / longestEdge.toFloat()
+            Bitmap.createScaledBitmap(
+                decoded,
+                (decoded.width * scale).toInt().coerceAtLeast(1),
+                (decoded.height * scale).toInt().coerceAtLeast(1),
+                true
+            ).also { if (it !== decoded) decoded.recycle() }
+        } else {
+            decoded
+        }
+
+        val compressed = ByteArrayOutputStream().use { buffer ->
+            check(scaled.compress(Bitmap.CompressFormat.JPEG, quality.pdfJpegQuality, buffer)) {
+                "Could not compress PDF page image: ${file.path}"
+            }
+            buffer.toByteArray()
+        }
+        scaled.recycle()
+        return BitmapFactory.decodeByteArray(compressed, 0, compressed.size)
+    }
+}
