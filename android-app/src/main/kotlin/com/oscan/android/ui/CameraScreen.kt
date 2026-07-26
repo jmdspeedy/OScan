@@ -40,6 +40,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.GridOff
+import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Button
@@ -58,6 +60,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
@@ -117,6 +120,7 @@ fun LiveCameraScreen(
     captureState: CameraCaptureState,
     onCaptured: (File, CameraScanMode) -> Unit,
     onDone: () -> Unit,
+    onAbandonIncompleteIdCard: () -> Unit,
     onImport: () -> Unit,
     shutterFeedbackEnabled: Boolean = true
 ) {
@@ -149,6 +153,7 @@ fun LiveCameraScreen(
     val compactControls = orientation == Configuration.ORIENTATION_LANDSCAPE
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
     var selectedMode by remember { mutableStateOf(CameraScanMode.Document) }
+    var gridVisible by rememberSaveable { mutableStateOf(true) }
     LaunchedEffect(previewView, lifecycleOwner, orientation) {
         previewView?.let { cameraViewModel.bind(lifecycleOwner, it, it.display?.rotation ?: 0) }
     }
@@ -211,7 +216,9 @@ fun LiveCameraScreen(
                 )
             }
 
-            CameraGrid(bottomInset = if (compactControls) 76.dp else 100.dp)
+            if (gridVisible) {
+                CameraGrid(bottomInset = if (compactControls) 76.dp else 100.dp)
+            }
 
             if (selectedMode == CameraScanMode.IdCard) {
                 IdCardGuideOverlay(
@@ -238,8 +245,10 @@ fun LiveCameraScreen(
             chrome = chrome,
             torchAvailable = state.torchAvailable && permissionGranted,
             torchEnabled = state.torchEnabled,
+            gridVisible = gridVisible,
             controlsEnabled = permissionGranted && !state.isCapturing && !captureState.isProcessing,
-            onToggleTorch = cameraViewModel::toggleTorch
+            onToggleTorch = cameraViewModel::toggleTorch,
+            onToggleGrid = { gridVisible = !gridVisible }
         )
 
         if (permissionGranted) {
@@ -292,9 +301,12 @@ fun LiveCameraScreen(
             onImport = onImport,
             selectedMode = selectedMode,
             onModeChanged = { mode ->
-                if (captureState.capturedCount == 0) selectedMode = mode
+                if (mode != selectedMode) {
+                    onAbandonIncompleteIdCard()
+                    selectedMode = mode
+                }
             },
-            modeEnabled = captureState.capturedCount == 0
+            modeEnabled = true
         )
 
         if (permissionGranted && state.isStarting) {
@@ -333,8 +345,10 @@ internal fun CameraTransitionPreview() {
             chrome = chrome,
             torchAvailable = false,
             torchEnabled = false,
+            gridVisible = true,
             controlsEnabled = false,
-            onToggleTorch = {}
+            onToggleTorch = {},
+            onToggleGrid = {}
         )
         CameraControlDock(
             chrome = chrome,
@@ -355,8 +369,10 @@ private fun BoxScope.CameraTopControls(
     chrome: CameraChromeColors,
     torchAvailable: Boolean,
     torchEnabled: Boolean,
+    gridVisible: Boolean,
     controlsEnabled: Boolean,
-    onToggleTorch: () -> Unit
+    onToggleTorch: () -> Unit,
+    onToggleGrid: () -> Unit
 ) {
     val flashDescription = when {
         !torchAvailable -> stringResource(R.string.camera_flash_unavailable)
@@ -364,34 +380,58 @@ private fun BoxScope.CameraTopControls(
         else -> stringResource(R.string.camera_flash_on_action)
     }
     val flashState = if (torchEnabled) stringResource(R.string.state_on) else stringResource(R.string.state_off)
-    Box(
+    val gridDescription = if (gridVisible) {
+        stringResource(R.string.camera_grid_off_action)
+    } else {
+        stringResource(R.string.camera_grid_on_action)
+    }
+    val gridState = if (gridVisible) stringResource(R.string.state_on) else stringResource(R.string.state_off)
+    Column(
         modifier = Modifier
             .align(Alignment.TopEnd)
             .statusBarsPadding()
-            .padding(end = 10.dp)
-            .size(48.dp)
-            .clickable(
-                enabled = controlsEnabled && torchAvailable,
-                onClick = onToggleTorch
-            )
-            .semantics {
-                contentDescription = flashDescription
-                stateDescription = flashState
-            }
+            .padding(top = 8.dp, end = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Surface(
+            onClick = onToggleTorch,
+            enabled = controlsEnabled && torchAvailable,
             color = chrome.floatingSurface,
             shape = CircleShape,
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .size(38.dp)
+                .size(48.dp)
+                .semantics {
+                    contentDescription = flashDescription
+                    stateDescription = flashState
+                }
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = if (torchEnabled) Icons.Default.FlashOn else Icons.Default.FlashOff,
                     contentDescription = null,
                     tint = if (torchAvailable) chrome.onPanel else chrome.onPanel.copy(alpha = .38f),
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
+        Surface(
+            onClick = onToggleGrid,
+            enabled = controlsEnabled,
+            color = chrome.floatingSurface,
+            shape = CircleShape,
+            modifier = Modifier
+                .size(48.dp)
+                .semantics {
+                    contentDescription = gridDescription
+                    stateDescription = gridState
+                }
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = if (gridVisible) Icons.Default.GridOn else Icons.Default.GridOff,
+                    contentDescription = null,
+                    tint = chrome.onPanel,
+                    modifier = Modifier.size(22.dp)
                 )
             }
         }

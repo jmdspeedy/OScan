@@ -29,6 +29,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -102,7 +104,9 @@ class ScannerViewModel(
     private val _cameraCaptureState = MutableStateFlow(CameraCaptureState())
     val cameraCaptureState: StateFlow<CameraCaptureState> = _cameraCaptureState.asStateFlow()
     private var activeCameraImports = 0
+    private var activeCameraImportJob: Job? = null
     private val cameraDetectionMutex = Mutex()
+    private var pendingIdCardAdjustment: ScannerUiState.IdCardAdjust? = null
 
     init {
         session?.let { restored ->
@@ -147,7 +151,7 @@ class ScannerViewModel(
             message = null,
             mode = mode
         )
-        viewModelScope.launch {
+        activeCameraImportJob = viewModelScope.launch {
             val draft = session ?: sessionStore.create().also { session = it }
             val page = SessionPage(
                 id = sessionStore.newPageId(),
@@ -175,7 +179,8 @@ class ScannerViewModel(
                     capturedCount = requireSession().pages.count { it.sourcePath != null },
                     message = if (latest.status == SessionPageStatus.FAILED) "That photo could not be prepared. You can keep scanning." else null
                 )
-            } catch (_: Throwable) {
+            } catch (error: Throwable) {
+                if (error is CancellationException) throw error
                 updatePage(page.id) {
                     it.copy(status = SessionPageStatus.FAILED, failureMessage = "This photo could not be added. Remove it or try again.")
                 }
@@ -188,6 +193,16 @@ class ScannerViewModel(
                 _cameraCaptureState.value = _cameraCaptureState.value.copy(isProcessing = activeCameraImports > 0)
             }
         }
+    }
+
+    /** Drops an abandoned, incomplete front-only ID-card capture and its stored image. */
+    fun discardIncompleteIdCardCapture() {
+        val capture = _cameraCaptureState.value
+        if (capture.mode != CameraScanMode.IdCard || (capture.capturedCount == 0 && !capture.isProcessing)) return
+        if (capture.capturedCount >= 2) return
+        activeCameraImportJob?.cancel()
+        activeCameraImportJob = null
+        discardSession()
     }
 
     fun finishCameraCapture() {
@@ -226,7 +241,10 @@ class ScannerViewModel(
                     isFrontValid = CornerValidator.isValidQuadrilateral(frontCorners.toArray(), frontResult.sourceDimensions),
                     isBackValid = CornerValidator.isValidQuadrilateral(backCorners.toArray(), backResult.sourceDimensions)
                 )
-            }.onSuccess { _uiState.value = it }
+            }.onSuccess {
+                pendingIdCardAdjustment = it
+                _uiState.value = it
+            }
                 .onFailure {
                     _uiState.value = ScannerUiState.Error("Both card sides could not be prepared. Try again.", ScannerUiState.Empty)
                 }
@@ -437,6 +455,7 @@ class ScannerViewModel(
                     )
                 }
             }.onSuccess {
+                pendingIdCardAdjustment = null
                 val pages = requireSession().pages.sortedBy { it.position }
                 val next = pages.firstOrNull { it.position > current.page.position && it.status == SessionPageStatus.CROP_REVIEW }
                     ?: pages.firstOrNull { it.status == SessionPageStatus.CROP_REVIEW }
@@ -449,6 +468,12 @@ class ScannerViewModel(
 
     fun onBackToCrop() {
         val current = _uiState.value as? ScannerUiState.PreviewReady ?: return
+        val idCardAdjustment = pendingIdCardAdjustment
+        if (idCardAdjustment != null) {
+            updateSession(idCardAdjustment.session)
+            _uiState.value = idCardAdjustment.copy(session = requireSession())
+            return
+        }
         viewModelScope.launch { openCrop(current.page) }
     }
 
@@ -595,6 +620,8 @@ class ScannerViewModel(
     fun discardSession() {
         session?.let { sessionStore.discard(it.id) }
         session = null
+        pendingIdCardAdjustment = null
+        activeCameraImportJob = null
         _uiState.value = ScannerUiState.Empty
         _cameraCaptureState.value = CameraCaptureState()
     }
@@ -606,6 +633,7 @@ class ScannerViewModel(
 
     fun startAnother() {
         session = null
+        pendingIdCardAdjustment = null
         _uiState.value = ScannerUiState.Empty
     }
 

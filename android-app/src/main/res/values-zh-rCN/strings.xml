@@ -427,6 +427,8 @@
     <string name="camera_flash_unavailable">闪光灯不可用</string>
     <string name="camera_flash_off_action">关闭闪光灯</string>
     <string name="camera_flash_on_action">打开闪光灯</string>
+    <string name="camera_grid_off_action">隐藏相机网格</string>
+    <string name="camera_grid_on_action">显示相机网格</string>
     <string name="state_on">开启</string>
     <string name="state_off">关闭</string>
     <string name="camera_mode_label">模式</string>

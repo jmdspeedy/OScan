@@ -54,6 +54,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,6 +91,15 @@ fun ScannerApp(
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
     val captureState by viewModel.cameraCaptureState.collectAsState()
 
+    DisposableEffect(viewModel) {
+        val lifecycle = ProcessLifecycleOwner.get().lifecycle
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) viewModel.discardIncompleteIdCardCapture()
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+
     val multiplePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(50)) { uris ->
         viewModel.onImagesSelected(uris)
     }
@@ -111,6 +124,7 @@ fun ScannerApp(
             captureState = captureState,
             onCaptured = viewModel::onCameraCaptured,
             onDone = viewModel::finishCameraCapture,
+            onAbandonIncompleteIdCard = viewModel::discardIncompleteIdCardCapture,
             scannerViewModel = viewModel,
             scannerEngine = scannerEngine,
             repository = repository,
@@ -129,17 +143,23 @@ fun ScannerApp(
         if (hasAcceptedPages) showDiscardDialog = true else viewModel.discardSession()
     }
 
-    BackHandler(enabled = state !is ScannerUiState.Empty) {
+    BackHandler(enabled = state !is ScannerUiState.Empty && state !is ScannerUiState.PreviewReady) {
         when (state) {
             is ScannerUiState.CropReady -> if (hasAcceptedPages) viewModel.showReview() else requestDiscard()
             is ScannerUiState.IdCardAdjust -> requestDiscard()
             is ScannerUiState.Review -> requestDiscard()
-            is ScannerUiState.PreviewReady -> viewModel.onBackToCrop()
             is ScannerUiState.SaveDocument -> viewModel.showReview()
             is ScannerUiState.Error -> viewModel.dismissError()
             is ScannerUiState.Saved -> viewModel.startAnother()
             else -> Unit
         }
+    }
+
+    // Keep preview navigation in a dedicated handler. The ID-card preview replaces
+    // its two source pages with a generated sheet, so system Back must use the same
+    // ID-card-aware route as the toolbar action instead of a stale crop callback.
+    BackHandler(enabled = state is ScannerUiState.PreviewReady) {
+        viewModel.onBackToCrop()
     }
 
     if (showDiscardDialog) {

@@ -431,6 +431,8 @@
     <string name="camera_flash_unavailable">Flash unavailable</string>
     <string name="camera_flash_off_action">Turn flash off</string>
     <string name="camera_flash_on_action">Turn flash on</string>
+    <string name="camera_grid_off_action">Hide camera grid</string>
+    <string name="camera_grid_on_action">Show camera grid</string>
     <string name="state_on">On</string>
     <string name="state_off">Off</string>
     <string name="camera_mode_label">Mode</string>

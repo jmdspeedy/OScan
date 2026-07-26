@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.oscan.android.ui.theme.OScanTheme
 import com.oscan.core.model.FilterType
 
@@ -74,7 +75,14 @@ fun PreviewScreen(
                                 selected = selectedFilter == filter,
                                 onClick = { onFilterSelected(filter) },
                                 shape = SegmentedButtonDefaults.itemShape(index, FilterType.entries.size),
-                                label = { Text(filter.displayName()) }
+                                label = {
+                                    Text(
+                                        text = filter.displayName(),
+                                        fontSize = 12.sp,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
                             )
                         }
                     }

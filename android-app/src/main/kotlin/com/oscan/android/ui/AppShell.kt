@@ -138,6 +138,7 @@ fun OScanAppShell(
     captureState: CameraCaptureState? = null,
     onCaptured: ((File, CameraScanMode) -> Unit)? = null,
     onDone: (() -> Unit)? = null,
+    onAbandonIncompleteIdCard: (() -> Unit)? = null,
     scannerViewModel: ScannerViewModel? = null,
     scannerEngine: com.oscan.android.engine.ScannerEngine? = null,
     repository: com.oscan.android.data.repository.DocumentRepository? = null,
@@ -158,6 +159,7 @@ fun OScanAppShell(
     }
     LaunchedEffect(destinationPagerState.settledPage) {
         destination = AppDestination.entries[destinationPagerState.settledPage]
+        if (destination != AppDestination.Scan) onAbandonIncompleteIdCard?.invoke()
     }
     var viewerPage by rememberSaveable { mutableStateOf<Int?>(null) }
     var editingPage by remember { mutableStateOf<com.oscan.android.data.model.Page?>(null) }
@@ -426,6 +428,7 @@ fun OScanAppShell(
                     captureState = captureState,
                     onCaptured = onCaptured,
                     onDone = onDone,
+                    onAbandonIncompleteIdCard = onAbandonIncompleteIdCard,
                     onOpenFolders = { isViewingFolders = true },
                     onOpenVault = {
                         if (vaultViewModel != null) isViewingVault = true
@@ -457,6 +460,7 @@ fun OScanAppShell(
                 captureState = captureState,
                 onCaptured = onCaptured,
                 onDone = onDone,
+                onAbandonIncompleteIdCard = onAbandonIncompleteIdCard,
                 onOpenFolders = { isViewingFolders = true },
                 onOpenVault = {
                     if (vaultViewModel != null) isViewingVault = true
@@ -556,6 +560,7 @@ private fun DestinationScaffold(
     captureState: CameraCaptureState? = null,
     onCaptured: ((File, CameraScanMode) -> Unit)? = null,
     onDone: (() -> Unit)? = null,
+    onAbandonIncompleteIdCard: (() -> Unit)? = null,
     onOpenFolders: () -> Unit,
     onOpenVault: (() -> Unit)? = null,
     onMoveSelectedToVault: () -> Unit = {},
@@ -626,7 +631,10 @@ private fun DestinationScaffold(
                 AppDestination.Scan -> {
                     if (cameraViewModel != null && captureState != null && onCaptured != null && onDone != null) {
                         BackHandler(enabled = cameraIsSettled) {
-                            if (captureState.capturedCount > 0) {
+                            if (captureState.mode == CameraScanMode.IdCard && captureState.capturedCount == 1) {
+                                onAbandonIncompleteIdCard?.invoke()
+                                onDestinationSelected(AppDestination.Home)
+                            } else if (captureState.capturedCount > 0) {
                                 onDone()
                             } else {
                                 onDestinationSelected(AppDestination.Home)
@@ -638,6 +646,7 @@ private fun DestinationScaffold(
                                 captureState = captureState,
                                 onCaptured = onCaptured,
                                 onDone = onDone,
+                                onAbandonIncompleteIdCard = { onAbandonIncompleteIdCard?.invoke() },
                                 onImport = onImportImages,
                                 shutterFeedbackEnabled = state.userPreferences.shutterFeedback
                             )

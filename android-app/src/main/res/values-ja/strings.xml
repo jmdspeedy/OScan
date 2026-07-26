@@ -427,6 +427,8 @@
     <string name="camera_flash_unavailable">フラッシュを利用できません</string>
     <string name="camera_flash_off_action">フラッシュをオフにする</string>
     <string name="camera_flash_on_action">フラッシュをオンにする</string>
+    <string name="camera_grid_off_action">カメラグリッドを非表示</string>
+    <string name="camera_grid_on_action">カメラグリッドを表示</string>
     <string name="state_on">オン</string>
     <string name="state_off">オフ</string>
     <string name="camera_mode_label">モード</string>
