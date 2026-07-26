@@ -208,10 +208,6 @@ class LibraryViewModel(
         viewModelScope.launch { preferencesStore.setAvatarPreset(preset) }
     }
 
-    fun setAutoCaptureDefault(enabled: Boolean) {
-        viewModelScope.launch { preferencesStore.setAutoCaptureDefault(enabled) }
-    }
-
     fun setShutterFeedback(enabled: Boolean) {
         viewModelScope.launch { preferencesStore.setShutterFeedback(enabled) }
     }

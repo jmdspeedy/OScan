@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -53,16 +52,6 @@ fun PageEditorScreen(
                                 onClick = viewModel::onCropConfirmed,
                                 enabled = current.isValidGeometry
                             ) { Text(stringResource(R.string.action_done)) }
-                        }
-                        is PageEditorUiState.PreviewReady -> {
-                            Button(
-                                onClick = viewModel::saveEdits,
-                                modifier = Modifier.padding(end = 8.dp)
-                            ) {
-                                Icon(Icons.Default.Check, null)
-                                Spacer(Modifier.width(4.dp))
-                                Text(stringResource(R.string.action_save))
-                            }
                         }
                         else -> {}
                     }

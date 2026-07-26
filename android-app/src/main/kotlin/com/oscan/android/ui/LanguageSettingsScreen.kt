@@ -24,16 +24,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.oscan.android.R
 import com.oscan.android.data.preferences.AppLanguage
-import java.util.Locale
 
 /**
  * Screen allowing the user to select the app display language independently of system settings.
@@ -49,17 +46,6 @@ fun LanguageSettingsScreen(
     onLanguageSelected: (AppLanguage) -> Unit,
     onBackClick: () -> Unit
 ) {
-    val context = LocalContext.current
-    val systemResolvedLanguageName = remember(context) {
-        val deviceLocale = Locale.getDefault()
-        when {
-            deviceLocale.language.equals("zh", ignoreCase = true) -> context.getString(R.string.language_simplified_chinese)
-            deviceLocale.language.equals("ja", ignoreCase = true) -> context.getString(R.string.language_japanese)
-            deviceLocale.language.equals("en", ignoreCase = true) -> context.getString(R.string.language_english)
-            else -> deviceLocale.getDisplayLanguage(deviceLocale)
-        }
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -117,16 +103,10 @@ fun LanguageSettingsScreen(
                         AppLanguage.SIMPLIFIED_CHINESE -> stringResource(R.string.language_simplified_chinese)
                         AppLanguage.JAPANESE -> stringResource(R.string.language_japanese)
                     }
-                    val subtitle = if (language == AppLanguage.SYSTEM) {
-                        stringResource(R.string.language_system_current, systemResolvedLanguageName)
-                    } else {
-                        null
-                    }
-
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(if (subtitle != null) 64.dp else 56.dp)
+                            .height(56.dp)
                             .selectable(
                                 selected = isSelected,
                                 onClick = {
@@ -144,20 +124,11 @@ fun LanguageSettingsScreen(
                             onClick = null
                         )
                         Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            if (subtitle != null) {
-                                Text(
-                                    text = subtitle,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             }

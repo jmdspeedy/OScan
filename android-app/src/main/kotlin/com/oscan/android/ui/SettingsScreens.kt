@@ -28,11 +28,14 @@ import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -102,13 +105,6 @@ fun AccentTheme.label(): String = when (this) {
 }
 
 @Composable
-fun PdfPageSize.label(): String = when (this) {
-    PdfPageSize.A4 -> stringResource(R.string.page_size_a4)
-    PdfPageSize.LETTER -> stringResource(R.string.page_size_us_letter)
-    PdfPageSize.MATCH_PAGE -> stringResource(R.string.page_size_auto)
-}
-
-@Composable
 fun JpegQuality.label(): String = when (this) {
     JpegQuality.HIGH -> stringResource(R.string.jpeg_quality_high)
     JpegQuality.MEDIUM -> stringResource(R.string.jpeg_quality_medium)
@@ -127,7 +123,6 @@ fun FilterType.displayName(): String = when (this) {
 @Composable
 fun CaptureSettingsScreen(
     preferences: UserPreferences,
-    onAutoCaptureChanged: (Boolean) -> Unit,
     onShutterFeedbackChanged: (Boolean) -> Unit,
     onCameraLensChanged: (CameraLensPreference) -> Unit,
     onBack: () -> Unit
@@ -152,13 +147,6 @@ fun CaptureSettingsScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            SettingSwitchRow(
-                title = stringResource(R.string.settings_auto_capture_default),
-                subtitle = stringResource(R.string.settings_auto_capture_default_desc),
-                checked = preferences.autoCaptureDefault,
-                onCheckedChange = onAutoCaptureChanged
-            )
-            HorizontalDivider()
             SettingSwitchRow(
                 title = stringResource(R.string.settings_shutter_feedback),
                 subtitle = stringResource(R.string.settings_shutter_feedback_desc),
@@ -271,104 +259,6 @@ fun EnhancementSettingsScreen(
                     }
                 }
                 if (index < FilterType.entries.lastIndex) HorizontalDivider()
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ExportSettingsScreen(
-    preferences: UserPreferences,
-    onFilenamePatternChanged: (String) -> Unit,
-    onPageSizeChanged: (PdfPageSize) -> Unit,
-    onJpegQualityChanged: (JpegQuality) -> Unit,
-    onBack: () -> Unit
-) {
-    var pageSizeExpanded by remember { mutableStateOf(false) }
-    var qualityExpanded by remember { mutableStateOf(false) }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.settings_export_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back_button))
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            OutlinedTextField(
-                value = preferences.defaultExportFilenamePattern,
-                onValueChange = onFilenamePatternChanged,
-                label = { Text(stringResource(R.string.settings_filename_prefix)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Text(stringResource(R.string.settings_filename_prefix_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-            HorizontalDivider()
-
-            Text(stringResource(R.string.settings_pdf_page_size), style = MaterialTheme.typography.titleMedium)
-            Box {
-                OutlinedButton(
-                    onClick = { pageSizeExpanded = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(preferences.defaultPageSize.label())
-                }
-                DropdownMenu(
-                    expanded = pageSizeExpanded,
-                    onDismissRequest = { pageSizeExpanded = false }
-                ) {
-                    PdfPageSize.entries.forEach { size ->
-                        DropdownMenuItem(
-                            text = { Text(size.label()) },
-                            onClick = {
-                                onPageSizeChanged(size)
-                                pageSizeExpanded = false
-                            },
-                            trailingIcon = { if (preferences.defaultPageSize == size) Icon(Icons.Default.Check, null) }
-                        )
-                    }
-                }
-            }
-
-            HorizontalDivider()
-
-            Text(stringResource(R.string.settings_export_image_quality), style = MaterialTheme.typography.titleMedium)
-            Box {
-                OutlinedButton(
-                    onClick = { qualityExpanded = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(preferences.defaultJpegQuality.label())
-                }
-                DropdownMenu(
-                    expanded = qualityExpanded,
-                    onDismissRequest = { qualityExpanded = false }
-                ) {
-                    JpegQuality.entries.forEach { quality ->
-                        DropdownMenuItem(
-                            text = { Text(quality.label()) },
-                            onClick = {
-                                onJpegQualityChanged(quality)
-                                qualityExpanded = false
-                            },
-                            trailingIcon = { if (preferences.defaultJpegQuality == quality) Icon(Icons.Default.Check, null) }
-                        )
-                    }
-                }
             }
         }
     }
@@ -949,6 +839,120 @@ private fun HelpTopic(title: String, body: String) {
             Spacer(Modifier.height(4.dp))
             Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+private const val DEVELOPER_GITHUB_URL = "https://github.com/jmdspeedy"
+private const val DEVELOPER_LINKEDIN_URL = "https://www.linkedin.com/in/james-wu-qld/"
+private const val DEVELOPER_WEBSITE_URL = "https://www.jameswu.me/"
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DeveloperScreen(onBack: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    val openLink: (String) -> Unit = { url ->
+        try {
+            uriHandler.openUri(url)
+        } catch (_: Exception) {
+            // The device may not have an activity capable of opening web links.
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.developer_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back_button))
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = CircleShape,
+                        modifier = Modifier.size(76.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+                    }
+                    Text(stringResource(R.string.developer_name), style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        stringResource(R.string.developer_role),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.developer_why_title), style = MaterialTheme.typography.titleLarge)
+                Text(
+                    stringResource(R.string.developer_why_body),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.developer_connect_title), style = MaterialTheme.typography.titleLarge)
+                DeveloperLinkButton(
+                    label = stringResource(R.string.developer_github),
+                    icon = Icons.Default.Code,
+                    onClick = { openLink(DEVELOPER_GITHUB_URL) }
+                )
+                DeveloperLinkButton(
+                    label = stringResource(R.string.developer_linkedin),
+                    icon = Icons.Default.Work,
+                    onClick = { openLink(DEVELOPER_LINKEDIN_URL) }
+                )
+                DeveloperLinkButton(
+                    label = stringResource(R.string.developer_website),
+                    icon = Icons.Default.Language,
+                    onClick = { openLink(DEVELOPER_WEBSITE_URL) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeveloperLinkButton(label: String, icon: ImageVector, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)
+    ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(12.dp))
+        Text(label, modifier = Modifier.weight(1f))
+        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
     }
 }
 

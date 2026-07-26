@@ -43,7 +43,6 @@ data class UserPreferences(
     val accentTheme: AccentTheme = AccentTheme.TEAL,
     val displayName: String = "Local Workspace",
     val avatarPreset: String = "TEAL",
-    val autoCaptureDefault: Boolean = false,
     val shutterFeedback: Boolean = true,
     val cameraLensPreference: CameraLensPreference = CameraLensPreference.BACK,
     val defaultTreatment: String = "MAGIC",
@@ -63,7 +62,6 @@ class UserPreferencesStore(private val context: Context) {
             accentTheme = values.enumValue(Keys.ACCENT_THEME, AccentTheme.TEAL),
             displayName = values[Keys.DISPLAY_NAME] ?: "Local Workspace",
             avatarPreset = values[Keys.AVATAR_PRESET] ?: "TEAL",
-            autoCaptureDefault = values[Keys.AUTO_CAPTURE_DEFAULT] ?: false,
             shutterFeedback = values[Keys.SHUTTER_FEEDBACK] ?: true,
             cameraLensPreference = values.enumValue(Keys.CAMERA_LENS, CameraLensPreference.BACK),
             defaultTreatment = values[Keys.DEFAULT_TREATMENT] ?: "MAGIC",
@@ -79,7 +77,6 @@ class UserPreferencesStore(private val context: Context) {
     suspend fun setAccentTheme(value: AccentTheme) = setEnum(Keys.ACCENT_THEME, value)
     suspend fun setDisplayName(value: String) = context.oscanPreferences.edit { it[Keys.DISPLAY_NAME] = value }
     suspend fun setAvatarPreset(value: String) = context.oscanPreferences.edit { it[Keys.AVATAR_PRESET] = value }
-    suspend fun setAutoCaptureDefault(value: Boolean) = context.oscanPreferences.edit { it[Keys.AUTO_CAPTURE_DEFAULT] = value }
     suspend fun setShutterFeedback(value: Boolean) = context.oscanPreferences.edit { it[Keys.SHUTTER_FEEDBACK] = value }
     suspend fun setCameraLensPreference(value: CameraLensPreference) = setEnum(Keys.CAMERA_LENS, value)
     suspend fun setDefaultTreatment(value: String) = context.oscanPreferences.edit { it[Keys.DEFAULT_TREATMENT] = value }
@@ -103,7 +100,6 @@ class UserPreferencesStore(private val context: Context) {
         val ACCENT_THEME = stringPreferencesKey("accent_theme")
         val DISPLAY_NAME = stringPreferencesKey("display_name")
         val AVATAR_PRESET = stringPreferencesKey("avatar_preset")
-        val AUTO_CAPTURE_DEFAULT = booleanPreferencesKey("auto_capture_default")
         val SHUTTER_FEEDBACK = booleanPreferencesKey("shutter_feedback")
         val CAMERA_LENS = stringPreferencesKey("camera_lens_preference")
         val DEFAULT_TREATMENT = stringPreferencesKey("default_treatment")

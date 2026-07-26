@@ -1,6 +1,7 @@
 package com.oscan.android
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -31,6 +32,7 @@ class LanguageSettingsTest {
 
         composeRule.onNodeWithText("App language").assertIsDisplayed()
         composeRule.onNodeWithText("System default").assertIsDisplayed()
+        composeRule.onNodeWithText("Currently:", substring = true).assertDoesNotExist()
         composeRule.onNodeWithText("English").assertIsDisplayed()
         composeRule.onNodeWithText("简体中文").assertIsDisplayed()
         composeRule.onNodeWithText("日本語").assertIsDisplayed()

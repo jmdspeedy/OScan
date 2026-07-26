@@ -399,7 +399,7 @@ private fun BoxScope.CameraTopControls(
             color = chrome.floatingSurface,
             shape = CircleShape,
             modifier = Modifier
-                .size(48.dp)
+                .size(44.dp)
                 .semantics {
                     contentDescription = flashDescription
                     stateDescription = flashState
@@ -410,7 +410,7 @@ private fun BoxScope.CameraTopControls(
                     imageVector = if (torchEnabled) Icons.Default.FlashOn else Icons.Default.FlashOff,
                     contentDescription = null,
                     tint = if (torchAvailable) chrome.onPanel else chrome.onPanel.copy(alpha = .38f),
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -420,7 +420,7 @@ private fun BoxScope.CameraTopControls(
             color = chrome.floatingSurface,
             shape = CircleShape,
             modifier = Modifier
-                .size(48.dp)
+                .size(44.dp)
                 .semantics {
                     contentDescription = gridDescription
                     stateDescription = gridState
@@ -431,7 +431,7 @@ private fun BoxScope.CameraTopControls(
                     imageVector = if (gridVisible) Icons.Default.GridOn else Icons.Default.GridOff,
                     contentDescription = null,
                     tint = chrome.onPanel,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }

@@ -249,8 +249,6 @@
     <string name="dialog_move_selected_trash_title">将所选文档移至回收站？</string>
     <string name="dialog_move_selected_trash_body">所选文档将移至本地回收站。</string>
     <string name="settings_capture_title">拍摄设置</string>
-    <string name="settings_auto_capture_default">默认自动拍摄</string>
-    <string name="settings_auto_capture_default_desc">检测到稳定的文档边界时自动拍摄。</string>
     <string name="settings_shutter_feedback">快门反馈</string>
     <string name="settings_shutter_feedback_desc">拍摄时提供视觉、声音或触觉反馈。</string>
     <string name="settings_camera_preference">相机偏好</string>
@@ -261,11 +259,6 @@
     <string name="settings_enhancement_title">增强设置</string>
     <string name="settings_default_enhancement">默认增强处理</string>
     <string name="settings_default_enhancement_desc">选择扫描页面时默认应用的处理方式。</string>
-    <string name="settings_export_title">导出设置</string>
-    <string name="settings_filename_prefix">默认文档文件名前缀</string>
-    <string name="settings_filename_prefix_desc">保存文档时，日期占位符会自动格式化。</string>
-    <string name="settings_pdf_page_size">PDF 页面尺寸</string>
-    <string name="settings_export_image_quality">导出图片质量</string>
     <string name="settings_appearance_title">外观设置</string>
     <string name="settings_color_palette">配色方案</string>
     <string name="settings_theme_auto">自动</string>
@@ -339,6 +332,14 @@
     <string name="vault_empty_trash_title">清空保险箱回收站？</string>
     <string name="vault_empty_trash_body">保险箱回收站中的所有项目都将被永久删除。</string>
     <string name="vault_settings_title">保险箱设置</string>
+    <string name="vault_settings_row_desc">无需解锁文档即可管理保险箱安全设置</string>
+    <string name="vault_not_configured_title">尚未设置保险箱</string>
+    <string name="vault_not_configured_body">请先从文档库创建保险箱，再管理其安全设置。</string>
+    <string name="vault_forgot_passcode_settings_desc">无需密码即可永久删除保险箱</string>
+    <string name="vault_fingerprint_passcode_prompt">请输入保险箱密码以启用指纹解锁。</string>
+    <string name="vault_reset_final_title">最终确认</string>
+    <string name="vault_reset_confirmation_phrase">delete vault</string>
+    <string name="vault_reset_type_prompt">要永久删除保险箱及其中的所有文档，请准确输入“%1$s”。</string>
     <string name="vault_change_passcode">更改保险箱密码</string>
     <string name="vault_change_passcode_desc">使用新密码重新封装加密密钥</string>
     <string name="vault_disable">停用保险箱</string>
@@ -365,6 +366,7 @@
     <string name="folders_empty_title">暂无文件夹</string>
     <string name="folders_empty_body">创建文件夹来整理文档。</string>
     <string name="folder_create">创建文件夹</string>
+    <string name="folder_create_new">创建新文件夹</string>
     <string name="folder_rename">重命名文件夹</string>
     <string name="folder_delete">删除文件夹</string>
     <string name="folder_empty_title">此文件夹为空</string>
@@ -397,6 +399,7 @@
     <string name="page_count_position">%1$d / %2$d</string>
     <string name="export_format">格式</string>
     <string name="export_image_quality">图片质量</string>
+    <string name="export_png_quality_fixed">PNG 使用无损画质，因此无需选择图片质量。</string>
     <string name="export_size_calculating">正在计算…</string>
     <string name="export_size_unavailable">无法获取大小</string>
     <string name="privacy_local_body">OScan 是本地优先的文档管理器。边缘检测、透视校正、图像增强和 PDF 生成均完全在此 Android 设备上运行。</string>
@@ -482,11 +485,9 @@
     <string name="vault_fingerprint_enroll_first">请先在 Android 设置中录入高安全性指纹</string>
     <string name="vault_passcode_fallback">保险箱密码始终可作为备用方式</string>
     <string name="settings_capture_row">拍摄</string>
-    <string name="settings_capture_row_desc">默认自动拍摄与快门反馈</string>
+    <string name="settings_capture_row_desc">快门反馈与相机偏好</string>
     <string name="settings_enhancement_row">增强</string>
     <string name="settings_enhancement_row_desc">默认处理效果（Magic 或原图）</string>
-    <string name="settings_export_row">导出</string>
-    <string name="settings_export_row_desc">文件名格式、PDF 页面尺寸与质量</string>
     <string name="settings_appearance_row">外观</string>
     <string name="settings_appearance_row_desc">更改 OScan 主题</string>
     <string name="settings_storage_row_desc">本地用量概览与缓存清理</string>

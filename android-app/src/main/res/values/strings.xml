@@ -5,6 +5,7 @@
 
     <!-- General / Common UI -->
     <string name="action_cancel">Cancel</string>
+    <string name="action_continue">Continue</string>
     <string name="action_confirm">Confirm</string>
     <string name="action_save">Save</string>
     <string name="action_delete">Delete</string>
@@ -253,8 +254,6 @@
     <string name="dialog_move_selected_trash_title">Move selected documents to Trash?</string>
     <string name="dialog_move_selected_trash_body">Selected documents will be moved to local Trash.</string>
     <string name="settings_capture_title">Capture settings</string>
-    <string name="settings_auto_capture_default">Auto-capture default</string>
-    <string name="settings_auto_capture_default_desc">Automatically capture when a stable document boundary is detected.</string>
     <string name="settings_shutter_feedback">Shutter feedback</string>
     <string name="settings_shutter_feedback_desc">Provide visual and audio or haptic feedback when taking a capture.</string>
     <string name="settings_camera_preference">Camera preference</string>
@@ -265,11 +264,6 @@
     <string name="settings_enhancement_title">Enhancement settings</string>
     <string name="settings_default_enhancement">Default enhancement treatment</string>
     <string name="settings_default_enhancement_desc">Choose the default processing applied when scanning pages.</string>
-    <string name="settings_export_title">Export settings</string>
-    <string name="settings_filename_prefix">Default document filename prefix</string>
-    <string name="settings_filename_prefix_desc">The date placeholder is automatically formatted in the saved document name.</string>
-    <string name="settings_pdf_page_size">PDF page size</string>
-    <string name="settings_export_image_quality">Export image quality</string>
     <string name="settings_appearance_title">Appearance settings</string>
     <string name="settings_color_palette">Color palette</string>
     <string name="settings_theme_auto">Auto</string>
@@ -289,6 +283,16 @@
     <string name="help_title">Help &amp; user guide</string>
     <string name="about_title">About OScan</string>
     <string name="about_github">View app repository (GitHub)</string>
+    <string name="developer_title">Developer</string>
+    <string name="developer_row_desc">The story and person behind OScan</string>
+    <string name="developer_name">James Wu</string>
+    <string name="developer_role">Independent developer of OScan</string>
+    <string name="developer_why_title">Why I built OScan</string>
+    <string name="developer_why_body">I built OScan because scanning a document should be simple, private, and dependable. I wanted a capable scanner that works entirely on your device, without accounts, cloud uploads, tracking, or subscriptions getting between you and your documents.</string>
+    <string name="developer_connect_title">Find me online</string>
+    <string name="developer_github">GitHub</string>
+    <string name="developer_linkedin">LinkedIn</string>
+    <string name="developer_website">Website</string>
     <string name="scanner_discard_title">Discard this scan?</string>
     <string name="scanner_discard_body">Accepted pages will be removed from this device.</string>
     <string name="scanner_reset_edges">Reset edges</string>
@@ -342,7 +346,15 @@
     <string name="vault_trash_empty_body">Items deleted from Vault stay here until emptied.</string>
     <string name="vault_empty_trash_title">Empty Vault Trash?</string>
     <string name="vault_empty_trash_body">All items in Vault Trash will be permanently deleted.</string>
-    <string name="vault_settings_title">Vault settings</string>
+    <string name="vault_settings_title">Vault</string>
+    <string name="vault_settings_row_desc">Manage vault security</string>
+    <string name="vault_not_configured_title">Vault is not set up</string>
+    <string name="vault_not_configured_body">Create your Vault from the library before managing its security settings.</string>
+    <string name="vault_forgot_passcode_settings_desc">Permanently delete the Vault without a passcode</string>
+    <string name="vault_fingerprint_passcode_prompt">Enter your Vault passcode to enable fingerprint unlock.</string>
+    <string name="vault_reset_final_title">Final confirmation</string>
+    <string name="vault_reset_confirmation_phrase">delete vault</string>
+    <string name="vault_reset_type_prompt">To permanently delete the Vault and every document in it, type “%1$s” exactly.</string>
     <string name="vault_change_passcode">Change Vault passcode</string>
     <string name="vault_change_passcode_desc">Re-wrap encryption keys with a new passcode</string>
     <string name="vault_disable">Disable Vault</string>
@@ -369,6 +381,7 @@
     <string name="folders_empty_title">No folders yet</string>
     <string name="folders_empty_body">Organize your documents by creating folders.</string>
     <string name="folder_create">Create folder</string>
+    <string name="folder_create_new">Create a new folder</string>
     <string name="folder_rename">Rename folder</string>
     <string name="folder_delete">Delete folder</string>
     <string name="folder_empty_title">This folder is empty</string>
@@ -401,6 +414,7 @@
     <string name="page_count_position">%1$d of %2$d</string>
     <string name="export_format">Format</string>
     <string name="export_image_quality">Image quality</string>
+    <string name="export_png_quality_fixed">PNG uses lossless quality, so no image quality option is needed.</string>
     <string name="export_size_calculating">Calculating…</string>
     <string name="export_size_unavailable">Size unavailable</string>
     <string name="privacy_local_body">OScan is a local-first document manager. Edge detection, perspective correction, image enhancement, and PDF generation run entirely on this Android device.</string>
@@ -486,11 +500,9 @@
     <string name="vault_fingerprint_enroll_first">Enroll a strong fingerprint in Android settings first</string>
     <string name="vault_passcode_fallback">Your Vault passcode remains available as a fallback</string>
     <string name="settings_capture_row">Capture</string>
-    <string name="settings_capture_row_desc">Auto-capture default and shutter feedback</string>
+    <string name="settings_capture_row_desc">Shutter feedback and camera preference</string>
     <string name="settings_enhancement_row">Enhancement</string>
     <string name="settings_enhancement_row_desc">Default treatment (Magic or Original)</string>
-    <string name="settings_export_row">Export</string>
-    <string name="settings_export_row_desc">Filename pattern, PDF page size, and quality</string>
     <string name="settings_appearance_row">Appearance</string>
     <string name="settings_appearance_row_desc">Change the OScan theme</string>
     <string name="settings_storage_row_desc">Local usage summary and cache cleanup</string>
@@ -500,7 +512,6 @@
     <string name="camera_permission_denied_body">OScan needs camera access to scan documents.</string>
     <string name="camera_permission_body">Allow camera access to scan documents.</string>
     <string name="action_try_again">Try again</string>
-    <string name="action_continue">Continue</string>
     <string name="camera_point_document">Point the camera at a document</string>
     <string name="camera_no_rear">No rear camera is available on this device.</string>
     <string name="camera_start_failed">The camera could not be started. You can still import images.</string>

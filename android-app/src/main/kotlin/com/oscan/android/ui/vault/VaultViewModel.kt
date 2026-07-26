@@ -58,6 +58,12 @@ class VaultViewModel(
     private val _uiState = MutableStateFlow(VaultUiState())
     val uiState: StateFlow<VaultUiState> = _uiState.asStateFlow()
     private var lockoutCountdownJob: Job? = null
+    private var pendingBiometricEnrollmentKeys: ActiveVaultKeys? = null
+
+    private fun clearPendingBiometricEnrollmentKeys() {
+        pendingBiometricEnrollmentKeys?.wipe()
+        pendingBiometricEnrollmentKeys = null
+    }
 
     init {
         refreshConfiguredState()
@@ -207,10 +213,14 @@ class VaultViewModel(
     }
 
     fun changePasscode(currentPasscode: String, newPasscode: String) {
-        val keys = sessionManager.getActiveKeys() ?: return
         viewModelScope.launch {
             try {
-                vaultRepository.changePasscode(currentPasscode, newPasscode, keys)
+                val keys = withContext(Dispatchers.IO) {
+                    sessionManager.getActiveKeys() ?: vaultRepository.unlock(currentPasscode)
+                }
+                withContext(Dispatchers.IO) {
+                    vaultRepository.changePasscode(currentPasscode, newPasscode, keys)
+                }
                 _uiState.value = _uiState.value.copy(infoMessage = "Vault passcode updated")
             } catch (error: VaultRepositoryError.InvalidPasscode) {
                 _uiState.value = _uiState.value.copy(errorMessage = error.reason)
@@ -223,10 +233,12 @@ class VaultViewModel(
     }
 
     fun disableVault(currentPasscode: String, migrateToLibrary: Boolean) {
-        val keys = sessionManager.getActiveKeys() ?: return
         viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) {
+                    // Always verify the passcode at the point of this destructive change,
+                    // even when an unlocked session already has the Vault keys in memory.
+                    val keys = vaultRepository.unlock(currentPasscode)
                     vaultRepository.disableVault(currentPasscode, keys, migrateToLibrary, fileStore, documentRepository)
                     biometricManager.disable()
                 }
@@ -436,11 +448,38 @@ class VaultViewModel(
         }.getOrNull()
     }
 
+    fun createBiometricEnrollmentCipher(
+        passcode: String,
+        onReady: (Cipher) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val keys = withContext(Dispatchers.IO) {
+                    vaultRepository.unlock(passcode)
+                }
+                val cipher = biometricManager.createEnrollmentCipher()
+                clearPendingBiometricEnrollmentKeys()
+                pendingBiometricEnrollmentKeys = keys
+                _uiState.value = _uiState.value.copy(errorMessage = null)
+                onReady(cipher)
+            } catch (error: VaultRepositoryError.IncorrectPasscode) {
+                clearPendingBiometricEnrollmentKeys()
+                _uiState.value = _uiState.value.copy(errorMessage = "Current passcode is incorrect")
+            } catch (error: Throwable) {
+                clearPendingBiometricEnrollmentKeys()
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = error.message ?: "Fingerprint unlock could not be enabled"
+                )
+            }
+        }
+    }
+
     fun completeBiometricEnrollment(cipher: Cipher) {
-        val keys = sessionManager.getActiveKeys() ?: return
+        val keys = sessionManager.getActiveKeys() ?: pendingBiometricEnrollmentKeys ?: return
         runCatching {
             biometricManager.completeEnrollment(cipher, keys.vmk)
         }.onSuccess {
+            clearPendingBiometricEnrollmentKeys()
             _uiState.value = _uiState.value.copy(
                 biometricEnabled = true,
                 showBiometricSetup = false,
@@ -448,6 +487,7 @@ class VaultViewModel(
                 infoMessage = "Fingerprint unlock enabled"
             )
         }.onFailure { error ->
+            clearPendingBiometricEnrollmentKeys()
             biometricManager.disable()
             _uiState.value = _uiState.value.copy(
                 biometricEnabled = false,
@@ -461,6 +501,10 @@ class VaultViewModel(
             showBiometricSetup = false,
             errorMessage = null
         )
+    }
+
+    fun cancelBiometricEnrollment() {
+        clearPendingBiometricEnrollmentKeys()
     }
 
     fun createBiometricUnlockCipher(): Cipher? =

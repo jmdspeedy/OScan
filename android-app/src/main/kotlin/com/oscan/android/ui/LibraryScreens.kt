@@ -910,6 +910,7 @@ fun DocumentDetailScreen(
     onRename: (String) -> Unit,
     onFavorite: (Boolean) -> Unit,
     onMove: (FolderId?) -> Unit,
+    onCreateFolder: (String) -> Unit = {},
     onTrash: () -> Unit,
     defaultJpegQuality: com.oscan.android.data.preferences.JpegQuality = com.oscan.android.data.preferences.JpegQuality.HIGH,
     defaultPageSize: PdfPageSize = PdfPageSize.A4,
@@ -931,6 +932,7 @@ fun DocumentDetailScreen(
     var overflowOpen by remember { mutableStateOf(false) }
     var renameOpen by rememberSaveable { mutableStateOf(false) }
     var moveOpen by rememberSaveable { mutableStateOf(false) }
+    var createFolderOpen by rememberSaveable { mutableStateOf(false) }
     var trashOpen by rememberSaveable { mutableStateOf(false) }
     var exportDialogOpen by rememberSaveable { mutableStateOf(false) }
     var pendingExportFormat by remember { mutableStateOf(com.oscan.android.engine.ExportFormat.PDF) }
@@ -1202,7 +1204,21 @@ fun DocumentDetailScreen(
     }
 
     if (renameOpen && document != null) RenameDialog(document.name, { renameOpen = false }) { onRename(it); renameOpen = false }
-    if (moveOpen && document != null) MoveDialog(document.folder?.id, folders, { moveOpen = false }) { onMove(it); moveOpen = false }
+    if (moveOpen && document != null) MoveDialog(
+        currentFolderId = document.folder?.id,
+        folders = folders,
+        onDismiss = { moveOpen = false },
+        onCreateFolder = { moveOpen = false; createFolderOpen = true },
+        onConfirm = { onMove(it); moveOpen = false }
+    )
+    if (createFolderOpen) CreateFolderDialog(
+        onDismiss = { createFolderOpen = false },
+        onConfirm = { name ->
+            onCreateFolder(name)
+            createFolderOpen = false
+            moveOpen = true
+        }
+    )
     if (trashOpen) AlertDialog(
         onDismissRequest = { trashOpen = false },
         title = { Text(stringResource(R.string.document_trash_title)) },
@@ -1255,15 +1271,34 @@ private fun RenameDialog(currentName: String, onDismiss: () -> Unit, onConfirm: 
 }
 
 @Composable
-fun MoveDialog(currentFolderId: FolderId?, folders: List<Folder>, onDismiss: () -> Unit, onConfirm: (FolderId?) -> Unit) {
+fun MoveDialog(
+    currentFolderId: FolderId?,
+    folders: List<Folder>,
+    onDismiss: () -> Unit,
+    onCreateFolder: () -> Unit = {},
+    onConfirm: (FolderId?) -> Unit
+) {
     var selected by rememberSaveable { mutableStateOf(currentFolderId?.value) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.document_move_folder)) },
         text = {
             LazyColumn {
-                item { FolderChoice("No folder (Unfiled)", selected == null) { selected = null } }
+                item { FolderChoice(stringResource(R.string.scanner_no_folder), selected == null) { selected = null } }
                 items(folders, key = { it.id.value }) { folder -> FolderChoice(folder.name, selected == folder.id.value) { selected = folder.id.value } }
+                item {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = MaterialTheme.shapes.small,
+                        modifier = Modifier.fillMaxWidth().clickable(onClick = onCreateFolder)
+                    ) {
+                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.CreateNewFolder, contentDescription = null)
+                            Spacer(Modifier.width(12.dp))
+                            Text(stringResource(R.string.folder_create_new))
+                        }
+                    }
+                }
             }
         },
             confirmButton = { TextButton(onClick = { onConfirm(selected?.let(::FolderId)) }) { Text(stringResource(R.string.action_move)) } },
@@ -1462,10 +1497,10 @@ fun ExportAndSaveDialog(
 ) {
     var selectedFormat by rememberSaveable { mutableStateOf(com.oscan.android.engine.ExportFormat.PDF) }
     var selectedQuality by rememberSaveable { mutableStateOf(defaultQuality) }
-    var sizeEstimates by remember { mutableStateOf<Map<JpegQuality, Long>?>(null) }
+    var sizeEstimates by remember { mutableStateOf<Map<ExportFormat, Map<JpegQuality, Long>>?>(null) }
     val documentExporter = remember { AndroidDocumentExporter() }
 
-    LaunchedEffect(document.id, document.modifiedAt, selectedFormat, pageSize) {
+    LaunchedEffect(document.id, document.modifiedAt, pageSize) {
         sizeEstimates = null
         sizeEstimates = withContext(Dispatchers.IO) {
             runCatching {
@@ -1475,24 +1510,26 @@ fun ExportAndSaveDialog(
                     file?.let { PdfPageSpec(it, page.rotationDegrees) }
                 }
                 require(pages.isNotEmpty()) { "No page assets found for document" }
-                if (selectedFormat == ExportFormat.PNG) {
-                    val size = documentExporter.measureDocumentSize(
-                        pages = pages,
-                        format = selectedFormat,
-                        pageSize = pageSize,
-                        quality = JpegQuality.HIGH,
-                        documentName = document.name
-                    )
-                    JpegQuality.entries.associateWith { size }
-                } else {
-                    JpegQuality.entries.associateWith { quality ->
-                        documentExporter.measureDocumentSize(
+                ExportFormat.entries.associateWith { format ->
+                    if (format == ExportFormat.PNG) {
+                        val size = documentExporter.measureDocumentSize(
                             pages = pages,
-                            format = selectedFormat,
+                            format = format,
                             pageSize = pageSize,
-                            quality = quality,
+                            quality = JpegQuality.HIGH,
                             documentName = document.name
                         )
+                        JpegQuality.entries.associateWith { size }
+                    } else {
+                        JpegQuality.entries.associateWith { quality ->
+                            documentExporter.measureDocumentSize(
+                                pages = pages,
+                                format = format,
+                                pageSize = pageSize,
+                                quality = quality,
+                                documentName = document.name
+                            )
+                        }
                     }
                 }
             }.getOrElse { emptyMap() }
@@ -1502,7 +1539,11 @@ fun ExportAndSaveDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.DriveFileMove,
                     contentDescription = null,
@@ -1513,14 +1554,23 @@ fun ExportAndSaveDialog(
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text(
-        text = stringResource(R.string.document_export_options_body),
+                    text = stringResource(R.string.document_export_options_body),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
 
-                Text(stringResource(R.string.export_format), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.export_format),
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1530,7 +1580,13 @@ fun ExportAndSaveDialog(
                         FilterChip(
                             selected = selectedFormat == format,
                             onClick = { selectedFormat = format },
-                            label = { Text(format.label) },
+                            label = {
+                                Text(
+                                    format.label,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            },
                             leadingIcon = {
                                 val icon = when (format) {
                                     com.oscan.android.engine.ExportFormat.PDF -> Icons.Default.PictureAsPdf
@@ -1544,33 +1600,58 @@ fun ExportAndSaveDialog(
                     }
                 }
 
-                Text(stringResource(R.string.export_image_quality), style = MaterialTheme.typography.titleMedium)
-
-                Row(
+                Text(
+                    stringResource(R.string.export_image_quality),
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    com.oscan.android.data.preferences.JpegQuality.entries.forEach { quality ->
-                        FilterChip(
-                            selected = selectedQuality == quality,
-                            onClick = { selectedQuality = quality },
-                            label = {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(quality.label(), maxLines = 1)
-                                    Text(
-                                        text = when (val estimates = sizeEstimates) {
-                                            null -> stringResource(R.string.export_size_calculating)
-                                            else -> estimates[quality]?.let(::formatFileSize)
-                                                ?: stringResource(R.string.export_size_unavailable)
-                                        },
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1
-                                    )
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+
+                if (selectedFormat == ExportFormat.PNG) {
+                    Text(
+                        text = stringResource(R.string.export_png_quality_fixed),
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        com.oscan.android.data.preferences.JpegQuality.entries.forEach { quality ->
+                            FilterChip(
+                                selected = selectedQuality == quality,
+                                onClick = { selectedQuality = quality },
+                                label = {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = quality.label(),
+                                            modifier = Modifier.fillMaxWidth(),
+                                            maxLines = 1,
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                        )
+                                        Text(
+                                            text = when (val estimates = sizeEstimates) {
+                                                null -> stringResource(R.string.export_size_calculating)
+                                                else -> estimates[selectedFormat]?.get(quality)?.let(::formatFileSize)
+                                                    ?: stringResource(R.string.export_size_unavailable)
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                        )
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }

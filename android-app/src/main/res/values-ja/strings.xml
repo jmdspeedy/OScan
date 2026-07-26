@@ -249,8 +249,6 @@
     <string name="dialog_move_selected_trash_title">選択した書類をゴミ箱に移動しますか？</string>
     <string name="dialog_move_selected_trash_body">選択した書類は端末内のゴミ箱に移動されます。</string>
     <string name="settings_capture_title">撮影設定</string>
-    <string name="settings_auto_capture_default">自動撮影の初期設定</string>
-    <string name="settings_auto_capture_default_desc">安定した書類の輪郭を検出すると自動で撮影します。</string>
     <string name="settings_shutter_feedback">シャッターのフィードバック</string>
     <string name="settings_shutter_feedback_desc">撮影時に画面、音、または振動で知らせます。</string>
     <string name="settings_camera_preference">使用するカメラ</string>
@@ -261,11 +259,6 @@
     <string name="settings_enhancement_title">補正設定</string>
     <string name="settings_default_enhancement">デフォルトの補正処理</string>
     <string name="settings_default_enhancement_desc">ページのスキャン時に適用する初期処理を選択します。</string>
-    <string name="settings_export_title">エクスポート設定</string>
-    <string name="settings_filename_prefix">書類ファイル名の初期プレフィックス</string>
-    <string name="settings_filename_prefix_desc">保存時に日付のプレースホルダーが自動で書式設定されます。</string>
-    <string name="settings_pdf_page_size">PDFページサイズ</string>
-    <string name="settings_export_image_quality">画像の出力品質</string>
     <string name="settings_appearance_title">外観設定</string>
     <string name="settings_color_palette">カラーパレット</string>
     <string name="settings_theme_auto">自動</string>
@@ -339,6 +332,14 @@
     <string name="vault_empty_trash_title">金庫のゴミ箱を空にしますか？</string>
     <string name="vault_empty_trash_body">金庫のゴミ箱にある項目はすべて完全に削除されます。</string>
     <string name="vault_settings_title">金庫の設定</string>
+    <string name="vault_settings_row_desc">書類のロックを解除せずに金庫のセキュリティを管理します</string>
+    <string name="vault_not_configured_title">金庫が設定されていません</string>
+    <string name="vault_not_configured_body">セキュリティ設定を管理する前に、ライブラリから金庫を作成してください。</string>
+    <string name="vault_forgot_passcode_settings_desc">パスコードなしで金庫を完全に削除します</string>
+    <string name="vault_fingerprint_passcode_prompt">指紋認証を有効にするには、金庫のパスコードを入力してください。</string>
+    <string name="vault_reset_final_title">最終確認</string>
+    <string name="vault_reset_confirmation_phrase">delete vault</string>
+    <string name="vault_reset_type_prompt">金庫とその中のすべての書類を完全に削除するには、「%1$s」と正確に入力してください。</string>
     <string name="vault_change_passcode">金庫のパスコードを変更</string>
     <string name="vault_change_passcode_desc">新しいパスコードで暗号鍵を再保護します</string>
     <string name="vault_disable">金庫を無効にする</string>
@@ -365,6 +366,7 @@
     <string name="folders_empty_title">フォルダがありません</string>
     <string name="folders_empty_body">フォルダを作成して書類を整理できます。</string>
     <string name="folder_create">フォルダを作成</string>
+    <string name="folder_create_new">新しいフォルダを作成</string>
     <string name="folder_rename">フォルダ名を変更</string>
     <string name="folder_delete">フォルダを削除</string>
     <string name="folder_empty_title">このフォルダは空です</string>
@@ -397,6 +399,7 @@
     <string name="page_count_position">%1$d / %2$d</string>
     <string name="export_format">形式</string>
     <string name="export_image_quality">画像品質</string>
+    <string name="export_png_quality_fixed">PNG は劣化のない品質で保存されるため、画像品質の選択はありません。</string>
     <string name="export_size_calculating">計算中…</string>
     <string name="export_size_unavailable">サイズを取得できません</string>
     <string name="privacy_local_body">OScanはローカル優先の書類管理アプリです。輪郭検出、遠近補正、画像補正、PDF生成はすべてこのAndroid端末上で実行されます。</string>
@@ -482,11 +485,9 @@
     <string name="vault_fingerprint_enroll_first">先にAndroidの設定で強力な指紋を登録してください</string>
     <string name="vault_passcode_fallback">金庫のパスコードも引き続き使用できます</string>
     <string name="settings_capture_row">撮影</string>
-    <string name="settings_capture_row_desc">自動撮影の初期設定とシャッター通知</string>
+    <string name="settings_capture_row_desc">シャッター通知とカメラ設定</string>
     <string name="settings_enhancement_row">補正</string>
     <string name="settings_enhancement_row_desc">初期補正（Magicまたはオリジナル）</string>
-    <string name="settings_export_row">エクスポート</string>
-    <string name="settings_export_row_desc">ファイル名、PDFページサイズ、品質</string>
     <string name="settings_appearance_row">外観</string>
     <string name="settings_appearance_row_desc">OScanのテーマを変更</string>
     <string name="settings_storage_row_desc">端末内の使用量とキャッシュ消去</string>

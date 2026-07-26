@@ -50,7 +50,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Scanner
@@ -98,6 +97,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.oscan.android.ui.vault.VaultFlow
+import com.oscan.android.ui.vault.VaultSettingsRoute
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -206,7 +206,6 @@ fun OScanAppShell(
         when (activeSubRoute) {
             SettingsSubRoute.CAPTURE -> CaptureSettingsScreen(
                 preferences = state.userPreferences,
-                onAutoCaptureChanged = libraryViewModel::setAutoCaptureDefault,
                 onShutterFeedbackChanged = libraryViewModel::setShutterFeedback,
                 onCameraLensChanged = libraryViewModel::setCameraLensPreference,
                 onBack = { activeSubRoute = SettingsSubRoute.NONE }
@@ -214,13 +213,6 @@ fun OScanAppShell(
             SettingsSubRoute.ENHANCEMENT -> EnhancementSettingsScreen(
                 preferences = state.userPreferences,
                 onDefaultTreatmentChanged = libraryViewModel::setDefaultTreatment,
-                onBack = { activeSubRoute = SettingsSubRoute.NONE }
-            )
-            SettingsSubRoute.EXPORT -> ExportSettingsScreen(
-                preferences = state.userPreferences,
-                onFilenamePatternChanged = libraryViewModel::setDefaultExportFilenamePattern,
-                onPageSizeChanged = libraryViewModel::setDefaultPageSize,
-                onJpegQualityChanged = libraryViewModel::setDefaultJpegQuality,
                 onBack = { activeSubRoute = SettingsSubRoute.NONE }
             )
             SettingsSubRoute.APPEARANCE -> AppearanceSettingsScreen(
@@ -245,6 +237,13 @@ fun OScanAppShell(
             SettingsSubRoute.PRIVACY -> PrivacyScreen(onBack = { activeSubRoute = SettingsSubRoute.NONE })
             SettingsSubRoute.HELP -> HelpScreen(onBack = { activeSubRoute = SettingsSubRoute.NONE })
             SettingsSubRoute.ABOUT -> AboutScreen(onBack = { activeSubRoute = SettingsSubRoute.NONE })
+            SettingsSubRoute.DEVELOPER -> DeveloperScreen(onBack = { activeSubRoute = SettingsSubRoute.NONE })
+            SettingsSubRoute.VAULT -> vaultViewModel?.let {
+                VaultSettingsRoute(
+                    viewModel = it,
+                    onBack = { activeSubRoute = SettingsSubRoute.NONE }
+                )
+            }
             SettingsSubRoute.NONE -> Unit
         }
         return
@@ -285,6 +284,7 @@ fun OScanAppShell(
                 onRename = libraryViewModel::rename,
                 onFavorite = libraryViewModel::setFavorite,
                 onMove = libraryViewModel::moveToFolder,
+                onCreateFolder = libraryViewModel::createFolder,
                 onTrash = libraryViewModel::moveToTrash,
                 defaultJpegQuality = state.userPreferences.defaultJpegQuality,
                 defaultPageSize = state.userPreferences.defaultPageSize,
@@ -575,6 +575,7 @@ private fun DestinationScaffold(
     var bulkMoveDialogOpen by remember { mutableStateOf(false) }
     var bulkTrashConfirmOpen by remember { mutableStateOf(false) }
     var createFolderDialogOpen by remember { mutableStateOf(false) }
+    var reopenBulkMoveAfterCreate by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
@@ -668,6 +669,7 @@ private fun DestinationScaffold(
                     foldersCount = state.folders.size,
                     onOpenFolders = onOpenFolders,
                     onOpenTrash = libraryViewModel::openTrash,
+                    vaultAvailable = onOpenVault != null,
                     onOpenSubRoute = onOpenSubRoute,
                     onUpdateDisplayName = libraryViewModel::setDisplayName,
                     onUpdateAvatarPreset = libraryViewModel::setAvatarPreset
@@ -683,6 +685,11 @@ private fun DestinationScaffold(
             currentFolderId = null,
             folders = state.folders,
             onDismiss = { bulkMoveDialogOpen = false },
+            onCreateFolder = {
+                bulkMoveDialogOpen = false
+                reopenBulkMoveAfterCreate = true
+                createFolderDialogOpen = true
+            },
             onConfirm = { folderId ->
                 libraryViewModel.bulkMoveToFolder(folderId)
                 bulkMoveDialogOpen = false
@@ -710,10 +717,17 @@ private fun DestinationScaffold(
 
     if (createFolderDialogOpen) {
         CreateFolderDialog(
-            onDismiss = { createFolderDialogOpen = false },
+            onDismiss = {
+                createFolderDialogOpen = false
+                reopenBulkMoveAfterCreate = false
+            },
             onConfirm = { name ->
                 libraryViewModel.createFolder(name)
                 createFolderDialogOpen = false
+                if (reopenBulkMoveAfterCreate) {
+                    reopenBulkMoveAfterCreate = false
+                    bulkMoveDialogOpen = true
+                }
             }
         )
     }
@@ -806,7 +820,7 @@ private fun DestinationTopAppBar(
 }
 
 private enum class SettingsSubRoute {
-    NONE, CAPTURE, ENHANCEMENT, EXPORT, APPEARANCE, LANGUAGE, STORAGE, PRIVACY, HELP, ABOUT
+    NONE, CAPTURE, ENHANCEMENT, APPEARANCE, LANGUAGE, STORAGE, PRIVACY, HELP, ABOUT, DEVELOPER, VAULT
 }
 
 @Composable
@@ -863,6 +877,7 @@ private fun MeScreen(
     foldersCount: Int,
     onOpenFolders: () -> Unit,
     onOpenTrash: () -> Unit,
+    vaultAvailable: Boolean,
     onOpenSubRoute: (SettingsSubRoute) -> Unit,
     onUpdateDisplayName: (String) -> Unit,
     onUpdateAvatarPreset: (String) -> Unit
@@ -977,7 +992,6 @@ private fun MeScreen(
 
             MeSettingRow(stringResource(R.string.settings_capture_row), stringResource(R.string.settings_capture_row_desc), Icons.Default.CameraAlt) { onOpenSubRoute(SettingsSubRoute.CAPTURE) }
             MeSettingRow(stringResource(R.string.settings_enhancement_row), stringResource(R.string.settings_enhancement_row_desc), Icons.Default.AutoAwesome) { onOpenSubRoute(SettingsSubRoute.ENHANCEMENT) }
-            MeSettingRow(stringResource(R.string.settings_export_row), stringResource(R.string.settings_export_row_desc), Icons.Default.PictureAsPdf) { onOpenSubRoute(SettingsSubRoute.EXPORT) }
             MeSettingRow(stringResource(R.string.settings_appearance_row), stringResource(R.string.settings_appearance_row_desc), Icons.Default.Palette) { onOpenSubRoute(SettingsSubRoute.APPEARANCE) }
             val currentLang = appLocaleController?.currentLanguage() ?: AppLanguage.SYSTEM
             val langSubtitle = when (currentLang) {
@@ -992,6 +1006,9 @@ private fun MeScreen(
                 icon = Icons.Default.Language
             ) { onOpenSubRoute(SettingsSubRoute.LANGUAGE) }
             MeSettingRow(stringResource(R.string.settings_storage_title), stringResource(R.string.settings_storage_row_desc), Icons.Default.Storage) { onOpenSubRoute(SettingsSubRoute.STORAGE) }
+            if (vaultAvailable) {
+                MeSettingRow(stringResource(R.string.vault_settings_title), stringResource(R.string.vault_settings_row_desc), Icons.Default.Lock) { onOpenSubRoute(SettingsSubRoute.VAULT) }
+            }
         }
 
         Spacer(Modifier.height(24.dp))
@@ -1004,6 +1021,7 @@ private fun MeScreen(
             MeSettingRow(stringResource(R.string.privacy_title), stringResource(R.string.settings_privacy_row_desc), Icons.Default.PrivacyTip) { onOpenSubRoute(SettingsSubRoute.PRIVACY) }
             MeSettingRow(stringResource(R.string.help_title), stringResource(R.string.settings_help_row_desc), Icons.Default.HelpOutline) { onOpenSubRoute(SettingsSubRoute.HELP) }
             MeSettingRow(stringResource(R.string.about_title), stringResource(R.string.settings_about_row_desc, versionName), Icons.Default.Info) { onOpenSubRoute(SettingsSubRoute.ABOUT) }
+            MeSettingRow(stringResource(R.string.developer_title), stringResource(R.string.developer_row_desc), Icons.Default.Person) { onOpenSubRoute(SettingsSubRoute.DEVELOPER) }
         }
     }
 

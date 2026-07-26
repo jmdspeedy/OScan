@@ -152,6 +152,9 @@ private fun rememberVaultBiometricPrompt(
                     }
 
                     override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                        if (currentAction.value == BiometricAction.ENROLL) {
+                            viewModel.cancelBiometricEnrollment()
+                        }
                         pendingAction = null
                         if (
                             errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON &&
@@ -206,7 +209,6 @@ fun VaultFlow(
     onExit: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var isViewingSettings by remember { mutableStateOf(false) }
     var moveOutDocument by remember { mutableStateOf<VaultDocument?>(null) }
     var biometricPromptAttempted by remember { mutableStateOf(false) }
     val launchBiometricPrompt = rememberVaultBiometricPrompt(viewModel)
@@ -216,7 +218,6 @@ fun VaultFlow(
     }
     LaunchedEffect(uiState.sessionState) {
         if (uiState.sessionState !is VaultSessionState.Unlocked) {
-            isViewingSettings = false
             moveOutDocument = null
         } else {
             biometricPromptAttempted = false
@@ -252,7 +253,6 @@ fun VaultFlow(
 
     BackHandler {
         when {
-            isViewingSettings -> isViewingSettings = false
             uiState.isViewingTrash -> viewModel.closeTrash()
             uiState.selectedDocumentId != null -> viewModel.closeDocument()
             else -> onExit()
@@ -279,7 +279,6 @@ fun VaultFlow(
                         launchBiometricPrompt(BiometricAction.UNLOCK, cipher)
                     }
                 },
-                onResetVault = viewModel::resetVault,
                 onBack = onExit
             )
         }
@@ -297,16 +296,6 @@ fun VaultFlow(
                         }
                     },
                     onSkip = viewModel::skipBiometricSetup
-                )
-
-                isViewingSettings -> VaultSettingsScreen(
-                    viewModel = viewModel,
-                    onEnableBiometric = {
-                        viewModel.createBiometricEnrollmentCipher()?.let { cipher ->
-                            launchBiometricPrompt(BiometricAction.ENROLL, cipher)
-                        }
-                    },
-                    onBack = { isViewingSettings = false }
                 )
 
                 uiState.isViewingTrash -> VaultTrashScreen(
@@ -338,7 +327,6 @@ fun VaultFlow(
                     keys = keys,
                     onBack = onExit,
                     onOpenTrash = viewModel::openTrash,
-                    onOpenSettings = { isViewingSettings = true },
                     onMoveOutRequested = { moveOutDocument = it }
                 )
             }
@@ -599,11 +587,9 @@ fun VaultUnlockScreen(
     biometricEnabled: Boolean = false,
     onUnlock: (String) -> Unit,
     onBiometricUnlock: () -> Unit = {},
-    onResetVault: () -> Unit,
     onBack: () -> Unit
 ) {
     var passcode by remember { mutableStateOf("") }
-    var showResetDialog by remember { mutableStateOf(false) }
 
     val lockoutRemaining = (sessionState as? VaultSessionState.Locked)?.lockoutRemainingSeconds ?: 0
 
@@ -713,39 +699,7 @@ fun VaultUnlockScreen(
                 Text(stringResource(R.string.vault_unlock))
             }
 
-            Spacer(Modifier.height(12.dp))
-
-            TextButton(onClick = { showResetDialog = true }) {
-                Text(stringResource(R.string.vault_forgot_passcode))
-            }
         }
-    }
-
-    if (showResetDialog) {
-        AlertDialog(
-            onDismissRequest = { showResetDialog = false },
-            icon = { Icon(Icons.Default.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text(stringResource(R.string.vault_reset_title)) },
-            text = {
-                Text(stringResource(R.string.vault_reset_body))
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showResetDialog = false
-                        onResetVault()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text(stringResource(R.string.vault_reset_action))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showResetDialog = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            }
-        )
     }
 }
 
@@ -757,7 +711,6 @@ fun VaultLibraryScreen(
     keys: ActiveVaultKeys,
     onBack: () -> Unit,
     onOpenTrash: () -> Unit,
-    onOpenSettings: () -> Unit,
     onMoveOutRequested: (VaultDocument) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -792,9 +745,6 @@ fun VaultLibraryScreen(
                     }
                     IconButton(onClick = onOpenTrash) {
                         Icon(Icons.Default.Delete, "Vault Trash")
-                    }
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(Icons.Default.MoreVert, "Vault Settings")
                     }
                 }
             )
@@ -900,7 +850,7 @@ fun VaultDocumentScreen(
                         Icon(Icons.Default.LockOpen, "Move out of Vault")
                     }
                     IconButton(onClick = onTrash) {
-                        Icon(Icons.Default.Delete, "Move to Vault Trash")
+                        Icon(Icons.Default.Delete, stringResource(R.string.vault_move_trash))
                     }
                 }
             )
@@ -1177,12 +1127,26 @@ fun VaultTrashScreen(
 @Composable
 fun VaultSettingsScreen(
     viewModel: VaultViewModel,
-    onEnableBiometric: () -> Unit = {},
+    onEnableBiometric: (String) -> Unit = {},
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val resetConfirmationPhrase = stringResource(R.string.vault_reset_confirmation_phrase)
     var showChangePasscodeDialog by remember { mutableStateOf(false) }
     var showDisableVaultDialog by remember { mutableStateOf(false) }
+    var showResetDialog by remember { mutableStateOf(false) }
+    var showFinalResetDialog by remember { mutableStateOf(false) }
+    var showBiometricPasscodeDialog by remember { mutableStateOf(false) }
+
+    val requestBiometricEnrollment = {
+        if (uiState.sessionState is VaultSessionState.Unlocked) {
+            onEnableBiometric("")
+        } else {
+            showBiometricPasscodeDialog = true
+        }
+    }
+
+    LaunchedEffect(Unit) { viewModel.refreshConfiguredState() }
 
     Scaffold(
         topBar = {
@@ -1200,8 +1164,17 @@ fun VaultSettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
+            if (!uiState.isConfigured) {
+                EmptyStateLayout(
+                    icon = Icons.Default.Security,
+                    title = stringResource(R.string.vault_not_configured_title),
+                    supportingText = stringResource(R.string.vault_not_configured_body)
+                ) {}
+                return@Column
+            }
             if (uiState.biometricSupported || uiState.biometricEnabled) {
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
@@ -1212,7 +1185,7 @@ fun VaultSettingsScreen(
                             if (uiState.biometricEnabled) {
                                 viewModel.disableBiometricUnlock()
                             } else if (uiState.biometricAvailable) {
-                                onEnableBiometric()
+                                requestBiometricEnrollment()
                             }
                         }
                         .padding(vertical = 4.dp)
@@ -1241,7 +1214,7 @@ fun VaultSettingsScreen(
                             checked = uiState.biometricEnabled,
                             enabled = uiState.biometricEnabled || uiState.biometricAvailable,
                             onCheckedChange = {
-                                if (it) onEnableBiometric() else viewModel.disableBiometricUnlock()
+                                if (it) requestBiometricEnrollment() else viewModel.disableBiometricUnlock()
                             }
                         )
                     }
@@ -1289,6 +1262,23 @@ fun VaultSettingsScreen(
                     Column(Modifier.weight(1f)) {
                         Text(stringResource(R.string.vault_disable), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
                         Text(stringResource(R.string.vault_disable_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f),
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth().clickable { showResetDialog = true }.padding(vertical = 4.dp)
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.DeleteForever, null, tint = MaterialTheme.colorScheme.error)
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.vault_forgot_passcode), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.vault_forgot_passcode_settings_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -1353,6 +1343,42 @@ fun VaultSettingsScreen(
         )
     }
 
+    if (showBiometricPasscodeDialog) {
+        var passcode by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showBiometricPasscodeDialog = false },
+            icon = { Icon(Icons.Default.Fingerprint, contentDescription = null) },
+            title = { Text(stringResource(R.string.vault_fingerprint_enable)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.vault_fingerprint_passcode_prompt))
+                    OutlinedTextField(
+                        value = passcode,
+                        onValueChange = { if (it.length <= 12 && it.all(Char::isDigit)) passcode = it },
+                        label = { Text(stringResource(R.string.vault_enter_current_passcode)) },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showBiometricPasscodeDialog = false
+                        onEnableBiometric(passcode)
+                    },
+                    enabled = passcode.length >= 6
+                ) { Text(stringResource(R.string.action_continue)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBiometricPasscodeDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
     if (showDisableVaultDialog) {
         var curPass by remember { mutableStateOf("") }
         var migrateChoice by remember { mutableStateOf(true) }
@@ -1407,4 +1433,84 @@ fun VaultSettingsScreen(
             }
         )
     }
+
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            icon = { Icon(Icons.Default.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text(stringResource(R.string.vault_reset_title)) },
+            text = { Text(stringResource(R.string.vault_reset_body)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showResetDialog = false
+                        showFinalResetDialog = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text(stringResource(R.string.vault_reset_action)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) { Text(stringResource(R.string.action_cancel)) }
+            }
+        )
+    }
+
+    if (showFinalResetDialog) {
+        var confirmation by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showFinalResetDialog = false },
+            icon = { Icon(Icons.Default.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text(stringResource(R.string.vault_reset_final_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.vault_reset_type_prompt, resetConfirmationPhrase))
+                    OutlinedTextField(
+                        value = confirmation,
+                        onValueChange = { confirmation = it },
+                        label = { Text(resetConfirmationPhrase) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showFinalResetDialog = false
+                        viewModel.resetVault()
+                    },
+                    enabled = confirmation == resetConfirmationPhrase,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text(stringResource(R.string.vault_reset_action)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showFinalResetDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun VaultSettingsRoute(
+    viewModel: VaultViewModel,
+    onBack: () -> Unit
+) {
+    val launchBiometricPrompt = rememberVaultBiometricPrompt(viewModel)
+    VaultSettingsScreen(
+        viewModel = viewModel,
+        onEnableBiometric = { passcode ->
+            if (passcode.isEmpty()) {
+                viewModel.createBiometricEnrollmentCipher()?.let { cipher ->
+                    launchBiometricPrompt(BiometricAction.ENROLL, cipher)
+                }
+            } else {
+                viewModel.createBiometricEnrollmentCipher(passcode) { cipher ->
+                    launchBiometricPrompt(BiometricAction.ENROLL, cipher)
+                }
+            }
+        },
+        onBack = onBack
+    )
 }

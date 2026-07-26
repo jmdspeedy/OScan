@@ -26,7 +26,6 @@ class UserPreferencesStoreTest {
         val prefs = store.preferences.first()
         assertEquals("Local Workspace", prefs.displayName)
         assertEquals("TEAL", prefs.avatarPreset)
-        assertFalse(prefs.autoCaptureDefault)
         assertTrue(prefs.shutterFeedback)
         assertEquals(CameraLensPreference.BACK, prefs.cameraLensPreference)
         assertEquals("MAGIC", prefs.defaultTreatment)
@@ -41,7 +40,6 @@ class UserPreferencesStoreTest {
     fun updatePreferencesPersistsValues() = runTest {
         store.setDisplayName("Custom User")
         store.setAvatarPreset("INDIGO")
-        store.setAutoCaptureDefault(true)
         store.setShutterFeedback(false)
         store.setDefaultTreatment("ORIGINAL")
         store.setDefaultPageSize(PdfPageSize.LETTER)
@@ -52,7 +50,6 @@ class UserPreferencesStoreTest {
         val updated = store.preferences.first()
         assertEquals("Custom User", updated.displayName)
         assertEquals("INDIGO", updated.avatarPreset)
-        assertTrue(updated.autoCaptureDefault)
         assertFalse(updated.shutterFeedback)
         assertEquals("ORIGINAL", updated.defaultTreatment)
         assertEquals(PdfPageSize.LETTER, updated.defaultPageSize)
