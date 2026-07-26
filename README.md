@@ -85,6 +85,8 @@ Run the desktop visual harness with:
 
 The desktop harness expects local test fixtures in the ignored `test-images/` directory.
 
+See the [complete testing guide](docs/testing_guide.md) for automated, desktop, Android, Vault, localization, accessibility, privacy, and release validation.
+
 ## Ownership
 
 OScan is a personal project maintained by its owner. The repository is published as a showcase and is not accepting external contributions.
