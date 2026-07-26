@@ -106,6 +106,9 @@ class ScanSessionStore(
     fun writeProcessed(sessionId: String, pageId: String, bitmap: Bitmap): String =
         writeBitmap(sessionId, pageId, "processed.jpg", bitmap, 94)
 
+    fun writeGeneratedSource(sessionId: String, pageId: String, bitmap: Bitmap): String =
+        writeBitmap(sessionId, pageId, "source.jpg", bitmap, 96)
+
     fun writeThumbnail(sessionId: String, pageId: String, bitmap: Bitmap): String =
         writeBitmap(sessionId, pageId, "thumbnail.jpg", bitmap, 82)
 

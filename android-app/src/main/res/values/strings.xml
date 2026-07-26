@@ -571,6 +571,12 @@
     <string name="library_all_documents">All documents</string>
     <string name="camera_mode_document">Document</string>
     <string name="camera_mode_id_card">ID card</string>
+    <string name="id_card_front">Front</string>
+    <string name="id_card_back">Back</string>
+    <string name="id_card_place_side">%1$s: place the card inside the outline</string>
+    <string name="id_card_adjust_both">Adjust both sides</string>
+    <string name="id_card_adjust_announcement">Front and back are ready to adjust</string>
+    <string name="id_card_reset_both">Reset both card outlines</string>
     <string name="treatment_magic_recommended">Magic (Recommended)</string>
     <string name="scanner_restoring_progress">Restoring your scan…</string>
     <string name="scanner_importing_progress">Importing images %1$d of %2$d…</string>

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -135,7 +136,7 @@ fun OScanAppShell(
     vaultViewModel: com.oscan.android.ui.vault.VaultViewModel? = null,
     cameraViewModel: CameraViewModel? = null,
     captureState: CameraCaptureState? = null,
-    onCaptured: ((File) -> Unit)? = null,
+    onCaptured: ((File, CameraScanMode) -> Unit)? = null,
     onDone: (() -> Unit)? = null,
     scannerViewModel: ScannerViewModel? = null,
     scannerEngine: com.oscan.android.engine.ScannerEngine? = null,
@@ -553,7 +554,7 @@ private fun DestinationScaffold(
     onImportImages: () -> Unit,
     cameraViewModel: CameraViewModel? = null,
     captureState: CameraCaptureState? = null,
-    onCaptured: ((File) -> Unit)? = null,
+    onCaptured: ((File, CameraScanMode) -> Unit)? = null,
     onDone: (() -> Unit)? = null,
     onOpenFolders: () -> Unit,
     onOpenVault: (() -> Unit)? = null,
@@ -576,7 +577,10 @@ private fun DestinationScaffold(
     ) { padding ->
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxSize().padding(padding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .consumeWindowInsets(padding),
             beyondBoundsPageCount = 1,
             userScrollEnabled = !sortMenuOpen && !bulkMoveDialogOpen &&
                 !bulkTrashConfirmOpen && !createFolderDialogOpen

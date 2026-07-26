@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
 import com.oscan.core.DocumentScanner
 import com.oscan.core.ImageEnhancer
+import com.oscan.core.IdCardProcessor
 import com.oscan.core.model.CornerPoints
 import com.oscan.core.model.FilterType
 import com.oscan.core.model.ImageDimensions
@@ -40,7 +41,12 @@ data class DetectionResult(
 
 interface ScannerEngine {
     suspend fun decodeAndDetect(uri: Uri): DetectionResult
+    suspend fun decodeForIdCard(uri: Uri): DetectionResult = decodeAndDetect(uri)
     suspend fun cropAndFilter(uri: Uri, corners: CornerPoints, filterType: FilterType): Bitmap
+    suspend fun cropIdCard(uri: Uri, corners: CornerPoints): Bitmap =
+        cropAndFilter(uri, corners, FilterType.ORIGINAL)
+    suspend fun createIdCardSheet(front: Bitmap, back: Bitmap): Bitmap =
+        error("ID-card sheet generation is not implemented")
 }
 
 /**
@@ -50,6 +56,7 @@ class AndroidScannerEngine(private val context: Context) : ScannerEngine {
 
     private val scanner: DocumentScanner by lazy { DocumentScanner() }
     private val enhancer: ImageEnhancer by lazy { ImageEnhancer() }
+    private val idCardProcessor: IdCardProcessor by lazy { IdCardProcessor(scanner) }
     private val detectorMutex = Mutex()
     private var isNativeInitialized = false
 
@@ -103,6 +110,35 @@ class AndroidScannerEngine(private val context: Context) : ScannerEngine {
         )
     }
 
+    /**
+     * Detects the card boundary from the captured pixels. The on-screen guide is only a framing
+     * aid; it is used as a fallback crop when neither the learned nor classical edge detector can
+     * find four reliable sides.
+     */
+    override suspend fun decodeForIdCard(uri: Uri): DetectionResult = withContext(Dispatchers.IO) {
+        require(initialize()) { "Failed to initialize OpenCV native libraries" }
+        val decodedBitmap = decodeUriWithExif(uri)
+            ?: throw IllegalArgumentException("Could not decode image from provided URI")
+        try {
+            val dimensions = ImageDimensions(decodedBitmap.width, decodedBitmap.height)
+            val sourceMat = bitmapToMat(decodedBitmap)
+            val detected = try {
+                detectorMutex.withLock { scanner.detectCorners(sourceMat) }
+            } finally {
+                sourceMat.release()
+            }
+            val (corners, autoDetected) = idCardCornersOrGuide(detected, dimensions)
+            DetectionResult(
+                sourceDimensions = dimensions,
+                corners = corners,
+                isAutoDetected = autoDetected,
+                previewBitmap = createDisplayPreview(decodedBitmap, maxDimension = 1200)
+            )
+        } finally {
+            decodedBitmap.recycle()
+        }
+    }
+
     /** Detects a boundary in an already oriented, downsampled camera frame. */
     suspend fun detectCameraFrame(bitmap: Bitmap): CornerPoints? = withContext(Dispatchers.Default) {
         require(initialize()) { "Failed to initialize image processing" }
@@ -145,6 +181,39 @@ class AndroidScannerEngine(private val context: Context) : ScannerEngine {
         finalMat.release()
 
         resultBitmap
+    }
+
+    override suspend fun cropIdCard(uri: Uri, corners: CornerPoints): Bitmap = withContext(Dispatchers.IO) {
+        val sourceBitmap = decodeUriWithExif(uri)
+            ?: throw IllegalArgumentException("Could not decode image from provided URI")
+        val sourceMat = bitmapToMat(sourceBitmap)
+        sourceBitmap.recycle()
+        try {
+            val cropped = idCardProcessor.cropRectangle(sourceMat, corners.toArray())
+            try {
+                matToBitmap(cropped)
+            } finally {
+                cropped.release()
+            }
+        } finally {
+            sourceMat.release()
+        }
+    }
+
+    override suspend fun createIdCardSheet(front: Bitmap, back: Bitmap): Bitmap = withContext(Dispatchers.Default) {
+        val frontMat = bitmapToMat(front)
+        val backMat = bitmapToMat(back)
+        try {
+            val sheet = idCardProcessor.createSheet(frontMat, backMat)
+            try {
+                matToBitmap(sheet)
+            } finally {
+                sheet.release()
+            }
+        } finally {
+            frontMat.release()
+            backMat.release()
+        }
     }
 
     private fun bitmapToMat(bitmap: Bitmap): Mat {
@@ -216,4 +285,28 @@ class AndroidScannerEngine(private val context: Context) : ScannerEngine {
         val targetHeight = (height * scale).toInt()
         return Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
     }
+}
+
+internal fun idCardGuideCorners(dimensions: ImageDimensions): CornerPoints {
+    val width = dimensions.width.toDouble()
+    val height = dimensions.height.toDouble()
+    val guideWidth = width * 0.86
+    val guideHeight = (guideWidth / 1.586).coerceAtMost(height * 0.72)
+    val left = (width - guideWidth) / 2.0
+    val top = (height - guideHeight) / 2.0
+    return CornerPoints(
+        Point(left, top),
+        Point(left + guideWidth, top),
+        Point(left + guideWidth, top + guideHeight),
+        Point(left, top + guideHeight)
+    )
+}
+
+internal fun idCardCornersOrGuide(
+    detected: Array<Point>?,
+    dimensions: ImageDimensions
+): Pair<CornerPoints, Boolean> = if (detected?.size == 4) {
+    CornerPoints.fromArray(detected) to true
+} else {
+    idCardGuideCorners(dimensions) to false
 }

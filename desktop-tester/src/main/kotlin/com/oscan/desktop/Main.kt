@@ -22,7 +22,9 @@ fun main() {
     if (!outputDir.exists()) outputDir.mkdirs()
     
     val images = inputDir.listFiles { _, name ->
-        name.endsWith(".jpg", ignoreCase = true) && !name.contains("_expected", ignoreCase = true)
+        name.endsWith(".jpg", ignoreCase = true) &&
+            !name.contains("_expected", ignoreCase = true) &&
+            !name.startsWith("card_test", ignoreCase = true)
     }?.sortedBy { it.name }
     if (images.isNullOrEmpty()) {
         println("No jpg images found in test-images.")

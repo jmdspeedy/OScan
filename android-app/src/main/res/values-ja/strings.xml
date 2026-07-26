@@ -600,4 +600,10 @@
     <plurals name="plural_trash_items">
         <item quantity="other">ゴミ箱に %1$d 件のアイテム</item>
     </plurals>
+    <string name="id_card_front">表面</string>
+    <string name="id_card_back">裏面</string>
+    <string name="id_card_place_side">%1$s：カードを枠内に置いてください</string>
+    <string name="id_card_adjust_both">両面を調整</string>
+    <string name="id_card_adjust_announcement">表面と裏面を調整できます</string>
+    <string name="id_card_reset_both">両面のカード枠をリセット</string>
 </resources>

@@ -100,7 +100,7 @@ private data class CameraChromeColors(
     val floatingSurface: Color
 )
 
-private enum class CameraScanMode {
+enum class CameraScanMode {
     Document,
     IdCard
 }
@@ -115,7 +115,7 @@ private fun CameraScanMode.label(): String = when (this) {
 fun LiveCameraScreen(
     cameraViewModel: CameraViewModel,
     captureState: CameraCaptureState,
-    onCaptured: (File) -> Unit,
+    onCaptured: (File, CameraScanMode) -> Unit,
     onDone: () -> Unit,
     onImport: () -> Unit,
     shutterFeedbackEnabled: Boolean = true
@@ -148,12 +148,22 @@ fun LiveCameraScreen(
     val orientation = LocalConfiguration.current.orientation
     val compactControls = orientation == Configuration.ORIENTATION_LANDSCAPE
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
+    var selectedMode by remember { mutableStateOf(CameraScanMode.Document) }
     LaunchedEffect(previewView, lifecycleOwner, orientation) {
         previewView?.let { cameraViewModel.bind(lifecycleOwner, it, it.display?.rotation ?: 0) }
     }
     DisposableEffect(Unit) { onDispose(cameraViewModel::unbind) }
 
-    val currentStatus = state.errorMessage ?: captureState.message ?: state.guidance
+    val idCardSide = if (captureState.capturedCount == 0) {
+        stringResource(R.string.id_card_front)
+    } else {
+        stringResource(R.string.id_card_back)
+    }
+    val currentStatus = state.errorMessage ?: captureState.message ?: if (selectedMode == CameraScanMode.IdCard) {
+        stringResource(R.string.id_card_place_side, idCardSide)
+    } else {
+        state.guidance
+    }
     var announcedStatus by remember { mutableStateOf(context.getString(R.string.camera_starting)) }
     LaunchedEffect(state.isStarting, currentStatus) {
         if (!state.isStarting) {
@@ -169,7 +179,8 @@ fun LiveCameraScreen(
     }
 
     LaunchedEffect(captureState.capturedCount, captureState.isProcessing) {
-        if (captureState.capturedCount > 0 && !captureState.isProcessing) {
+        val requiredCaptures = if (selectedMode == CameraScanMode.IdCard) 2 else 1
+        if (captureState.capturedCount >= requiredCaptures && !captureState.isProcessing) {
             onDone()
         }
     }
@@ -202,8 +213,16 @@ fun LiveCameraScreen(
 
             CameraGrid(bottomInset = if (compactControls) 76.dp else 100.dp)
 
-            state.corners?.takeIf { it.size == 4 }?.let { corners ->
-                DocumentCornerOverlay(corners, chrome.accent)
+            if (selectedMode == CameraScanMode.IdCard) {
+                IdCardGuideOverlay(
+                    side = idCardSide,
+                    accent = chrome.accent,
+                    bottomInset = if (compactControls) 76.dp else 100.dp
+                )
+            } else {
+                state.corners?.takeIf { it.size == 4 }?.let { corners ->
+                    DocumentCornerOverlay(corners, chrome.accent)
+                }
             }
         } else {
             CameraPermissionCard(
@@ -251,7 +270,8 @@ fun LiveCameraScreen(
             compact = compactControls,
             isCapturing = state.isCapturing,
             captureEnabled = permissionGranted && state.isAvailable && !state.isStarting &&
-                !state.isCapturing && !captureState.isProcessing && captureState.capturedCount == 0,
+                !state.isCapturing && !captureState.isProcessing &&
+                captureState.capturedCount < if (selectedMode == CameraScanMode.IdCard) 2 else 1,
             onCapture = {
                 if (!permissionGranted) {
                     permissionLauncher.launch(Manifest.permission.CAMERA)
@@ -264,12 +284,17 @@ fun LiveCameraScreen(
                                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             }
                             captureFeedbackEvent++
-                            onCaptured(it)
+                            onCaptured(it, selectedMode)
                         }
                     }
                 }
             },
-            onImport = onImport
+            onImport = onImport,
+            selectedMode = selectedMode,
+            onModeChanged = { mode ->
+                if (captureState.capturedCount == 0) selectedMode = mode
+            },
+            modeEnabled = captureState.capturedCount == 0
         )
 
         if (permissionGranted && state.isStarting) {
@@ -317,7 +342,10 @@ internal fun CameraTransitionPreview() {
             isCapturing = false,
             captureEnabled = false,
             onCapture = {},
-            onImport = {}
+            onImport = {},
+            selectedMode = CameraScanMode.Document,
+            onModeChanged = {},
+            modeEnabled = false
         )
     }
 }
@@ -404,6 +432,57 @@ private fun DocumentCornerOverlay(corners: List<PreviewPoint>, accent: Color) {
     }
 }
 
+@Composable
+private fun IdCardGuideOverlay(side: String, accent: Color, bottomInset: Dp) {
+    Box(
+        Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(Modifier.fillMaxSize()) {
+            // The guide is positioned in the unobstructed preview area, but the shade must
+            // continue behind the dock's curved shutter cut-out. Padding the whole canvas left
+            // an unshaded band between the preview and the opaque part of the dock.
+            val previewHeight = (size.height - bottomInset.toPx()).coerceAtLeast(1f)
+            val guideWidth = size.width * .86f
+            val guideHeight = (guideWidth / 1.586f).coerceAtMost(previewHeight * .48f)
+            val left = (size.width - guideWidth) / 2f
+            val top = (previewHeight - guideHeight) / 2f
+            val right = left + guideWidth
+            val bottom = top + guideHeight
+            val shade = Color.Black.copy(alpha = .38f)
+            drawRect(shade, size = androidx.compose.ui.geometry.Size(size.width, top))
+            drawRect(shade, topLeft = Offset(0f, bottom), size = androidx.compose.ui.geometry.Size(size.width, size.height - bottom))
+            drawRect(shade, topLeft = Offset(0f, top), size = androidx.compose.ui.geometry.Size(left, guideHeight))
+            drawRect(shade, topLeft = Offset(right, top), size = androidx.compose.ui.geometry.Size(size.width - right, guideHeight))
+
+            val bracket = 28.dp.toPx()
+            val stroke = 4.dp.toPx()
+            listOf(
+                Triple(Offset(left, top), Offset(left + bracket, top), Offset(left, top + bracket)),
+                Triple(Offset(right, top), Offset(right - bracket, top), Offset(right, top + bracket)),
+                Triple(Offset(left, bottom), Offset(left + bracket, bottom), Offset(left, bottom - bracket)),
+                Triple(Offset(right, bottom), Offset(right - bracket, bottom), Offset(right, bottom - bracket))
+            ).forEach { (corner, horizontal, vertical) ->
+                drawLine(Color.Black.copy(alpha = .5f), corner, horizontal, stroke + 3.dp.toPx())
+                drawLine(Color.Black.copy(alpha = .5f), corner, vertical, stroke + 3.dp.toPx())
+                drawLine(accent, corner, horizontal, stroke)
+                drawLine(accent, corner, vertical, stroke)
+            }
+        }
+        Text(
+            text = side,
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 24.dp)
+                .background(Color.Black.copy(alpha = .62f), RoundedCornerShape(18.dp))
+                .padding(horizontal = 18.dp, vertical = 8.dp)
+        )
+    }
+}
+
 private fun Offset.toward(target: Offset, distance: Float): Offset {
     val length = hypot(target.x - x, target.y - y).coerceAtLeast(1f)
     return Offset(
@@ -419,7 +498,10 @@ private fun BoxScope.CameraControlDock(
     isCapturing: Boolean,
     captureEnabled: Boolean,
     onCapture: () -> Unit,
-    onImport: () -> Unit
+    onImport: () -> Unit,
+    selectedMode: CameraScanMode,
+    onModeChanged: (CameraScanMode) -> Unit,
+    modeEnabled: Boolean
 ) {
     CaptureDock(
         chrome = chrome,
@@ -428,6 +510,9 @@ private fun BoxScope.CameraControlDock(
         captureEnabled = captureEnabled,
         onCapture = onCapture,
         onImport = onImport,
+        selectedMode = selectedMode,
+        onModeChanged = onModeChanged,
+        modeEnabled = modeEnabled,
         modifier = Modifier.align(Alignment.BottomCenter)
     )
 }
@@ -447,9 +532,11 @@ private fun BoxScope.CameraControlDock(
 private fun ScanModeButton(
     chrome: CameraChromeColors,
     compact: Boolean,
+    selectedMode: CameraScanMode,
+    onModeChanged: (CameraScanMode) -> Unit,
+    enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
-    var selectedMode by remember { mutableStateOf(CameraScanMode.Document) }
     val scanModeDescription = stringResource(R.string.camera_scan_mode, selectedMode.label())
     val scope = rememberCoroutineScope()
     val buttonScale = remember { Animatable(1f) }
@@ -471,14 +558,16 @@ private fun ScanModeButton(
         )
         Surface(
             onClick = {
+                if (!enabled) return@Surface
                 scope.launch {
                     buttonScale.animateTo(0.92f, animationSpec = tween(70))
                     buttonScale.animateTo(1f, animationSpec = tween(120))
                 }
                 val entries = CameraScanMode.entries
                 val nextIndex = (entries.indexOf(selectedMode) + 1) % entries.size
-                selectedMode = entries[nextIndex]
+                onModeChanged(entries[nextIndex])
             },
+            enabled = enabled,
             color = chrome.onPanel.copy(alpha = .08f),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
@@ -525,6 +614,9 @@ private fun CaptureDock(
     captureEnabled: Boolean,
     onCapture: () -> Unit,
     onImport: () -> Unit,
+    selectedMode: CameraScanMode,
+    onModeChanged: (CameraScanMode) -> Unit,
+    modeEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     val dockHeight = if (compact) 76.dp else 100.dp
@@ -594,6 +686,9 @@ private fun CaptureDock(
         ScanModeButton(
             chrome = chrome,
             compact = compact,
+            selectedMode = selectedMode,
+            onModeChanged = onModeChanged,
+            enabled = modeEnabled,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(

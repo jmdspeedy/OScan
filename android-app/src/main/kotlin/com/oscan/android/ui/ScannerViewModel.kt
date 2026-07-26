@@ -18,6 +18,7 @@ import com.oscan.android.engine.ScannerEngine
 import com.oscan.core.model.CornerPoints
 import com.oscan.core.model.FilterType
 import com.oscan.core.model.ImageDimensions
+import com.oscan.core.IdCardProcessor
 import com.oscan.core.util.CoordinateTransformer
 import com.oscan.core.util.CornerValidator
 import java.io.File
@@ -53,6 +54,19 @@ sealed interface ScannerUiState {
         val corners: CornerPoints,
         val initialDetectedCorners: CornerPoints,
         val isValidGeometry: Boolean
+    ) : ScannerUiState
+    data class IdCardAdjust(
+        val session: ScanSession,
+        val frontPage: SessionPage,
+        val backPage: SessionPage,
+        val frontPreview: Bitmap,
+        val backPreview: Bitmap,
+        val frontCorners: CornerPoints,
+        val backCorners: CornerPoints,
+        val frontInitialCorners: CornerPoints,
+        val backInitialCorners: CornerPoints,
+        val isFrontValid: Boolean,
+        val isBackValid: Boolean
     ) : ScannerUiState
     data class Processing(val session: ScanSession, val message: String) : ScannerUiState
     data class PreviewReady(
@@ -126,9 +140,13 @@ class ScannerViewModel(
     }
 
     /** Copies a CameraX output into durable session storage before deleting the transient file. */
-    fun onCameraCaptured(file: File) {
+    fun onCameraCaptured(file: File, mode: CameraScanMode) {
         activeCameraImports++
-        _cameraCaptureState.value = _cameraCaptureState.value.copy(isProcessing = true, message = null)
+        _cameraCaptureState.value = _cameraCaptureState.value.copy(
+            isProcessing = true,
+            message = null,
+            mode = mode
+        )
         viewModelScope.launch {
             val draft = session ?: sessionStore.create().also { session = it }
             val page = SessionPage(
@@ -149,7 +167,9 @@ class ScannerViewModel(
                 _cameraCaptureState.value = _cameraCaptureState.value.copy(
                     capturedCount = requireSession().pages.count { it.sourcePath != null }
                 )
-                cameraDetectionMutex.withLock { detectStoredPage(page.id) }
+                cameraDetectionMutex.withLock {
+                    if (mode == CameraScanMode.IdCard) prepareIdCardPage(page.id) else detectStoredPage(page.id)
+                }
                 val latest = requireSession().pages.first { it.id == page.id }
                 _cameraCaptureState.value = _cameraCaptureState.value.copy(
                     capturedCount = requireSession().pages.count { it.sourcePath != null },
@@ -172,8 +192,124 @@ class ScannerViewModel(
 
     fun finishCameraCapture() {
         val draft = session ?: return
+        if (_cameraCaptureState.value.mode == CameraScanMode.IdCard && draft.pages.size >= 2) {
+            showIdCardAdjustment()
+            return
+        }
         val first = draft.pages.sortedBy { it.position }.firstOrNull { it.status == SessionPageStatus.CROP_REVIEW }
         if (first != null) openPage(first.id) else showReview()
+    }
+
+    private fun showIdCardAdjustment() {
+        viewModelScope.launch {
+            val draft = requireSession()
+            val pages = draft.pages.sortedBy { it.position }.take(2)
+            if (pages.size != 2 || pages.any { it.sourcePath == null }) return@launch showReview()
+            _uiState.value = ScannerUiState.Processing(draft, "Preparing both sides\u2026")
+            runCatching {
+                val frontResult = scannerEngine.decodeForIdCard(sourceUri(pages[0]))
+                val backResult = scannerEngine.decodeForIdCard(sourceUri(pages[1]))
+                val front = requireSession().pages.first { it.id == pages[0].id }
+                val back = requireSession().pages.first { it.id == pages[1].id }
+                val frontCorners = front.corners ?: frontResult.corners
+                val backCorners = back.corners ?: backResult.corners
+                ScannerUiState.IdCardAdjust(
+                    session = requireSession(),
+                    frontPage = front,
+                    backPage = back,
+                    frontPreview = frontResult.previewBitmap,
+                    backPreview = backResult.previewBitmap,
+                    frontCorners = frontCorners,
+                    backCorners = backCorners,
+                    frontInitialCorners = front.initialCorners ?: frontResult.corners,
+                    backInitialCorners = back.initialCorners ?: backResult.corners,
+                    isFrontValid = CornerValidator.isValidQuadrilateral(frontCorners.toArray(), frontResult.sourceDimensions),
+                    isBackValid = CornerValidator.isValidQuadrilateral(backCorners.toArray(), backResult.sourceDimensions)
+                )
+            }.onSuccess { _uiState.value = it }
+                .onFailure {
+                    _uiState.value = ScannerUiState.Error("Both card sides could not be prepared. Try again.", ScannerUiState.Empty)
+                }
+        }
+    }
+
+    fun onIdCardCornerMoved(
+        pageId: String,
+        handleIndex: Int,
+        newDisplayPoint: Point,
+        containerDimensions: ImageDimensions
+    ) {
+        val current = _uiState.value as? ScannerUiState.IdCardAdjust ?: return
+        if (handleIndex !in 0..3) return
+        val page = if (pageId == current.frontPage.id) current.frontPage else current.backPage
+        val sourceDimensions = ImageDimensions(page.sourceWidth, page.sourceHeight)
+        val transform = CoordinateTransformer.computeTransform(sourceDimensions, containerDimensions)
+        val existing = if (pageId == current.frontPage.id) current.frontCorners else current.backCorners
+        val points = existing.toArray()
+        points[handleIndex] = CoordinateTransformer.displayToSource(newDisplayPoint, transform, sourceDimensions)
+        val corners = CornerPoints.fromArray(points)
+        val valid = CornerValidator.isValidQuadrilateral(points, sourceDimensions)
+        _uiState.value = if (pageId == current.frontPage.id) {
+            current.copy(frontCorners = corners, isFrontValid = valid)
+        } else {
+            current.copy(backCorners = corners, isBackValid = valid)
+        }
+    }
+
+    fun resetIdCardCorners() {
+        val current = _uiState.value as? ScannerUiState.IdCardAdjust ?: return
+        _uiState.value = current.copy(
+            frontCorners = current.frontInitialCorners,
+            backCorners = current.backInitialCorners,
+            isFrontValid = true,
+            isBackValid = true
+        )
+    }
+
+    fun confirmIdCardAdjustment() {
+        val current = _uiState.value as? ScannerUiState.IdCardAdjust ?: return
+        if (!current.isFrontValid || !current.isBackValid) return
+        viewModelScope.launch {
+            _uiState.value = ScannerUiState.Processing(requireSession(), "Creating ID card page\u2026")
+            runCatching {
+                val front = scannerEngine.cropIdCard(sourceUri(current.frontPage), current.frontCorners)
+                val back = scannerEngine.cropIdCard(sourceUri(current.backPage), current.backCorners)
+                val sheet = try {
+                    scannerEngine.createIdCardSheet(front, back)
+                } finally {
+                    front.recycle()
+                    back.recycle()
+                }
+                val pageId = sessionStore.newPageId()
+                val sourcePath = try {
+                    sessionStore.writeGeneratedSource(requireSession().id, pageId, sheet)
+                } finally {
+                    sheet.recycle()
+                }
+                val dimensions = ImageDimensions(IdCardProcessor.SHEET_WIDTH, IdCardProcessor.SHEET_HEIGHT)
+                val corners = fullFrameCorners(dimensions)
+                val filter = runCatching { defaultFilterProvider() }.getOrDefault(FilterType.MAGIC)
+                val page = SessionPage(
+                    id = pageId,
+                    position = 0,
+                    status = SessionPageStatus.TREATMENT_REVIEW,
+                    sourcePath = sourcePath,
+                    originalExtension = "jpg",
+                    sourceWidth = dimensions.width,
+                    sourceHeight = dimensions.height,
+                    corners = corners,
+                    initialCorners = corners,
+                    filter = filter
+                )
+                updateSession(requireSession().copy(pages = listOf(page), currentPageId = page.id))
+                val treated = scannerEngine.cropAndFilter(sourceUri(page), corners, filter)
+                page to treated
+            }.onSuccess { (page, bitmap) ->
+                _uiState.value = ScannerUiState.PreviewReady(requireSession(), page, page.filter, bitmap)
+            }.onFailure {
+                _uiState.value = ScannerUiState.Error("The ID card page could not be created. Try again.", current)
+            }
+        }
     }
 
     fun onReplacementSelected(pageId: String, uri: Uri?) {
@@ -524,6 +660,32 @@ class ScannerViewModel(
             }
     }
 
+    private suspend fun prepareIdCardPage(pageId: String) {
+        val page = requireSession().pages.first { it.id == pageId }
+        val sourcePath = page.sourcePath ?: return
+        updatePage(pageId) { it.copy(status = SessionPageStatus.DETECTING, failureMessage = null) }
+        runCatching { scannerEngine.decodeForIdCard(Uri.fromFile(sessionStore.resolve(sourcePath))) }
+            .onSuccess { result ->
+                updatePage(pageId) {
+                    it.copy(
+                        status = SessionPageStatus.CROP_REVIEW,
+                        sourceWidth = result.sourceDimensions.width,
+                        sourceHeight = result.sourceDimensions.height,
+                        corners = result.corners,
+                        initialCorners = result.corners,
+                        isAutoDetected = result.isAutoDetected,
+                        failureMessage = null
+                    )
+                }
+                result.previewBitmap.recycle()
+            }
+            .onFailure {
+                updatePage(pageId) {
+                    it.copy(status = SessionPageStatus.FAILED, failureMessage = "This card side could not be prepared. Try again.")
+                }
+            }
+    }
+
     private suspend fun openCrop(page: SessionPage) {
         val sourcePath = page.sourcePath ?: return showReview()
         _uiState.value = ScannerUiState.Processing(requireSession(), "Loading page…")
@@ -612,5 +774,13 @@ class ScannerViewModel(
 data class CameraCaptureState(
     val capturedCount: Int = 0,
     val isProcessing: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    val mode: CameraScanMode = CameraScanMode.Document
+)
+
+private fun fullFrameCorners(dimensions: ImageDimensions) = CornerPoints(
+    Point(1.0, 1.0),
+    Point(dimensions.width - 2.0, 1.0),
+    Point(dimensions.width - 2.0, dimensions.height - 2.0),
+    Point(1.0, dimensions.height - 2.0)
 )

@@ -20,3 +20,11 @@ dependencies {
 tasks.named<JavaExec>("run") {
     workingDir = rootDir
 }
+
+tasks.register<JavaExec>("runIdCard") {
+    group = "verification"
+    description = "Runs ID-card detection and PDF generation against test-images/card_test_* fixtures."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.oscan.desktop.IdCardMainKt")
+    workingDir = rootDir
+}

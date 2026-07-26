@@ -377,7 +377,11 @@ class DocumentScanner {
         return result
     }
 
-    fun cropWarped(source: Mat, corners: Array<Point>): Mat {
+    fun cropWarped(
+        source: Mat,
+        corners: Array<Point>,
+        targetAspectRatio: Double? = null
+    ): Mat {
         require(corners.size == 4) { "Exactly four document corners are required" }
         val tl = corners[0]
         val tr = corners[1]
@@ -399,7 +403,9 @@ class DocumentScanner {
         val boundsRatio = boundsWidth / boundsHeight.coerceAtLeast(1.0)
         val measuredRatio = measuredWidth / measuredHeight
         val projectiveRatio = estimateProjectiveAspect(corners, source.width(), source.height())
-        val targetRatio = correctedDocumentAspect(measuredRatio, boundsRatio, projectiveRatio)
+        val targetRatio = targetAspectRatio
+            ?.also { require(it.isFinite() && it > 0.0) { "Target aspect ratio must be positive" } }
+            ?: correctedDocumentAspect(measuredRatio, boundsRatio, projectiveRatio)
 
         // Keep the best-observed edge at native sampling density. This preserves fine text on the
         // near side instead of reducing the whole page to the geometric-mean edge length.

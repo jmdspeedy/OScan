@@ -22,5 +22,5 @@ desktop.ini
 .agents/
 .codex/
 
-# Generated Phase 1 artifacts
-test-images/output/
+# Local test fixtures and generated artifacts may contain private documents.
+test-images/

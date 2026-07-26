@@ -55,6 +55,16 @@ The APK will be generated at `android-app/build/outputs/apk/debug/android-app-de
 
 Output artifacts (boundary overlay, crop, magic filter, PDF) will be written to `test-images/output/`.
 
+To run the shared ID-card detector and front/back sheet generator against matching
+`card_test*_front.jpg` and `card_test*_back.jpg` fixtures:
+
+```powershell
+.\gradlew.bat :desktop-tester:runIdCard
+```
+
+The edge overlays, rectangular crops, rounded crops, combined sheets, and PDFs are written to
+`test-images/output/id-cards/`.
+
 ### 3. Run Unit Tests
 
 ```powershell

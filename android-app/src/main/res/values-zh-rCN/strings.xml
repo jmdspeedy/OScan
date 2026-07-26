@@ -600,4 +600,10 @@
     <plurals name="plural_trash_items">
         <item quantity="other">回收站中包含 %1$d 个项目</item>
     </plurals>
+    <string name="id_card_front">正面</string>
+    <string name="id_card_back">背面</string>
+    <string name="id_card_place_side">%1$s：请将卡片放入轮廓内</string>
+    <string name="id_card_adjust_both">调整两面</string>
+    <string name="id_card_adjust_announcement">身份证正反面已可调整</string>
+    <string name="id_card_reset_both">重置两面的卡片轮廓</string>
 </resources>

@@ -132,6 +132,7 @@ fun ScannerApp(
     BackHandler(enabled = state !is ScannerUiState.Empty) {
         when (state) {
             is ScannerUiState.CropReady -> if (hasAcceptedPages) viewModel.showReview() else requestDiscard()
+            is ScannerUiState.IdCardAdjust -> requestDiscard()
             is ScannerUiState.Review -> requestDiscard()
             is ScannerUiState.PreviewReady -> viewModel.onBackToCrop()
             is ScannerUiState.SaveDocument -> viewModel.showReview()
@@ -155,6 +156,7 @@ fun ScannerApp(
 
             val title = when (state) {
                 is ScannerUiState.CropReady -> stringResource(R.string.scanner_adjust_edges)
+                is ScannerUiState.IdCardAdjust -> stringResource(R.string.id_card_adjust_both)
                 is ScannerUiState.PreviewReady -> stringResource(R.string.scanner_enhance_page)
                 is ScannerUiState.Review -> stringResource(R.string.scanner_review_pages)
                 is ScannerUiState.SaveDocument -> stringResource(R.string.scanner_save_document)
@@ -167,7 +169,7 @@ fun ScannerApp(
             TopAppBar(
                 title = { Text(title) },
                 navigationIcon = {
-                    if (state is ScannerUiState.CropReady || state is ScannerUiState.PreviewReady ||
+                    if (state is ScannerUiState.CropReady || state is ScannerUiState.IdCardAdjust || state is ScannerUiState.PreviewReady ||
                         state is ScannerUiState.Review || state is ScannerUiState.SaveDocument
                     ) {
                         IconButton(onClick = {
@@ -175,6 +177,7 @@ fun ScannerApp(
                                 is ScannerUiState.PreviewReady -> viewModel.onBackToCrop()
                                 is ScannerUiState.SaveDocument -> viewModel.showReview()
                                 is ScannerUiState.CropReady -> if (hasAcceptedPages) viewModel.showReview() else requestDiscard()
+                                is ScannerUiState.IdCardAdjust -> requestDiscard()
                                 else -> requestDiscard()
                             }
                         }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back_button)) }
@@ -189,6 +192,14 @@ fun ScannerApp(
                             onClick = viewModel::onCropConfirmed,
                             enabled = state.isValidGeometry
                         ) { Text(stringResource(R.string.action_done), fontWeight = FontWeight.SemiBold) }
+                    } else if (state is ScannerUiState.IdCardAdjust) {
+                        IconButton(onClick = viewModel::resetIdCardCorners) {
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.id_card_reset_both))
+                        }
+                        TextButton(
+                            onClick = viewModel::confirmIdCardAdjustment,
+                            enabled = state.isFrontValid && state.isBackValid
+                        ) { Text(stringResource(R.string.action_done), fontWeight = FontWeight.SemiBold) }
                     }
                 }
             )
@@ -198,6 +209,7 @@ fun ScannerApp(
             val announcement = when (state) {
                 ScannerUiState.LoadingSession -> stringResource(R.string.scanner_restoring)
                 is ScannerUiState.CropReady -> stringResource(R.string.scanner_crop_ready)
+                is ScannerUiState.IdCardAdjust -> stringResource(R.string.id_card_adjust_announcement)
                 is ScannerUiState.Processing -> localizedRuntimeMessage(state.message)
                 is ScannerUiState.PreviewReady -> stringResource(R.string.scanner_processing_complete)
                 is ScannerUiState.Review -> stringResource(R.string.scanner_review_ready, state.session.acceptedPages.size)
@@ -231,6 +243,10 @@ fun ScannerApp(
                         onCornerMoved = viewModel::onCornerMoved
                     )
                 }
+                is ScannerUiState.IdCardAdjust -> IdCardAdjustmentScreen(
+                    state = state,
+                    onCornerMoved = viewModel::onIdCardCornerMoved
+                )
                 is ScannerUiState.PreviewReady -> Column(Modifier.fillMaxSize()) {
                     SessionPositionHeader(state.session, state.page.position, state.croppedBitmap)
                     PreviewScreen(
@@ -490,6 +506,7 @@ private fun ErrorState(message: String, onDismiss: () -> Unit) {
 private fun ScannerUiState.sessionOrNull(): ScanSession? = when (this) {
     is ScannerUiState.Importing -> session
     is ScannerUiState.CropReady -> session
+    is ScannerUiState.IdCardAdjust -> session
     is ScannerUiState.Processing -> session
     is ScannerUiState.PreviewReady -> session
     is ScannerUiState.Review -> session
