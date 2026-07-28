@@ -76,8 +76,11 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.oscan.android.data.model.DocumentId
+import com.oscan.android.data.model.Folder
 import com.oscan.android.data.model.FolderId
 import com.oscan.android.data.session.ScanSession
+import com.oscan.android.data.session.SessionPage
 import com.oscan.android.data.session.SessionPageStatus
 import com.oscan.android.data.storage.DocumentFileStore
 
@@ -652,6 +655,59 @@ private fun ErrorState(message: String, onDismiss: () -> Unit) {
         Spacer(Modifier.height(24.dp))
         Button(onClick = onDismiss) { Text(stringResource(R.string.action_ok)) }
     }
+}
+
+private fun previewScanSession(): ScanSession {
+    val pages = listOf(
+        SessionPage(id = "preview-1", position = 0, status = SessionPageStatus.ACCEPTED),
+        SessionPage(id = "preview-2", position = 1, status = SessionPageStatus.ACCEPTED)
+    )
+    return ScanSession(id = "preview-session", pages = pages, documentName = "July expense report")
+}
+
+@OScanPagePreview
+@Composable
+internal fun ScanReviewPagePreview() = com.oscan.android.ui.theme.OScanTheme {
+    val session = previewScanSession()
+    SessionReviewScreen(
+        state = ScannerUiState.Review(
+            session,
+            session.pages.map { page ->
+                SessionPageSummary(page.id, page.position, page.status, null, null, true)
+            }
+        ),
+        onOpen = {}, onRetry = {}, onReplace = {}, onRemove = {}, onMove = { _, _ -> }, onAdd = {}, onFinish = {}
+    )
+}
+
+@OScanPagePreview
+@Composable
+internal fun SaveDocumentPagePreview() = com.oscan.android.ui.theme.OScanTheme {
+    SaveDocumentScreen(
+        state = ScannerUiState.SaveDocument(
+            previewScanSession(),
+            listOf(Folder(FolderId("preview-folder"), "Receipts", java.time.Instant.now(), java.time.Instant.now()))
+        ),
+        onNameChanged = {}, onFolderSelected = {}, onSave = {}
+    )
+}
+
+@OScanPagePreview
+@Composable
+internal fun SavedDocumentPagePreview() = com.oscan.android.ui.theme.OScanTheme {
+    SavedDocumentScreen(ScannerUiState.Saved(DocumentId("preview-document"), "July expense report", 2), {}, {})
+}
+
+@OScanPagePreview
+@Composable
+internal fun ScannerProgressPagePreview() = com.oscan.android.ui.theme.OScanTheme {
+    ProgressState("Enhancing page 2 of 3…")
+}
+
+@OScanPagePreview
+@Composable
+internal fun ScannerErrorPagePreview() = com.oscan.android.ui.theme.OScanTheme {
+    ErrorState("This image could not be processed.", {})
 }
 
 private fun ScannerUiState.sessionOrNull(): ScanSession? = when (this) {

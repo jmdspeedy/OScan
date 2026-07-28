@@ -1110,3 +1110,33 @@ private fun MeSettingRow(
         }
     }
 }
+
+@OScanPagePreview
+@Composable
+internal fun HomeEmptyPagePreview() = com.oscan.android.ui.theme.OScanTheme {
+    EmptyHomeScreen(onScanDocument = {})
+}
+
+@OScanPagePreview
+@Composable
+internal fun ScanEntryPagePreview() = com.oscan.android.ui.theme.OScanTheme {
+    ScanEntryScreen(onOpenCamera = {}, onImportImages = {})
+}
+
+@OScanPagePreview
+@Composable
+internal fun ProfileAndSettingsPagePreview() = com.oscan.android.ui.theme.OScanTheme {
+    MeScreen(
+        scrollState = rememberScrollState(),
+        userPreferences = com.oscan.android.data.preferences.UserPreferences(displayName = "Local Workspace"),
+        appLocaleController = null,
+        trashCount = 2,
+        foldersCount = 4,
+        onOpenFolders = {},
+        onOpenTrash = {},
+        vaultAvailable = true,
+        onOpenSubRoute = {},
+        onUpdateDisplayName = {},
+        onUpdateAvatarPreset = {}
+    )
+}
