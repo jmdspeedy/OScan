@@ -41,7 +41,6 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
@@ -236,7 +235,6 @@ fun OScanAppShell(
                 onBack = { activeSubRoute = SettingsSubRoute.NONE }
             )
             SettingsSubRoute.PRIVACY -> PrivacyScreen(onBack = { activeSubRoute = SettingsSubRoute.NONE })
-            SettingsSubRoute.HELP -> HelpScreen(onBack = { activeSubRoute = SettingsSubRoute.NONE })
             SettingsSubRoute.ABOUT -> AboutScreen(onBack = { activeSubRoute = SettingsSubRoute.NONE })
             SettingsSubRoute.DEVELOPER -> DeveloperScreen(onBack = { activeSubRoute = SettingsSubRoute.NONE })
             SettingsSubRoute.VAULT -> vaultViewModel?.let {
@@ -825,7 +823,7 @@ private fun DestinationTopAppBar(
 }
 
 private enum class SettingsSubRoute {
-    NONE, CAPTURE, ENHANCEMENT, APPEARANCE, LANGUAGE, STORAGE, PRIVACY, HELP, ABOUT, DEVELOPER, VAULT
+    NONE, CAPTURE, ENHANCEMENT, APPEARANCE, LANGUAGE, STORAGE, PRIVACY, ABOUT, DEVELOPER, VAULT
 }
 
 @Composable
@@ -1025,7 +1023,6 @@ private fun MeScreen(
             Spacer(Modifier.height(8.dp))
 
             MeSettingRow(stringResource(R.string.privacy_title), stringResource(R.string.settings_privacy_row_desc), Icons.Default.PrivacyTip) { onOpenSubRoute(SettingsSubRoute.PRIVACY) }
-            MeSettingRow(stringResource(R.string.help_title), stringResource(R.string.settings_help_row_desc), Icons.Default.HelpOutline) { onOpenSubRoute(SettingsSubRoute.HELP) }
             MeSettingRow(stringResource(R.string.about_title), stringResource(R.string.settings_about_row_desc, versionName), Icons.Default.Info) { onOpenSubRoute(SettingsSubRoute.ABOUT) }
             MeSettingRow(stringResource(R.string.developer_title), stringResource(R.string.developer_row_desc), Icons.Default.Person) { onOpenSubRoute(SettingsSubRoute.DEVELOPER) }
         }

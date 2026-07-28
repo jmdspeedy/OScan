@@ -9,6 +9,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,10 +27,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material3.AlertDialog
@@ -62,9 +62,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -87,8 +95,12 @@ fun ScannerApp(
     onSecureWindowChanged: ((Boolean) -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val cameraUiState by cameraViewModel.uiState.collectAsState()
+    val libraryUiState by libraryViewModel.uiState.collectAsState()
     var replacementPageId by rememberSaveable { mutableStateOf<String?>(null) }
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
+    var showAddPagesDialog by rememberSaveable { mutableStateOf(false) }
+    var addingPageWithCamera by rememberSaveable { mutableStateOf(false) }
     val captureState by viewModel.cameraCaptureState.collectAsState()
 
     DisposableEffect(viewModel) {
@@ -139,13 +151,59 @@ fun ScannerApp(
     val session = state.sessionOrNull()
     val hasAcceptedPages = session?.acceptedPages?.isNotEmpty() == true
 
+    if (addingPageWithCamera) {
+        val cameraIsBusy = cameraUiState.isCapturing || captureState.isProcessing
+        val finishAdditionalCapture = {
+            if (!cameraIsBusy) {
+                addingPageWithCamera = false
+                viewModel.finishAdditionalCameraCapture()
+            }
+        }
+        BackHandler { finishAdditionalCapture() }
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.action_take_picture)) },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = finishAdditionalCapture,
+                            enabled = !cameraIsBusy
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.cd_back_button)
+                            )
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Box(Modifier.fillMaxSize().padding(padding)) {
+                LiveCameraScreen(
+                    cameraViewModel = cameraViewModel,
+                    captureState = captureState,
+                    onCaptured = viewModel::onCameraCaptured,
+                    onDone = finishAdditionalCapture,
+                    onAbandonIncompleteIdCard = {},
+                    onImport = {},
+                    shutterFeedbackEnabled = libraryUiState.userPreferences.shutterFeedback,
+                    allowModeSelection = false,
+                    showImport = false
+                )
+            }
+        }
+        return
+    }
+
     fun requestDiscard() {
         if (hasAcceptedPages) showDiscardDialog = true else viewModel.discardSession()
     }
 
     BackHandler(enabled = state !is ScannerUiState.Empty && state !is ScannerUiState.PreviewReady) {
         when (state) {
-            is ScannerUiState.CropReady -> if (hasAcceptedPages) viewModel.showReview() else requestDiscard()
+            is ScannerUiState.CropReady -> if (hasAcceptedPages) {
+                if (!viewModel.discardPendingAddedPage()) viewModel.showReview()
+            } else requestDiscard()
             is ScannerUiState.IdCardAdjust -> requestDiscard()
             is ScannerUiState.Review -> requestDiscard()
             is ScannerUiState.SaveDocument -> viewModel.showReview()
@@ -196,7 +254,9 @@ fun ScannerApp(
                             when (state) {
                                 is ScannerUiState.PreviewReady -> viewModel.onBackToCrop()
                                 is ScannerUiState.SaveDocument -> viewModel.showReview()
-                                is ScannerUiState.CropReady -> if (hasAcceptedPages) viewModel.showReview() else requestDiscard()
+                                is ScannerUiState.CropReady -> if (hasAcceptedPages) {
+                                    if (!viewModel.discardPendingAddedPage()) viewModel.showReview()
+                                } else requestDiscard()
                                 is ScannerUiState.IdCardAdjust -> requestDiscard()
                                 else -> requestDiscard()
                             }
@@ -284,7 +344,7 @@ fun ScannerApp(
                     onReplace = launchReplacement,
                     onRemove = viewModel::removePage,
                     onMove = viewModel::movePage,
-                    onAdd = launchMultiplePicker,
+                    onAdd = { showAddPagesDialog = true },
                     onFinish = viewModel::beginFinish
                 )
                 is ScannerUiState.SaveDocument -> SaveDocumentScreen(
@@ -304,6 +364,27 @@ fun ScannerApp(
                 is ScannerUiState.Error -> ErrorState(localizedRuntimeMessage(state.message), viewModel::dismissError)
             }
         }
+    }
+
+    if (showAddPagesDialog && state is ScannerUiState.Review) {
+        AlertDialog(
+            onDismissRequest = { showAddPagesDialog = false },
+            title = { Text(stringResource(R.string.action_add_pages)) },
+            text = { Text(stringResource(R.string.dialog_add_pages_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showAddPagesDialog = false
+                    viewModel.beginAdditionalCameraCapture()
+                    addingPageWithCamera = true
+                }) { Text(stringResource(R.string.action_take_picture)) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showAddPagesDialog = false
+                    launchMultiplePicker()
+                }) { Text(stringResource(R.string.action_import_images)) }
+            }
+        )
     }
 }
 
@@ -336,6 +417,7 @@ private fun SessionReviewScreen(
     onFinish: () -> Unit
 ) {
     val pending = state.pages.any { it.status == SessionPageStatus.CROP_REVIEW || it.status == SessionPageStatus.TREATMENT_REVIEW }
+    val haptics = LocalHapticFeedback.current
     Column(Modifier.fillMaxSize()) {
         Text(
             stringResource(R.string.scanner_review_count, state.session.acceptedPages.size, state.pages.size),
@@ -344,8 +426,15 @@ private fun SessionReviewScreen(
         )
         LazyColumn(Modifier.weight(1f)) {
             items(state.pages, key = SessionPageSummary::id) { page ->
+                var rowHeightPx by remember(page.id) { mutableStateOf(1) }
+                val moveUpLabel = stringResource(R.string.cd_move_page_up)
+                val moveDownLabel = stringResource(R.string.cd_move_page_down)
+                val reorderDescription = stringResource(R.string.cd_drag_to_reorder_page, page.position + 1)
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .onSizeChanged { rowHeightPx = it.height.coerceAtLeast(1) }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (page.thumbnail != null) {
@@ -388,13 +477,55 @@ private fun SessionReviewScreen(
                             TextButton(onClick = { onRemove(page.id) }) { Text(stringResource(R.string.action_remove)) }
                         }
                     }
-                    Column {
-                        IconButton(onClick = { onMove(page.id, -1) }, enabled = page.position > 0) {
-                            Icon(Icons.Default.ArrowUpward, stringResource(R.string.cd_move_page_up))
-                        }
-                        IconButton(onClick = { onMove(page.id, 1) }, enabled = page.position < state.pages.lastIndex) {
-                            Icon(Icons.Default.ArrowDownward, stringResource(R.string.cd_move_page_down))
-                        }
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .semantics {
+                                contentDescription = reorderDescription
+                                role = Role.Button
+                                customActions = buildList {
+                                    if (page.position > 0) {
+                                        add(CustomAccessibilityAction(moveUpLabel) {
+                                            onMove(page.id, -1)
+                                            true
+                                        })
+                                    }
+                                    if (page.position < state.pages.lastIndex) {
+                                        add(CustomAccessibilityAction(moveDownLabel) {
+                                            onMove(page.id, 1)
+                                            true
+                                        })
+                                    }
+                                }
+                            }
+                            .pointerInput(page.id, rowHeightPx) {
+                                var accumulatedDragY = 0f
+                                detectDragGesturesAfterLongPress(
+                                    onDragStart = {
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    },
+                                    onDragCancel = { accumulatedDragY = 0f },
+                                    onDragEnd = { accumulatedDragY = 0f },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        accumulatedDragY += dragAmount.y
+                                        val threshold = (rowHeightPx * 0.45f).coerceAtLeast(1f)
+                                        while (accumulatedDragY >= threshold) {
+                                            onMove(page.id, 1)
+                                            accumulatedDragY -= threshold
+                                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        }
+                                        while (accumulatedDragY <= -threshold) {
+                                            onMove(page.id, -1)
+                                            accumulatedDragY += threshold
+                                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        }
+                                    }
+                                )
+                            }
+                    ) {
+                        Icon(Icons.Default.DragHandle, contentDescription = null)
                     }
                 }
                 HorizontalDivider()

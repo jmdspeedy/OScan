@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
@@ -791,53 +790,6 @@ fun PrivacyScreen(onBack: () -> Unit) {
                 stringResource(R.string.privacy_sharing_body),
                 style = MaterialTheme.typography.bodyMedium
             )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HelpScreen(onBack: () -> Unit) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.help_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back_button))
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            HelpTopic(stringResource(R.string.help_camera_title), stringResource(R.string.help_camera_body))
-            HelpTopic(stringResource(R.string.help_corners_title), stringResource(R.string.help_corners_body))
-            HelpTopic(stringResource(R.string.help_treatment_title), stringResource(R.string.help_treatment_body))
-            HelpTopic(stringResource(R.string.help_multipage_title), stringResource(R.string.help_multipage_body))
-            HelpTopic(stringResource(R.string.help_folders_title), stringResource(R.string.help_folders_body))
-            HelpTopic(stringResource(R.string.help_export_title), stringResource(R.string.help_export_body))
-        }
-    }
-}
-
-@Composable
-private fun HelpTopic(title: String, body: String) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(4.dp))
-            Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

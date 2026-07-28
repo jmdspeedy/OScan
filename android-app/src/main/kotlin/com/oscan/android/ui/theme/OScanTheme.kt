@@ -324,7 +324,7 @@ fun OScanTheme(
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.surface.toArgb()
-            window.navigationBarColor = android.graphics.Color.TRANSPARENT
+            window.navigationBarColor = colorScheme.surface.toArgb()
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                 window.isNavigationBarContrastEnforced = false
                 window.isStatusBarContrastEnforced = false

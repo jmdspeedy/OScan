@@ -3,9 +3,15 @@ package com.oscan.android.ui
 import com.oscan.android.R
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
 import android.media.MediaActionSound
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
@@ -91,6 +97,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.core.app.ActivityCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import java.io.File
 import kotlin.math.hypot
 import kotlinx.coroutines.delay
@@ -122,16 +131,33 @@ fun LiveCameraScreen(
     onDone: () -> Unit,
     onAbandonIncompleteIdCard: () -> Unit,
     onImport: () -> Unit,
-    shutterFeedbackEnabled: Boolean = true
+    shutterFeedbackEnabled: Boolean = true,
+    allowModeSelection: Boolean = true,
+    showImport: Boolean = true
 ) {
     val context = LocalContext.current
     var permissionGranted by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
     }
-    var permissionRequested by remember { mutableStateOf(false) }
+    var permissionRequested by rememberSaveable { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         permissionRequested = true
         permissionGranted = granted
+    }
+    val requestCameraPermission = {
+        val activity = context.findActivity()
+        val canRequestInApp = !permissionRequested || activity == null ||
+            ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)
+        if (canRequestInApp) {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        } else {
+            context.startActivity(
+                Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", context.packageName, null)
+                )
+            )
+        }
     }
 
 
@@ -149,6 +175,18 @@ fun LiveCameraScreen(
     var captureFeedbackEvent by remember { mutableIntStateOf(0) }
     val captureFlashAlpha = remember { Animatable(0f) }
     val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                permissionGranted = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.CAMERA
+                ) == PackageManager.PERMISSION_GRANTED
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     val orientation = LocalConfiguration.current.orientation
     val compactControls = orientation == Configuration.ORIENTATION_LANDSCAPE
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
@@ -233,8 +271,7 @@ fun LiveCameraScreen(
             }
         } else {
             CameraPermissionCard(
-                denied = permissionRequested,
-                onRequest = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                onRequest = requestCameraPermission,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(bottom = if (compactControls) 76.dp else 100.dp)
@@ -283,7 +320,7 @@ fun LiveCameraScreen(
                 captureState.capturedCount < if (selectedMode == CameraScanMode.IdCard) 2 else 1,
             onCapture = {
                 if (!permissionGranted) {
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                    requestCameraPermission()
                 } else {
                     val temp = File.createTempFile("capture-", ".jpg", context.cacheDir)
                     cameraViewModel.capture(temp) { capturedFile ->
@@ -299,6 +336,7 @@ fun LiveCameraScreen(
                 }
             },
             onImport = onImport,
+            showImport = showImport && selectedMode == CameraScanMode.Document,
             selectedMode = selectedMode,
             onModeChanged = { mode ->
                 if (mode != selectedMode) {
@@ -306,7 +344,7 @@ fun LiveCameraScreen(
                     selectedMode = mode
                 }
             },
-            modeEnabled = true
+            modeEnabled = allowModeSelection
         )
 
         if (permissionGranted && state.isStarting) {
@@ -319,7 +357,9 @@ fun LiveCameraScreen(
             ) {
                 Text(state.errorMessage ?: stringResource(R.string.error_camera_unavailable), color = Color.White)
                 Spacer(Modifier.height(16.dp))
-                OutlinedButton(onClick = onImport) { Text(stringResource(R.string.action_import_images), color = Color.White) }
+                if (showImport && selectedMode == CameraScanMode.Document) {
+                    OutlinedButton(onClick = onImport) { Text(stringResource(R.string.action_import_images), color = Color.White) }
+                }
             }
         }
     }
@@ -357,6 +397,7 @@ internal fun CameraTransitionPreview() {
             captureEnabled = false,
             onCapture = {},
             onImport = {},
+            showImport = true,
             selectedMode = CameraScanMode.Document,
             onModeChanged = {},
             modeEnabled = false
@@ -539,6 +580,7 @@ private fun BoxScope.CameraControlDock(
     captureEnabled: Boolean,
     onCapture: () -> Unit,
     onImport: () -> Unit,
+    showImport: Boolean,
     selectedMode: CameraScanMode,
     onModeChanged: (CameraScanMode) -> Unit,
     modeEnabled: Boolean
@@ -550,6 +592,7 @@ private fun BoxScope.CameraControlDock(
         captureEnabled = captureEnabled,
         onCapture = onCapture,
         onImport = onImport,
+        showImport = showImport,
         selectedMode = selectedMode,
         onModeChanged = onModeChanged,
         modeEnabled = modeEnabled,
@@ -654,6 +697,7 @@ private fun CaptureDock(
     captureEnabled: Boolean,
     onCapture: () -> Unit,
     onImport: () -> Unit,
+    showImport: Boolean,
     selectedMode: CameraScanMode,
     onModeChanged: (CameraScanMode) -> Unit,
     modeEnabled: Boolean,
@@ -700,7 +744,7 @@ private fun CaptureDock(
             drawPath(path, chrome.onPanel.copy(alpha = .14f), style = Stroke(1.dp.toPx()))
         }
 
-        if (selectedMode == CameraScanMode.Document) {
+        if (showImport) {
             Surface(
                 onClick = onImport,
                 color = chrome.onPanel.copy(alpha = .09f),
@@ -768,7 +812,6 @@ private fun CaptureDock(
 
 @Composable
 private fun CameraPermissionCard(
-    denied: Boolean,
     onRequest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -804,7 +847,7 @@ private fun CameraPermissionCard(
                 }
                 Spacer(Modifier.height(20.dp))
                 Text(
-                    text = if (denied) stringResource(R.string.camera_access_off) else stringResource(R.string.camera_allow_access),
+                    text = stringResource(R.string.camera_allow_access),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -812,8 +855,7 @@ private fun CameraPermissionCard(
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = if (denied) stringResource(R.string.camera_permission_denied_body)
-                    else stringResource(R.string.camera_permission_body),
+                    text = stringResource(R.string.camera_permission_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -831,13 +873,20 @@ private fun CameraPermissionCard(
                     )
                 ) {
                     Text(
-                        text = if (denied) stringResource(R.string.action_try_again) else stringResource(R.string.action_continue),
+                        text = stringResource(R.string.action_continue),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
                 }
             }
         }
     }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

@@ -228,6 +228,7 @@
     <string name="action_discard">Discard</string>
     <string name="action_keep_editing">Keep editing</string>
     <string name="action_open_camera">Open camera</string>
+    <string name="action_take_picture">Take picture</string>
     <string name="action_import_images">Import images</string>
     <string name="action_scan_document">Scan document</string>
     <string name="action_add_pages">Add pages</string>
@@ -280,7 +281,6 @@
     <string name="privacy_local_offline">100% local and offline</string>
     <string name="privacy_no_accounts">No accounts or cloud dependencies</string>
     <string name="privacy_explicit_sharing">Explicit system sharing</string>
-    <string name="help_title">Help &amp; user guide</string>
     <string name="about_title">About OScan</string>
     <string name="about_github">View app repository (GitHub)</string>
     <string name="developer_title">Developer</string>
@@ -349,7 +349,7 @@
     <string name="vault_settings_title">Vault</string>
     <string name="vault_settings_row_desc">Manage vault security</string>
     <string name="vault_not_configured_title">Vault is not set up</string>
-    <string name="vault_not_configured_body">Create your Vault from the library before managing its security settings.</string>
+    <string name="vault_not_configured_body">Vault keeps sensitive documents encrypted on this device and protected by a passcode. It has not been set up yet. Would you like to set it up now?</string>
     <string name="vault_forgot_passcode_settings_desc">Permanently delete the Vault without a passcode</string>
     <string name="vault_fingerprint_passcode_prompt">Enter your Vault passcode to enable fingerprint unlock.</string>
     <string name="vault_reset_final_title">Final confirmation</string>
@@ -420,18 +420,6 @@
     <string name="privacy_local_body">OScan is a local-first document manager. Edge detection, perspective correction, image enhancement, and PDF generation run entirely on this Android device.</string>
     <string name="privacy_accounts_body">OScan has no user accounts, remote sync, analytics, background reporting, or advertisements. Document data leaves the device only when you explicitly share it.</string>
     <string name="privacy_sharing_body">When you share a PDF, OScan uses the standard Android share sheet. You control where and with whom files are shared.</string>
-    <string name="help_camera_title">Camera &amp; import</string>
-    <string name="help_camera_body">Point the camera at a paper document or import existing photos. OScan identifies document corners and outlines the scan region.</string>
-    <string name="help_corners_title">Adjusting corners</string>
-    <string name="help_corners_body">Drag the four boundary handles on the Crop screen to match the paper edges. Use Reset to restore the detected edges.</string>
-    <string name="help_treatment_title">Original vs Magic</string>
-    <string name="help_treatment_body">Choose Magic for clean, high-contrast document text or Original for unedited color photos.</string>
-    <string name="help_multipage_title">Multi-page scanning</string>
-    <string name="help_multipage_body">Capture or import multiple pages in one session. Reorder or replace pages before saving one local document.</string>
-    <string name="help_folders_title">Folders &amp; Trash</string>
-    <string name="help_folders_body">Organize documents in folders. Deleted documents move to Trash, where they can be restored or permanently removed.</string>
-    <string name="help_export_title">Exporting PDF</string>
-    <string name="help_export_body">Save multi-page documents as PDF files with your preferred page size and compression settings.</string>
     <string name="about_version">Version %1$s (Build %2$d)</string>
     <string name="about_tagline">Local-first document manager for Android</string>
     <string name="about_oss_title">Open-source libraries &amp; notices</string>
@@ -507,7 +495,6 @@
     <string name="settings_appearance_row_desc">Change the OScan theme</string>
     <string name="settings_storage_row_desc">Local usage summary and cache cleanup</string>
     <string name="settings_privacy_row_desc">100% local, without telemetry or accounts</string>
-    <string name="settings_help_row_desc">Scanning, crop adjustments, and multi-page editing</string>
     <string name="settings_about_row_desc">Version %1$s and open-source notices</string>
     <string name="camera_permission_denied_body">OScan needs camera access to scan documents.</string>
     <string name="camera_permission_body">Allow camera access to scan documents.</string>
@@ -600,6 +587,7 @@
     <string name="cd_page_thumbnail">Page %1$d thumbnail</string>
     <string name="cd_move_page_up">Move page up</string>
     <string name="cd_move_page_down">Move page down</string>
+    <string name="cd_drag_to_reorder_page">Drag to reorder page %1$d</string>
     <string name="action_saving">Saving…</string>
     <string name="editor_saving_updates">Saving page updates…</string>
     <string name="favorite">Favorite</string>

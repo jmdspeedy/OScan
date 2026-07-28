@@ -1118,6 +1118,41 @@ fun VaultTrashScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+private fun VaultNotConfiguredScreen(
+    onSetUpVault: () -> Unit,
+    onBack: () -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.vault_settings_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back_button)
+                        )
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            EmptyStateLayout(
+                icon = Icons.Default.Security,
+                title = stringResource(R.string.vault_not_configured_title),
+                supportingText = stringResource(R.string.vault_not_configured_body)
+            ) {
+                Button(onClick = onSetUpVault) {
+                    Text(stringResource(R.string.vault_setup_title))
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun VaultSettingsScreen(
     viewModel: VaultViewModel,
     onEnableBiometric: (String) -> Unit = {},
@@ -1139,8 +1174,6 @@ fun VaultSettingsScreen(
         }
     }
 
-    LaunchedEffect(Unit) { viewModel.refreshConfiguredState() }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -1160,14 +1193,6 @@ fun VaultSettingsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
-            if (!uiState.isConfigured) {
-                EmptyStateLayout(
-                    icon = Icons.Default.Security,
-                    title = stringResource(R.string.vault_not_configured_title),
-                    supportingText = stringResource(R.string.vault_not_configured_body)
-                ) {}
-                return@Column
-            }
             if (uiState.biometricSupported || uiState.biometricEnabled) {
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
@@ -1494,6 +1519,27 @@ fun VaultSettingsRoute(
     viewModel: VaultViewModel,
     onBack: () -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    var isSettingUp by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) { viewModel.refreshConfiguredState() }
+
+    if (!uiState.isConfigured || uiState.sessionState is VaultSessionState.NotConfigured) {
+        if (isSettingUp) {
+            VaultSetupScreen(
+                errorMessage = uiState.errorMessage,
+                onSetupCompleted = viewModel::setupVault,
+                onCancel = { isSettingUp = false }
+            )
+        } else {
+            VaultNotConfiguredScreen(
+                onSetUpVault = { isSettingUp = true },
+                onBack = onBack
+            )
+        }
+        return
+    }
+
     val launchBiometricPrompt = rememberVaultBiometricPrompt(viewModel)
     VaultSettingsScreen(
         viewModel = viewModel,

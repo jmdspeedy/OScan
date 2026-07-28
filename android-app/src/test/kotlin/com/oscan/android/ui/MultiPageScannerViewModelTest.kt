@@ -23,12 +23,16 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withTimeout
 import org.junit.runner.RunWith
 import org.opencv.core.Point
 import org.robolectric.RobolectricTestRunner
@@ -75,6 +79,118 @@ class MultiPageScannerViewModelTest {
         assertEquals(listOf(0, 1), state.session.pages.map { it.position })
         assertEquals(SessionPageStatus.CROP_REVIEW, state.session.pages[0].status)
         assertEquals(SessionPageStatus.FAILED, state.session.pages[1].status)
+    }
+
+    @Test
+    fun cancellingAdditionalCameraCaptureKeepsExistingReviewPages() {
+        val image = File(context.cacheDir, "existing-review-page.jpg").apply { writeText("good") }
+        val viewModel = ScannerViewModel(
+            scannerEngine = FakeScannerEngine(),
+            repository = EmptyRepository,
+            sessionStore = store,
+            contentResolver = context.contentResolver
+        )
+
+        viewModel.onImagesSelected(listOf(Uri.fromFile(image)))
+        viewModel.showReview()
+        val before = assertIs<ScannerUiState.Review>(viewModel.uiState.value)
+
+        viewModel.beginAdditionalCameraCapture()
+        assertEquals(0, viewModel.cameraCaptureState.value.capturedCount)
+        viewModel.finishAdditionalCameraCapture()
+
+        val after = assertIs<ScannerUiState.Review>(viewModel.uiState.value)
+        assertEquals(before.session.pages.map { it.id }, after.session.pages.map { it.id })
+        assertEquals(before.session.pages.map { it.position }, after.session.pages.map { it.position })
+    }
+
+    @Test
+    fun backingOutOfCapturedAdditionalPageDiscardsOnlyThatPage() {
+        val existing = File(context.cacheDir, "accepted-existing-page.jpg").apply { writeText("good") }
+        val additional = File(context.cacheDir, "pending-additional-page.jpg").apply { writeText("good") }
+        val viewModel = ScannerViewModel(
+            scannerEngine = FakeScannerEngine(),
+            repository = EmptyRepository,
+            sessionStore = store,
+            contentResolver = context.contentResolver
+        )
+
+        viewModel.onImagesSelected(listOf(Uri.fromFile(existing)))
+        dispatcher.scheduler.advanceUntilIdle()
+        viewModel.onCropConfirmed()
+        dispatcher.scheduler.advanceUntilIdle()
+        viewModel.acceptCurrentPage()
+        dispatcher.scheduler.advanceUntilIdle()
+        val before = assertIs<ScannerUiState.Review>(viewModel.uiState.value)
+
+        viewModel.beginAdditionalCameraCapture()
+        viewModel.onCameraCaptured(additional, CameraScanMode.Document)
+        runBlocking {
+            withTimeout(5_000) {
+                viewModel.cameraCaptureState.first { !it.isProcessing && it.capturedCount == 1 }
+            }
+        }
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.cameraCaptureState.value.capturedCount)
+        viewModel.finishAdditionalCameraCapture()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertIs<ScannerUiState.CropReady>(viewModel.uiState.value)
+        assertTrue(viewModel.discardPendingAddedPage())
+        val after = assertIs<ScannerUiState.Review>(viewModel.uiState.value)
+        assertEquals(before.session.pages.map { it.id }, after.session.pages.map { it.id })
+        assertEquals(listOf(SessionPageStatus.ACCEPTED), after.session.pages.map { it.status })
+    }
+
+    @Test
+    fun backingOutOfImportedAdditionalPageDiscardsOnlyThatPage() {
+        val existing = File(context.cacheDir, "accepted-before-import.jpg").apply { writeText("good") }
+        val additional = File(context.cacheDir, "pending-imported-page.jpg").apply { writeText("good") }
+        val viewModel = ScannerViewModel(
+            scannerEngine = FakeScannerEngine(),
+            repository = EmptyRepository,
+            sessionStore = store,
+            contentResolver = context.contentResolver
+        )
+
+        viewModel.onImagesSelected(listOf(Uri.fromFile(existing)))
+        dispatcher.scheduler.advanceUntilIdle()
+        viewModel.onCropConfirmed()
+        dispatcher.scheduler.advanceUntilIdle()
+        viewModel.acceptCurrentPage()
+        dispatcher.scheduler.advanceUntilIdle()
+        val before = assertIs<ScannerUiState.Review>(viewModel.uiState.value)
+
+        viewModel.onImagesSelected(listOf(Uri.fromFile(additional)))
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertIs<ScannerUiState.CropReady>(viewModel.uiState.value)
+        assertTrue(viewModel.discardPendingAddedPage())
+        val after = assertIs<ScannerUiState.Review>(viewModel.uiState.value)
+        assertEquals(before.session.pages.map { it.id }, after.session.pages.map { it.id })
+        assertEquals(listOf(SessionPageStatus.ACCEPTED), after.session.pages.map { it.status })
+    }
+
+    @Test
+    fun movingReviewPageUpdatesOrderAndPositions() {
+        val first = File(context.cacheDir, "reorder-first.jpg").apply { writeText("good") }
+        val second = File(context.cacheDir, "reorder-second.jpg").apply { writeText("good") }
+        val viewModel = ScannerViewModel(
+            scannerEngine = FakeScannerEngine(),
+            repository = EmptyRepository,
+            sessionStore = store,
+            contentResolver = context.contentResolver
+        )
+
+        viewModel.onImagesSelected(listOf(Uri.fromFile(first), Uri.fromFile(second)))
+        viewModel.showReview()
+        val before = assertIs<ScannerUiState.Review>(viewModel.uiState.value)
+
+        viewModel.movePage(before.pages[1].id, -1)
+
+        val after = assertIs<ScannerUiState.Review>(viewModel.uiState.value)
+        assertEquals(before.pages.map { it.id }.reversed(), after.pages.map { it.id })
+        assertEquals(listOf(0, 1), after.pages.map { it.position })
     }
 
     private class FakeScannerEngine : ScannerEngine {

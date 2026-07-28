@@ -107,6 +107,8 @@ class ScannerViewModel(
     private var activeCameraImportJob: Job? = null
     private val cameraDetectionMutex = Mutex()
     private var pendingIdCardAdjustment: ScannerUiState.IdCardAdjust? = null
+    private var additionalCameraCaptureActive = false
+    private val pendingAddedPageIds = mutableSetOf<String>()
 
     init {
         session?.let { restored ->
@@ -121,6 +123,8 @@ class ScannerViewModel(
     fun onImagesSelected(uris: List<Uri>) {
         if (uris.isEmpty()) return
         viewModelScope.launch {
+            val isAddingToExistingReview = _uiState.value is ScannerUiState.Review &&
+                session?.acceptedPages?.isNotEmpty() == true
             val draft = session ?: sessionStore.create().also { session = it }
             val startPosition = draft.pages.size
             val placeholders = uris.mapIndexed { index, _ ->
@@ -130,6 +134,7 @@ class ScannerViewModel(
                     status = SessionPageStatus.IMPORTING
                 )
             }
+            if (isAddingToExistingReview) pendingAddedPageIds.addAll(placeholders.map(SessionPage::id))
             updateSession(draft.copy(pages = draft.pages + placeholders))
             uris.forEachIndexed { index, uri ->
                 _uiState.value = ScannerUiState.Importing(index, uris.size, requireSession())
@@ -145,6 +150,7 @@ class ScannerViewModel(
 
     /** Copies a CameraX output into durable session storage before deleting the transient file. */
     fun onCameraCaptured(file: File, mode: CameraScanMode) {
+        val captureNumber = _cameraCaptureState.value.capturedCount + 1
         activeCameraImports++
         _cameraCaptureState.value = _cameraCaptureState.value.copy(
             isProcessing = true,
@@ -158,6 +164,7 @@ class ScannerViewModel(
                 position = draft.pages.size,
                 status = SessionPageStatus.IMPORTING
             )
+            if (additionalCameraCaptureActive) pendingAddedPageIds.add(page.id)
             updateSession(draft.copy(pages = draft.pages + page))
             try {
                 val sourcePath = withContext(Dispatchers.IO) {
@@ -169,14 +176,13 @@ class ScannerViewModel(
                     it.copy(status = SessionPageStatus.DETECTING, sourcePath = sourcePath, originalExtension = "jpg")
                 }
                 _cameraCaptureState.value = _cameraCaptureState.value.copy(
-                    capturedCount = requireSession().pages.count { it.sourcePath != null }
+                    capturedCount = maxOf(_cameraCaptureState.value.capturedCount, captureNumber)
                 )
                 cameraDetectionMutex.withLock {
                     if (mode == CameraScanMode.IdCard) prepareIdCardPage(page.id) else detectStoredPage(page.id)
                 }
                 val latest = requireSession().pages.first { it.id == page.id }
                 _cameraCaptureState.value = _cameraCaptureState.value.copy(
-                    capturedCount = requireSession().pages.count { it.sourcePath != null },
                     message = if (latest.status == SessionPageStatus.FAILED) "That photo could not be prepared. You can keep scanning." else null
                 )
             } catch (error: Throwable) {
@@ -213,6 +219,34 @@ class ScannerViewModel(
         }
         val first = draft.pages.sortedBy { it.position }.firstOrNull { it.status == SessionPageStatus.CROP_REVIEW }
         if (first != null) openPage(first.id) else showReview()
+    }
+
+    /** Starts a one-photo camera batch while preserving all pages already in review. */
+    fun beginAdditionalCameraCapture() {
+        if (_uiState.value !is ScannerUiState.Review || _cameraCaptureState.value.isProcessing) return
+        additionalCameraCaptureActive = true
+        _cameraCaptureState.value = CameraCaptureState(mode = CameraScanMode.Document)
+    }
+
+    /** Returns to review when cancelled, or opens the newly captured page when one exists. */
+    fun finishAdditionalCameraCapture() {
+        val capture = _cameraCaptureState.value
+        if (capture.isProcessing) return
+        if (capture.capturedCount > 0) {
+            finishCameraCapture()
+        } else {
+            showReview()
+        }
+        additionalCameraCaptureActive = false
+        _cameraCaptureState.value = CameraCaptureState()
+    }
+
+    /** Discards a newly captured add-page image when the user backs out before accepting it. */
+    fun discardPendingAddedPage(): Boolean {
+        val current = _uiState.value as? ScannerUiState.CropReady ?: return false
+        if (!pendingAddedPageIds.remove(current.page.id)) return false
+        removePage(current.page.id)
+        return true
     }
 
     private fun showIdCardAdjustment() {
@@ -456,6 +490,7 @@ class ScannerViewModel(
                 }
             }.onSuccess {
                 pendingIdCardAdjustment = null
+                pendingAddedPageIds.remove(current.page.id)
                 val pages = requireSession().pages.sortedBy { it.position }
                 val next = pages.firstOrNull { it.position > current.page.position && it.status == SessionPageStatus.CROP_REVIEW }
                     ?: pages.firstOrNull { it.status == SessionPageStatus.CROP_REVIEW }
@@ -485,6 +520,7 @@ class ScannerViewModel(
 
     fun removePage(pageId: String) {
         val draft = session ?: return
+        pendingAddedPageIds.remove(pageId)
         sessionStore.deletePage(draft.id, pageId)
         val pages = draft.pages.filterNot { it.id == pageId }.mapIndexed { index, page -> page.copy(position = index) }
         if (pages.isEmpty()) {
@@ -503,8 +539,20 @@ class ScannerViewModel(
         if (from < 0 || from == to) return
         val page = ordered.removeAt(from)
         ordered.add(to, page)
-        updateSession(draft.copy(pages = ordered.mapIndexed { index, item -> item.copy(position = index) }))
-        showReview()
+        val repositioned = ordered.mapIndexed { index, item -> item.copy(position = index) }
+        updateSession(draft.copy(pages = repositioned))
+        val currentReview = _uiState.value as? ScannerUiState.Review
+        if (currentReview != null) {
+            val summariesById = currentReview.pages.associateBy(SessionPageSummary::id)
+            _uiState.value = ScannerUiState.Review(
+                session = requireSession(),
+                pages = repositioned.map { item ->
+                    summariesById.getValue(item.id).copy(position = item.position)
+                }
+            )
+        } else {
+            showReview()
+        }
     }
 
     private var targetDocumentId: DocumentId? = null
@@ -621,6 +669,8 @@ class ScannerViewModel(
         session?.let { sessionStore.discard(it.id) }
         session = null
         pendingIdCardAdjustment = null
+        additionalCameraCaptureActive = false
+        pendingAddedPageIds.clear()
         activeCameraImportJob = null
         _uiState.value = ScannerUiState.Empty
         _cameraCaptureState.value = CameraCaptureState()
@@ -634,6 +684,8 @@ class ScannerViewModel(
     fun startAnother() {
         session = null
         pendingIdCardAdjustment = null
+        additionalCameraCaptureActive = false
+        pendingAddedPageIds.clear()
         _uiState.value = ScannerUiState.Empty
     }
 
