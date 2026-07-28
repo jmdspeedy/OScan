@@ -46,7 +46,6 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -714,7 +713,6 @@ fun VaultLibraryScreen(
     onMoveOutRequested: (VaultDocument) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var searchOpen by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val rawSnackbarMessage = uiState.errorMessage ?: uiState.infoMessage
     val snackbarMessage = rawSnackbarMessage?.let { localizedRuntimeMessage(it) }
@@ -740,9 +738,6 @@ fun VaultLibraryScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { searchOpen = !searchOpen }) {
-                        Icon(Icons.Default.Search, "Search Vault")
-                    }
                     IconButton(onClick = onOpenTrash) {
                         Icon(Icons.Default.Delete, "Vault Trash")
                     }
@@ -766,16 +761,14 @@ fun VaultLibraryScreen(
                 )
             }
 
-            if (searchOpen) {
-                OutlinedTextField(
-                    value = uiState.searchQuery,
-                    onValueChange = viewModel::setSearchQuery,
-                    placeholder = { Text(stringResource(R.string.vault_search_hint)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
+            OutlinedTextField(
+                value = uiState.searchQuery,
+                onValueChange = viewModel::setSearchQuery,
+                placeholder = { Text(stringResource(R.string.vault_search_hint)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            )
 
             val displayList = if (uiState.searchQuery.isNotBlank()) uiState.searchResults else uiState.documents
 
@@ -1191,12 +1184,15 @@ fun VaultSettingsScreen(
                         .padding(vertical = 4.dp)
                 ) {
                     Row(
-                        Modifier.padding(16.dp),
+                        Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(Icons.Default.Fingerprint, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(16.dp))
-                        Column(Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
                             Text(stringResource(R.string.vault_fingerprint_unlock), style = MaterialTheme.typography.titleMedium)
                             Text(
                                 if (uiState.biometricEnabled) {
@@ -1210,6 +1206,7 @@ fun VaultSettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        Spacer(Modifier.width(16.dp))
                         Switch(
                             checked = uiState.biometricEnabled,
                             enabled = uiState.biometricEnabled || uiState.biometricAvailable,

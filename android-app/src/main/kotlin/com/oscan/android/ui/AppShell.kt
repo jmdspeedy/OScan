@@ -171,6 +171,7 @@ fun OScanAppShell(
 
     val gridState = rememberLazyGridState()
     val listState = rememberLazyListState()
+    val meScrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val localizedMessage = state.message?.let { localizedRuntimeMessage(it) }
 
@@ -422,6 +423,7 @@ fun OScanAppShell(
                     fileStore = fileStore,
                     gridState = gridState,
                     listState = listState,
+                    meScrollState = meScrollState,
                     snackbarHostState = snackbarHostState,
                     onDestinationSelected = selectDestination,
                     onImportImages = onImportImages,
@@ -454,6 +456,7 @@ fun OScanAppShell(
                 fileStore = fileStore,
                 gridState = gridState,
                 listState = listState,
+                meScrollState = meScrollState,
                 snackbarHostState = snackbarHostState,
                 onDestinationSelected = selectDestination,
                 onImportImages = onImportImages,
@@ -554,6 +557,7 @@ private fun DestinationScaffold(
     fileStore: DocumentFileStore,
     gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
     listState: androidx.compose.foundation.lazy.LazyListState,
+    meScrollState: androidx.compose.foundation.ScrollState,
     snackbarHostState: SnackbarHostState,
     onDestinationSelected: (AppDestination) -> Unit,
     onImportImages: () -> Unit,
@@ -663,6 +667,7 @@ private fun DestinationScaffold(
                     }
                 }
                 AppDestination.Me -> MeScreen(
+                    scrollState = meScrollState,
                     userPreferences = state.userPreferences,
                     appLocaleController = appLocaleController,
                     trashCount = state.trashDocuments.size,
@@ -871,6 +876,7 @@ private fun ScanEntryScreen(onOpenCamera: () -> Unit, onImportImages: () -> Unit
 
 @Composable
 private fun MeScreen(
+    scrollState: androidx.compose.foundation.ScrollState,
     userPreferences: com.oscan.android.data.preferences.UserPreferences,
     appLocaleController: AppLocaleController?,
     trashCount: Int,
@@ -904,7 +910,7 @@ private fun MeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(androidx.compose.foundation.rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(horizontal = 24.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

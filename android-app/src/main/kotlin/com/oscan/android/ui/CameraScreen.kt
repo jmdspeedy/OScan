@@ -700,26 +700,28 @@ private fun CaptureDock(
             drawPath(path, chrome.onPanel.copy(alpha = .14f), style = Stroke(1.dp.toPx()))
         }
 
-        Surface(
-            onClick = onImport,
-            color = chrome.onPanel.copy(alpha = .09f),
-            shape = RoundedCornerShape(14.dp),
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(
-                    start = if (compact) 22.dp else 42.dp,
-                    bottom = if (compact) 6.dp else 12.dp
-                )
-                .size(sideControlSize)
-                .semantics { contentDescription = importDescription }
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    Icons.Default.PhotoLibrary,
-                    null,
-                    tint = chrome.onPanel,
-                    modifier = Modifier.size(if (compact) 20.dp else 26.dp)
-                )
+        if (selectedMode == CameraScanMode.Document) {
+            Surface(
+                onClick = onImport,
+                color = chrome.onPanel.copy(alpha = .09f),
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(
+                        start = if (compact) 22.dp else 42.dp,
+                        bottom = if (compact) 6.dp else 12.dp
+                    )
+                    .size(sideControlSize)
+                    .semantics { contentDescription = importDescription }
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.PhotoLibrary,
+                        null,
+                        tint = chrome.onPanel,
+                        modifier = Modifier.size(if (compact) 20.dp else 26.dp)
+                    )
+                }
             }
         }
 

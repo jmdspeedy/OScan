@@ -549,14 +549,9 @@ fun FolderOverviewScreen(
                 EmptyStateLayout(
                     icon = Icons.Default.Folder,
                     title = stringResource(R.string.folders_empty_title),
-                    supportingText = stringResource(R.string.folders_empty_body)
-                ) {
-                    Button(onClick = { createDialogOpen = true }) {
-                        Icon(Icons.Default.CreateNewFolder, null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.folder_create))
-                    }
-                }
+                    supportingText = stringResource(R.string.folders_empty_body),
+                    actions = {}
+                )
             } else {
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(160.dp),
