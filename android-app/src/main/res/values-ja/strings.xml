@@ -317,7 +317,8 @@
     <string name="vault_fingerprint_enable">指紋認証を有効にする</string>
     <string name="vault_setup_title">金庫を設定</string>
     <string name="vault_protect_sensitive">機密書類を保護</string>
-    <string name="vault_create_passcode">パスコードを作成（6～12桁）</string>
+    <string name="vault_create_passcode">6桁のパスコードを作成</string>
+    <string name="passcode_delete_digit">数字を削除</string>
     <string name="vault_create">金庫を作成</string>
     <string name="vault_locked_title">金庫はロックされています</string>
     <string name="vault_fingerprint_unlock">指紋でロック解除</string>
@@ -355,7 +356,7 @@
     <string name="vault_disable">金庫を無効にする</string>
     <string name="vault_disable_desc">書類をライブラリに移すか金庫を削除します</string>
     <string name="vault_current_passcode">現在のパスコード</string>
-    <string name="vault_new_passcode">新しいパスコード（6～12桁）</string>
+    <string name="vault_new_passcode">新しい6桁のパスコード</string>
     <string name="vault_confirm_new_passcode">新しいパスコードを確認</string>
     <string name="vault_change_passcode_action">パスコードを変更</string>
     <string name="vault_disable_prompt">金庫内の書類をどう処理するか選択してください：</string>
@@ -474,7 +475,7 @@
     <string name="vault_fingerprint_faster">指紋ですばやくロック解除</string>
     <string name="vault_fingerprint_body">指紋を主な解除方法として使用します。パスコードも引き続き使用できます。</string>
     <string name="vault_fingerprint_unavailable_body">この端末には強力な指紋が登録されていません。後で金庫の設定から有効にできます。</string>
-    <string name="vault_setup_body">金庫内の書類はこの端末上で暗号化されます。アクセスには6～12桁のパスコードが必要です。</string>
+    <string name="vault_setup_body">金庫内の書類はこの端末上で暗号化されます。アクセスには6桁のパスコードが必要です。</string>
     <string name="vault_recovery_ack">パスコードを忘れた場合、OScanが金庫内の書類を復元できないことを理解しました。</string>
     <string name="vault_unlock_body">暗号化された書類を表示するには金庫のパスコードを入力してください。</string>
     <string name="vault_lockout">失敗回数が多すぎます。%1$d秒後にもう一度お試しください。</string>

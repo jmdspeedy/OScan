@@ -83,8 +83,8 @@ object VaultCrypto {
     private val secureRandom = SecureRandom()
 
     fun validatePasscode(passcode: String): PasscodeValidationResult {
-        if (!passcode.matches(Regex("^\\d{6,12}$"))) {
-            return PasscodeValidationResult.Invalid("Passcode must be between 6 and 12 digits")
+        if (!passcode.matches(Regex("^\\d{6}$"))) {
+            return PasscodeValidationResult.Invalid("Passcode must be exactly 6 digits")
         }
         val firstChar = passcode[0]
         if (passcode.all { it == firstChar }) {

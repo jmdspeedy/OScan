@@ -317,7 +317,8 @@
     <string name="vault_fingerprint_enable">启用指纹解锁</string>
     <string name="vault_setup_title">设置保险箱</string>
     <string name="vault_protect_sensitive">保护敏感文档</string>
-    <string name="vault_create_passcode">创建密码（6–12 位数字）</string>
+    <string name="vault_create_passcode">创建 6 位数字密码</string>
+    <string name="passcode_delete_digit">删除数字</string>
     <string name="vault_create">创建保险箱</string>
     <string name="vault_locked_title">保险箱已锁定</string>
     <string name="vault_fingerprint_unlock">使用指纹解锁</string>
@@ -355,7 +356,7 @@
     <string name="vault_disable">停用保险箱</string>
     <string name="vault_disable_desc">将文档移至文档库或删除保险箱</string>
     <string name="vault_current_passcode">当前密码</string>
-    <string name="vault_new_passcode">新密码（6–12 位数字）</string>
+    <string name="vault_new_passcode">新的 6 位数字密码</string>
     <string name="vault_confirm_new_passcode">确认新密码</string>
     <string name="vault_change_passcode_action">更改密码</string>
     <string name="vault_disable_prompt">选择如何处理保险箱中的文档：</string>
@@ -474,7 +475,7 @@
     <string name="vault_fingerprint_faster">使用指纹更快解锁</string>
     <string name="vault_fingerprint_body">将指纹作为主要解锁方式。密码始终可作为备用方式。</string>
     <string name="vault_fingerprint_unavailable_body">此设备尚未录入高安全性指纹。您可稍后在保险箱设置中启用指纹解锁。</string>
-    <string name="vault_setup_body">保险箱中的文档在此设备上加密。访问需要 6–12 位数字密码。</string>
+    <string name="vault_setup_body">保险箱中的文档在此设备上加密。访问需要 6 位数字密码。</string>
     <string name="vault_recovery_ack">我明白，如果忘记密码，OScan 无法恢复保险箱中的文档。</string>
     <string name="vault_unlock_body">输入保险箱密码以查看加密文档。</string>
     <string name="vault_lockout">失败次数过多，请在 %1$d 秒后重试。</string>

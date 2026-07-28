@@ -8,6 +8,8 @@ import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,7 +31,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,6 +41,7 @@ import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
@@ -47,8 +51,6 @@ import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -57,6 +59,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -89,11 +92,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.oscan.android.data.vault.ActiveVaultKeys
 import com.oscan.android.data.vault.VaultDocument
@@ -107,10 +108,128 @@ import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.crypto.Cipher
+import kotlin.math.roundToInt
 
 private enum class BiometricAction {
     ENROLL,
     UNLOCK
+}
+
+private const val PASSCODE_LENGTH = 6
+
+@Composable
+private fun PasscodeEntry(
+    value: String,
+    label: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    biometricEnabled: Boolean = false,
+    onBiometricClick: () -> Unit = {},
+    incorrect: Boolean = false,
+    onIncorrectAnimationFinished: () -> Unit = {}
+) {
+    val shakeOffset = remember { Animatable(0f) }
+
+    LaunchedEffect(incorrect) {
+        if (incorrect) {
+            shakeOffset.snapTo(0f)
+            listOf(-22f, 22f, -16f, 16f, -8f, 8f, 0f).forEach { target ->
+                shakeOffset.animateTo(target, animationSpec = tween(durationMillis = 45))
+            }
+            onIncorrectAnimationFinished()
+        }
+    }
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        Text(label, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
+            modifier = Modifier.offset {
+                IntOffset(shakeOffset.value.roundToInt(), 0)
+            }
+        ) {
+            repeat(PASSCODE_LENGTH) { index ->
+                Surface(
+                    shape = CircleShape,
+                    color = if (index < value.length) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                ) {}
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            listOf(
+                listOf("1", "2", "3"),
+                listOf("4", "5", "6"),
+                listOf("7", "8", "9")
+            ).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    row.forEach { digit ->
+                        PasscodeKey(
+                            label = digit,
+                            enabled = enabled && value.length < PASSCODE_LENGTH,
+                            onClick = { onValueChange(value + digit) }
+                        )
+                    }
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                PasscodeIconKey(
+                    enabled = enabled && value.isNotEmpty(),
+                    onClick = { onValueChange(value.dropLast(1)) }
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Backspace,
+                        contentDescription = stringResource(R.string.passcode_delete_digit),
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+
+                PasscodeKey(
+                    label = "0",
+                    enabled = enabled && value.length < PASSCODE_LENGTH,
+                    onClick = { onValueChange(value + "0") }
+                )
+
+                if (biometricEnabled) {
+                    PasscodeIconKey(enabled = enabled, onClick = onBiometricClick) {
+                        Icon(
+                            Icons.Default.Fingerprint,
+                            contentDescription = stringResource(R.string.vault_fingerprint_unlock),
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
+                } else {
+                    Spacer(Modifier.size(72.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PasscodeKey(label: String, enabled: Boolean, onClick: () -> Unit) {
+    FilledTonalIconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(72.dp)) {
+        Text(label, style = MaterialTheme.typography.headlineSmall)
+    }
+}
+
+@Composable
+private fun PasscodeIconKey(
+    enabled: Boolean,
+    onClick: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    FilledTonalIconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(72.dp)) {
+        content()
+    }
 }
 
 @Composable
@@ -451,7 +570,7 @@ fun VaultSetupScreen(
 ) {
     var passcode by remember { mutableStateOf("") }
     var confirmPasscode by remember { mutableStateOf("") }
-    var showPasscode by remember { mutableStateOf(false) }
+    var confirmingPasscode by remember { mutableStateOf(false) }
     var ackNoRecovery by remember { mutableStateOf(false) }
     var localError by remember { mutableStateOf<String?>(null) }
 
@@ -503,30 +622,21 @@ fun VaultSetupScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            OutlinedTextField(
-                value = passcode,
-                onValueChange = { if (it.length <= 12 && it.all { c -> c.isDigit() }) passcode = it },
-                label = { Text(stringResource(R.string.vault_create_passcode)) },
-                singleLine = true,
-                visualTransformation = if (showPasscode) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                trailingIcon = {
-                    IconButton(onClick = { showPasscode = !showPasscode }) {
-                        Icon(if (showPasscode) Icons.Default.VisibilityOff else Icons.Default.Visibility, "Show passcode")
+            PasscodeEntry(
+                value = if (confirmingPasscode) confirmPasscode else passcode,
+                label = stringResource(
+                    if (confirmingPasscode) R.string.vault_confirm_passcode
+                    else R.string.vault_create_passcode
+                ),
+                onValueChange = { updated ->
+                    localError = null
+                    if (confirmingPasscode) {
+                        confirmPasscode = updated
+                    } else {
+                        passcode = updated
+                        if (updated.length == PASSCODE_LENGTH) confirmingPasscode = true
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = confirmPasscode,
-                onValueChange = { if (it.length <= 12 && it.all { c -> c.isDigit() }) confirmPasscode = it },
-                label = { Text(stringResource(R.string.vault_confirm_passcode)) },
-                singleLine = true,
-                visualTransformation = if (showPasscode) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -560,6 +670,9 @@ fun VaultSetupScreen(
                 onClick = {
                     if (passcode != confirmPasscode) {
                         localError = "Passcodes do not match"
+                        passcode = ""
+                        confirmPasscode = ""
+                        confirmingPasscode = false
                         return@Button
                     }
                     if (!ackNoRecovery) {
@@ -569,7 +682,8 @@ fun VaultSetupScreen(
                     localError = null
                     onSetupCompleted(passcode)
                 },
-                enabled = passcode.length >= 6 && confirmPasscode.length >= 6 && ackNoRecovery,
+                enabled = passcode.length == PASSCODE_LENGTH &&
+                    confirmPasscode.length == PASSCODE_LENGTH && ackNoRecovery,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(stringResource(R.string.vault_create))
@@ -640,19 +754,6 @@ fun VaultUnlockScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            if (biometricEnabled) {
-                OutlinedButton(
-                    onClick = onBiometricUnlock,
-                    enabled = lockoutRemaining == 0,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Fingerprint, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.vault_fingerprint_unlock))
-                }
-                Spacer(Modifier.height(12.dp))
-            }
-
             if (lockoutRemaining > 0) {
                 Surface(
                     color = MaterialTheme.colorScheme.errorContainer,
@@ -669,33 +770,26 @@ fun VaultUnlockScreen(
                 }
             }
 
-            OutlinedTextField(
+            PasscodeEntry(
                 value = passcode,
-                onValueChange = { if (it.length <= 12 && it.all { c -> c.isDigit() }) passcode = it },
-                label = { Text(stringResource(R.string.vault_passcode)) },
-                singleLine = true,
+                onValueChange = { updated ->
+                    passcode = updated
+                    if (updated.length == PASSCODE_LENGTH) {
+                        onUnlock(updated)
+                    }
+                },
+                label = stringResource(R.string.vault_enter_passcode),
                 enabled = lockoutRemaining == 0,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                biometricEnabled = biometricEnabled,
+                onBiometricClick = onBiometricUnlock,
+                incorrect = errorMessage == "Incorrect passcode",
+                onIncorrectAnimationFinished = { passcode = "" },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            if (errorMessage != null) {
+            if (errorMessage != null && errorMessage != "Incorrect passcode") {
                 Spacer(Modifier.height(8.dp))
                 Text(localizedRuntimeMessage(errorMessage), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    onUnlock(passcode)
-                    passcode = ""
-                },
-                enabled = passcode.length >= 6 && lockoutRemaining == 0,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.vault_unlock))
             }
 
         }
@@ -1311,6 +1405,7 @@ fun VaultSettingsScreen(
         var curPass by remember { mutableStateOf("") }
         var newPass by remember { mutableStateOf("") }
         var confPass by remember { mutableStateOf("") }
+        var passcodeStep by remember { mutableStateOf(0) }
         var dialogError by remember { mutableStateOf<String?>(null) }
 
         AlertDialog(
@@ -1318,29 +1413,29 @@ fun VaultSettingsScreen(
             title = { Text(stringResource(R.string.vault_change_passcode)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = curPass,
-                        onValueChange = { curPass = it },
-                        label = { Text(stringResource(R.string.vault_current_passcode)) },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
-                    )
-                    OutlinedTextField(
-                        value = newPass,
-                        onValueChange = { newPass = it },
-                        label = { Text(stringResource(R.string.vault_new_passcode)) },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
-                    )
-                    OutlinedTextField(
-                        value = confPass,
-                        onValueChange = { confPass = it },
-                        label = { Text(stringResource(R.string.vault_confirm_new_passcode)) },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
+                    val activePasscode = when (passcodeStep) {
+                        0 -> curPass
+                        1 -> newPass
+                        else -> confPass
+                    }
+                    PasscodeEntry(
+                        value = activePasscode,
+                        label = stringResource(
+                            when (passcodeStep) {
+                                0 -> R.string.vault_current_passcode
+                                1 -> R.string.vault_new_passcode
+                                else -> R.string.vault_confirm_new_passcode
+                            }
+                        ),
+                        onValueChange = { updated ->
+                            dialogError = null
+                            when (passcodeStep) {
+                                0 -> curPass = updated
+                                1 -> newPass = updated
+                                else -> confPass = updated
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
                     )
                     if (dialogError != null) {
                         Text(dialogError!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -1348,15 +1443,35 @@ fun VaultSettingsScreen(
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    if (newPass != confPass) {
-                        dialogError = "New passcodes do not match"
-                        return@Button
-                    }
-                    viewModel.changePasscode(curPass, newPass)
-                    showChangePasscodeDialog = false
-                }) {
-                    Text(stringResource(R.string.vault_change_passcode_action))
+                val activeLength = when (passcodeStep) {
+                    0 -> curPass.length
+                    1 -> newPass.length
+                    else -> confPass.length
+                }
+                Button(
+                    onClick = {
+                        if (passcodeStep < 2) {
+                            passcodeStep++
+                        } else {
+                            if (newPass != confPass) {
+                                dialogError = "New passcodes do not match"
+                                newPass = ""
+                                confPass = ""
+                                passcodeStep = 1
+                                return@Button
+                            }
+                            viewModel.changePasscode(curPass, newPass)
+                            showChangePasscodeDialog = false
+                        }
+                    },
+                    enabled = activeLength == PASSCODE_LENGTH
+                ) {
+                    Text(
+                        stringResource(
+                            if (passcodeStep < 2) R.string.action_continue
+                            else R.string.vault_change_passcode_action
+                        )
+                    )
                 }
             },
             dismissButton = {
@@ -1374,13 +1489,11 @@ fun VaultSettingsScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(R.string.vault_fingerprint_passcode_prompt))
-                    OutlinedTextField(
+                    PasscodeEntry(
                         value = passcode,
-                        onValueChange = { if (it.length <= 12 && it.all(Char::isDigit)) passcode = it },
-                        label = { Text(stringResource(R.string.vault_enter_current_passcode)) },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
+                        onValueChange = { passcode = it },
+                        label = stringResource(R.string.vault_enter_current_passcode),
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             },
@@ -1390,7 +1503,7 @@ fun VaultSettingsScreen(
                         showBiometricPasscodeDialog = false
                         onEnableBiometric(passcode)
                     },
-                    enabled = passcode.length >= 6
+                    enabled = passcode.length == PASSCODE_LENGTH
                 ) { Text(stringResource(R.string.action_continue)) }
             },
             dismissButton = {
@@ -1427,13 +1540,11 @@ fun VaultSettingsScreen(
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.vault_disable_delete), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
                     }
-                    OutlinedTextField(
+                    PasscodeEntry(
                         value = curPass,
                         onValueChange = { curPass = it },
-                        label = { Text(stringResource(R.string.vault_enter_current_passcode)) },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
+                        label = stringResource(R.string.vault_enter_current_passcode),
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             },
@@ -1444,7 +1555,7 @@ fun VaultSettingsScreen(
                         showDisableVaultDialog = false
                         onBack()
                     },
-                    enabled = curPass.length >= 6,
+                    enabled = curPass.length == PASSCODE_LENGTH,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
                     Text(stringResource(R.string.vault_disable))

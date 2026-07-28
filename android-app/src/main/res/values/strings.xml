@@ -322,7 +322,8 @@
     <string name="vault_fingerprint_enable">Enable fingerprint unlock</string>
     <string name="vault_setup_title">Set up Vault</string>
     <string name="vault_protect_sensitive">Protect sensitive documents</string>
-    <string name="vault_create_passcode">Create passcode (6–12 digits)</string>
+    <string name="vault_create_passcode">Create a 6-digit passcode</string>
+    <string name="passcode_delete_digit">Delete digit</string>
     <string name="vault_create">Create Vault</string>
     <string name="vault_locked_title">Vault is locked</string>
     <string name="vault_fingerprint_unlock">Unlock with fingerprint</string>
@@ -360,7 +361,7 @@
     <string name="vault_disable">Disable Vault</string>
     <string name="vault_disable_desc">Move documents to the library or delete the Vault repository</string>
     <string name="vault_current_passcode">Current passcode</string>
-    <string name="vault_new_passcode">New passcode (6–12 digits)</string>
+    <string name="vault_new_passcode">New 6-digit passcode</string>
     <string name="vault_confirm_new_passcode">Confirm new passcode</string>
     <string name="vault_change_passcode_action">Change passcode</string>
     <string name="vault_disable_prompt">Choose how to proceed with your Vault documents:</string>
@@ -479,7 +480,7 @@
     <string name="vault_fingerprint_faster">Unlock faster with your fingerprint</string>
     <string name="vault_fingerprint_body">Use your fingerprint as the primary unlock method. Your passcode remains available as a fallback.</string>
     <string name="vault_fingerprint_unavailable_body">No strong fingerprint is enrolled on this device. You can enable fingerprint unlock later in Vault settings.</string>
-    <string name="vault_setup_body">Documents in Vault are encrypted on this device. Access requires a 6–12 digit passcode.</string>
+    <string name="vault_setup_body">Documents in Vault are encrypted on this device. Access requires a 6-digit passcode.</string>
     <string name="vault_recovery_ack">I understand that OScan cannot recover my Vault documents if I forget my passcode.</string>
     <string name="vault_unlock_body">Enter your Vault passcode to view encrypted documents.</string>
     <string name="vault_lockout">Too many failed attempts. Try again in %1$d seconds.</string>

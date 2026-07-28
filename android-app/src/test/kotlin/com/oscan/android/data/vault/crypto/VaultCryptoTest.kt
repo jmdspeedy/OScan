@@ -12,10 +12,11 @@ class VaultCryptoTest {
     fun testPasscodeValidation() {
         // Valid passcodes
         assertTrue(VaultCrypto.validatePasscode("184920") is PasscodeValidationResult.Valid)
-        assertTrue(VaultCrypto.validatePasscode("94810293") is PasscodeValidationResult.Valid)
 
-        // Too short / too long
+        // Passcodes must be exactly six digits
         assertTrue(VaultCrypto.validatePasscode("12345") is PasscodeValidationResult.Invalid)
+        assertTrue(VaultCrypto.validatePasscode("9481029") is PasscodeValidationResult.Invalid)
+        assertTrue(VaultCrypto.validatePasscode("94810293") is PasscodeValidationResult.Invalid)
         assertTrue(VaultCrypto.validatePasscode("1234567890123") is PasscodeValidationResult.Invalid)
 
         // Non-digit
@@ -23,7 +24,7 @@ class VaultCryptoTest {
 
         // Single repeated digit
         assertTrue(VaultCrypto.validatePasscode("111111") is PasscodeValidationResult.Invalid)
-        assertTrue(VaultCrypto.validatePasscode("99999999") is PasscodeValidationResult.Invalid)
+        assertTrue(VaultCrypto.validatePasscode("999999") is PasscodeValidationResult.Invalid)
 
         // Sequential
         assertTrue(VaultCrypto.validatePasscode("123456") is PasscodeValidationResult.Invalid)

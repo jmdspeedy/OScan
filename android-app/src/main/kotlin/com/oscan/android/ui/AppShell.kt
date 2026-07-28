@@ -890,7 +890,6 @@ private fun MeScreen(
     var editAvatarDialogOpen by remember { mutableStateOf(false) }
 
     val context = androidx.compose.ui.platform.LocalContext.current
-    val versionName = remember(context) { com.oscan.android.util.AppVersionUtils.getVersionName(context) }
 
     val avatarBgColor = when (userPreferences.avatarPreset) {
         "INDIGO" -> androidx.compose.ui.graphics.Color(0xFF3F51B5)
@@ -994,24 +993,16 @@ private fun MeScreen(
             Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
 
-            MeSettingRow(stringResource(R.string.settings_capture_row), stringResource(R.string.settings_capture_row_desc), Icons.Default.CameraAlt) { onOpenSubRoute(SettingsSubRoute.CAPTURE) }
-            MeSettingRow(stringResource(R.string.settings_enhancement_row), stringResource(R.string.settings_enhancement_row_desc), Icons.Default.AutoAwesome) { onOpenSubRoute(SettingsSubRoute.ENHANCEMENT) }
-            MeSettingRow(stringResource(R.string.settings_appearance_row), stringResource(R.string.settings_appearance_row_desc), Icons.Default.Palette) { onOpenSubRoute(SettingsSubRoute.APPEARANCE) }
-            val currentLang = appLocaleController?.currentLanguage() ?: AppLanguage.SYSTEM
-            val langSubtitle = when (currentLang) {
-                AppLanguage.SYSTEM -> stringResource(R.string.language_system)
-                AppLanguage.ENGLISH -> stringResource(R.string.language_english)
-                AppLanguage.SIMPLIFIED_CHINESE -> stringResource(R.string.language_simplified_chinese)
-                AppLanguage.JAPANESE -> stringResource(R.string.language_japanese)
-            }
+            MeSettingRow(stringResource(R.string.settings_capture_row), Icons.Default.CameraAlt) { onOpenSubRoute(SettingsSubRoute.CAPTURE) }
+            MeSettingRow(stringResource(R.string.settings_enhancement_row), Icons.Default.AutoAwesome) { onOpenSubRoute(SettingsSubRoute.ENHANCEMENT) }
+            MeSettingRow(stringResource(R.string.settings_appearance_row), Icons.Default.Palette) { onOpenSubRoute(SettingsSubRoute.APPEARANCE) }
             MeSettingRow(
                 title = stringResource(R.string.settings_language_title),
-                subtitle = langSubtitle,
                 icon = Icons.Default.Language
             ) { onOpenSubRoute(SettingsSubRoute.LANGUAGE) }
-            MeSettingRow(stringResource(R.string.settings_storage_title), stringResource(R.string.settings_storage_row_desc), Icons.Default.Storage) { onOpenSubRoute(SettingsSubRoute.STORAGE) }
+            MeSettingRow(stringResource(R.string.settings_storage_title), Icons.Default.Storage) { onOpenSubRoute(SettingsSubRoute.STORAGE) }
             if (vaultAvailable) {
-                MeSettingRow(stringResource(R.string.vault_settings_title), stringResource(R.string.vault_settings_row_desc), Icons.Default.Lock) { onOpenSubRoute(SettingsSubRoute.VAULT) }
+                MeSettingRow(stringResource(R.string.vault_settings_title), Icons.Default.Lock) { onOpenSubRoute(SettingsSubRoute.VAULT) }
             }
         }
 
@@ -1022,9 +1013,9 @@ private fun MeScreen(
             Text(stringResource(R.string.product_information), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
 
-            MeSettingRow(stringResource(R.string.privacy_title), stringResource(R.string.settings_privacy_row_desc), Icons.Default.PrivacyTip) { onOpenSubRoute(SettingsSubRoute.PRIVACY) }
-            MeSettingRow(stringResource(R.string.about_title), stringResource(R.string.settings_about_row_desc, versionName), Icons.Default.Info) { onOpenSubRoute(SettingsSubRoute.ABOUT) }
-            MeSettingRow(stringResource(R.string.developer_title), stringResource(R.string.developer_row_desc), Icons.Default.Person) { onOpenSubRoute(SettingsSubRoute.DEVELOPER) }
+            MeSettingRow(stringResource(R.string.privacy_title), Icons.Default.PrivacyTip) { onOpenSubRoute(SettingsSubRoute.PRIVACY) }
+            MeSettingRow(stringResource(R.string.about_title), Icons.Default.Info) { onOpenSubRoute(SettingsSubRoute.ABOUT) }
+            MeSettingRow(stringResource(R.string.developer_title), Icons.Default.Person) { onOpenSubRoute(SettingsSubRoute.DEVELOPER) }
         }
     }
 
@@ -1097,7 +1088,6 @@ private fun MeScreen(
 @Composable
 private fun MeSettingRow(
     title: String,
-    subtitle: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit
 ) {
@@ -1115,10 +1105,7 @@ private fun MeSettingRow(
         ) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

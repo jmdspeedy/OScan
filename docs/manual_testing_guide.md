@@ -330,7 +330,7 @@ Use disposable content only. Destructive Vault cases are intentionally last in t
 ### VLT-01 — Set up Vault **Smoke**
 
 1. Open Vault from Library or `Me` and start setup.
-2. Try a passcode shorter than 6 digits, a mismatch, and then a valid 6–12 digit passcode.
+2. Try a passcode shorter or longer than 6 digits, a mismatch, and then a valid 6-digit passcode.
 3. Acknowledge the recovery warning and create the Vault.
 
 Expected: invalid/mismatched input is rejected clearly; the warning explains that recovery is impossible; valid setup succeeds without exposing content.
