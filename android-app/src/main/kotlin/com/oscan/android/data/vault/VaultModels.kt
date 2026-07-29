@@ -1,7 +1,6 @@
 package com.oscan.android.data.vault
 
 import com.oscan.core.model.CornerPoints
-import org.opencv.core.Point
 
 data class VaultPage(
     val id: String,

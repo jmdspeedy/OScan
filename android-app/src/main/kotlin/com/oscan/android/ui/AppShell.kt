@@ -29,14 +29,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
@@ -44,7 +42,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -52,8 +49,6 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PrivacyTip
-import androidx.compose.material.icons.filled.Scanner
-import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
@@ -64,7 +59,6 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PhotoCamera
-import androidx.compose.material.icons.outlined.Scanner
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -101,17 +95,14 @@ import com.oscan.android.ui.vault.VaultSettingsRoute
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.oscan.android.data.model.DocumentId
 import com.oscan.android.data.model.FolderId
 import com.oscan.android.data.model.Page
 import com.oscan.android.data.model.PageId
 import com.oscan.android.data.preferences.DocumentSort
-import com.oscan.android.data.preferences.LibraryPresentation
 import com.oscan.android.data.storage.DocumentFileStore
 import kotlinx.coroutines.launch
 
@@ -311,7 +302,6 @@ fun OScanAppShell(
                     LibraryMasterPane(
                         state = state,
                         fileStore = fileStore,
-                        gridState = gridState,
                         listState = listState,
                         libraryViewModel = libraryViewModel,
                         modifier = Modifier.widthIn(min = 320.dp, max = 400.dp).fillMaxHeight()
@@ -365,8 +355,6 @@ fun OScanAppShell(
             onToggleDocumentSelection = libraryViewModel::toggleDocumentSelection,
             onRestoreDocument = libraryViewModel::restoreDocument,
             onPermanentlyDeleteDocument = libraryViewModel::permanentlyDeleteDocument,
-            onRestoreMultiple = libraryViewModel::restoreMultiple,
-            onPermanentlyDeleteMultiple = libraryViewModel::permanentlyDeleteMultiple,
             onEmptyTrash = libraryViewModel::emptyTrash,
             onBack = libraryViewModel::closeTrash
         )
@@ -420,7 +408,6 @@ fun OScanAppShell(
                     pagerState = destinationPagerState,
                     state = state,
                     fileStore = fileStore,
-                    gridState = gridState,
                     listState = listState,
                     meScrollState = meScrollState,
                     snackbarHostState = snackbarHostState,
@@ -444,7 +431,6 @@ fun OScanAppShell(
                     },
                     onOpenSubRoute = { activeSubRoute = it },
                     libraryViewModel = libraryViewModel,
-                    appLocaleController = appLocaleController,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -453,7 +439,6 @@ fun OScanAppShell(
                 pagerState = destinationPagerState,
                 state = state,
                 fileStore = fileStore,
-                gridState = gridState,
                 listState = listState,
                 meScrollState = meScrollState,
                 snackbarHostState = snackbarHostState,
@@ -477,7 +462,6 @@ fun OScanAppShell(
                 },
                 onOpenSubRoute = { activeSubRoute = it },
                 libraryViewModel = libraryViewModel,
-                appLocaleController = appLocaleController,
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
                     NavigationBar {
@@ -501,7 +485,6 @@ fun OScanAppShell(
 private fun LibraryMasterPane(
     state: LibraryUiState,
     fileStore: DocumentFileStore,
-    gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
     listState: androidx.compose.foundation.lazy.LazyListState,
     libraryViewModel: LibraryViewModel,
     modifier: Modifier = Modifier
@@ -514,15 +497,12 @@ private fun LibraryMasterPane(
             HomeLibraryScreen(
                 state = state,
                 fileStore = fileStore,
-                gridState = gridState,
                 listState = listState,
                 onOpenDocument = libraryViewModel::openDocument,
                 onSearchQueryChange = libraryViewModel::setSearchQuery,
                 onFilterChange = libraryViewModel::setFilter,
                 onToggleSelectionMode = libraryViewModel::toggleSelectionMode,
                 onToggleDocumentSelection = libraryViewModel::toggleDocumentSelection,
-                onOpenFolder = libraryViewModel::openFolder,
-                onCreateFolderRequested = {},
                 emptyContent = {
                     Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
                         Text(stringResource(R.string.library_no_documents), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -554,7 +534,6 @@ private fun DestinationScaffold(
     pagerState: PagerState,
     state: LibraryUiState,
     fileStore: DocumentFileStore,
-    gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
     listState: androidx.compose.foundation.lazy.LazyListState,
     meScrollState: androidx.compose.foundation.ScrollState,
     snackbarHostState: SnackbarHostState,
@@ -570,7 +549,6 @@ private fun DestinationScaffold(
     onMoveSelectedToVault: () -> Unit = {},
     onOpenSubRoute: (SettingsSubRoute) -> Unit,
     libraryViewModel: LibraryViewModel,
-    appLocaleController: AppLocaleController? = null,
     modifier: Modifier,
     bottomBar: @Composable () -> Unit = {}
 ) {
@@ -622,15 +600,12 @@ private fun DestinationScaffold(
                 AppDestination.Home -> HomeLibraryScreen(
                     state = state,
                     fileStore = fileStore,
-                    gridState = gridState,
                     listState = listState,
                     onOpenDocument = libraryViewModel::openDocument,
                     onSearchQueryChange = libraryViewModel::setSearchQuery,
                     onFilterChange = libraryViewModel::setFilter,
                     onToggleSelectionMode = libraryViewModel::toggleSelectionMode,
                     onToggleDocumentSelection = libraryViewModel::toggleDocumentSelection,
-                    onOpenFolder = libraryViewModel::openFolder,
-                    onCreateFolderRequested = { createFolderDialogOpen = true },
                     onOpenVault = onOpenVault
                 ) { EmptyHomeScreen { onDestinationSelected(AppDestination.Scan) } }
                 AppDestination.Scan -> {
@@ -668,7 +643,6 @@ private fun DestinationScaffold(
                 AppDestination.Me -> MeScreen(
                     scrollState = meScrollState,
                     userPreferences = state.userPreferences,
-                    appLocaleController = appLocaleController,
                     trashCount = state.trashDocuments.size,
                     foldersCount = state.folders.size,
                     onOpenFolders = onOpenFolders,
@@ -702,7 +676,6 @@ private fun DestinationScaffold(
     }
 
     if (bulkTrashConfirmOpen) {
-        val count = state.selectedDocumentIds.size
         AlertDialog(
             onDismissRequest = { bulkTrashConfirmOpen = false },
             title = { Text(stringResource(R.string.dialog_move_selected_trash_title)) },
@@ -853,7 +826,7 @@ private fun EmptyHomeScreen(onScanDocument: () -> Unit) {
 }
 
 @Composable
-private fun ScanEntryScreen(onOpenCamera: () -> Unit, onImportImages: () -> Unit) {
+internal fun ScanEntryScreen(onOpenCamera: () -> Unit, onImportImages: () -> Unit) {
     EmptyStateLayout(
         icon = Icons.Default.PhotoCamera,
         title = stringResource(R.string.scan_entry_title),
@@ -877,7 +850,6 @@ private fun ScanEntryScreen(onOpenCamera: () -> Unit, onImportImages: () -> Unit
 private fun MeScreen(
     scrollState: androidx.compose.foundation.ScrollState,
     userPreferences: com.oscan.android.data.preferences.UserPreferences,
-    appLocaleController: AppLocaleController?,
     trashCount: Int,
     foldersCount: Int,
     onOpenFolders: () -> Unit,
@@ -889,8 +861,6 @@ private fun MeScreen(
 ) {
     var editNameDialogOpen by remember { mutableStateOf(false) }
     var editAvatarDialogOpen by remember { mutableStateOf(false) }
-
-    val context = androidx.compose.ui.platform.LocalContext.current
 
     val avatarBgColor = when (userPreferences.avatarPreset) {
         "INDIGO" -> androidx.compose.ui.graphics.Color(0xFF3F51B5)
@@ -1085,6 +1055,21 @@ private fun MeScreen(
         )
     }
 }
+@Composable
+internal fun MePagePreviewContent() {
+    MeScreen(
+        scrollState = rememberScrollState(),
+        userPreferences = com.oscan.android.data.preferences.UserPreferences(displayName = "Local Workspace"),
+        trashCount = 2,
+        foldersCount = 4,
+        onOpenFolders = {},
+        onOpenTrash = {},
+        vaultAvailable = true,
+        onOpenSubRoute = {},
+        onUpdateDisplayName = {},
+        onUpdateAvatarPreset = {}
+    )
+}
 
 @Composable
 private fun MeSettingRow(
@@ -1111,34 +1096,4 @@ private fun MeSettingRow(
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
-}
-
-@OScanPagePreview
-@Composable
-internal fun HomeEmptyPagePreview() = com.oscan.android.ui.theme.OScanTheme {
-    EmptyHomeScreen(onScanDocument = {})
-}
-
-@OScanPagePreview
-@Composable
-internal fun ScanEntryPagePreview() = com.oscan.android.ui.theme.OScanTheme {
-    ScanEntryScreen(onOpenCamera = {}, onImportImages = {})
-}
-
-@OScanPagePreview
-@Composable
-internal fun ProfileAndSettingsPagePreview() = com.oscan.android.ui.theme.OScanTheme {
-    MeScreen(
-        scrollState = rememberScrollState(),
-        userPreferences = com.oscan.android.data.preferences.UserPreferences(displayName = "Local Workspace"),
-        appLocaleController = null,
-        trashCount = 2,
-        foldersCount = 4,
-        onOpenFolders = {},
-        onOpenTrash = {},
-        vaultAvailable = true,
-        onOpenSubRoute = {},
-        onUpdateDisplayName = {},
-        onUpdateAvatarPreset = {}
-    )
 }

@@ -1,15 +1,11 @@
 package com.oscan.core.util
 
-import com.oscan.core.model.CornerPoints
 import com.oscan.core.model.ImageDimensions
 import org.opencv.core.Point
-import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.acos
 import kotlin.math.atan2
 import kotlin.math.hypot
-import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.sign
 
 /**

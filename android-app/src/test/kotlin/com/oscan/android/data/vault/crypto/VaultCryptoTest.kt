@@ -3,7 +3,6 @@ package com.oscan.android.data.vault.crypto
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class VaultCryptoTest {

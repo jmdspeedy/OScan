@@ -21,7 +21,6 @@ import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.Point
 import org.opencv.imgproc.Imgproc
-import kotlin.math.max
 import kotlin.math.min
 
 /**

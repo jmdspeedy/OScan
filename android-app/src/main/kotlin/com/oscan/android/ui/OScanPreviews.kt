@@ -3,13 +3,12 @@ package com.oscan.android.ui
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import com.oscan.android.data.model.Document
@@ -46,7 +45,9 @@ annotation class OScanPagePreview
 
 @Composable
 private fun PreviewTheme(content: @Composable () -> Unit) {
-    OScanTheme(content = content)
+    val uiMode = LocalConfiguration.current.uiMode
+    val darkTheme = uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+    OScanTheme(darkTheme = darkTheme, content = content)
 }
 
 private val previewFolder = Folder(FolderId("preview-folder"), "Receipts", Instant.now(), Instant.now())
@@ -79,6 +80,18 @@ private fun previewFileStore() = DocumentFileStore(LocalContext.current)
 @OScanPagePreview
 @Composable
 fun WelcomePagePreview() = PreviewTheme { StartScreen {} }
+
+@OScanPagePreview
+@Composable
+fun ScanPagePreview() = PreviewTheme {
+    ScanEntryScreen(onOpenCamera = {}, onImportImages = {})
+}
+
+@OScanPagePreview
+@Composable
+fun MePagePreview() = PreviewTheme {
+    MePagePreviewContent()
+}
 
 @OScanPagePreview
 @Composable
@@ -127,10 +140,9 @@ fun LibraryPagePreview() = PreviewTheme {
     HomeLibraryScreen(
         state = LibraryUiState(isLoading = false, documents = listOf(previewDocument), recentDocuments = listOf(previewDocument), folders = listOf(previewFolder)),
         fileStore = previewFileStore(),
-        gridState = rememberLazyGridState(),
         listState = rememberLazyListState(),
         onOpenDocument = {}, onSearchQueryChange = {}, onFilterChange = {}, onToggleSelectionMode = {},
-        onToggleDocumentSelection = {}, onOpenFolder = {}, onCreateFolderRequested = {}, emptyContent = {}
+        onToggleDocumentSelection = {}, emptyContent = {}
     )
 }
 
@@ -152,7 +164,7 @@ fun FolderDetailPagePreview() = PreviewTheme {
 @OScanPagePreview
 @Composable
 fun TrashPagePreview() = PreviewTheme {
-    TrashScreen(listOf(previewDocument.copy(trashedAt = Instant.now())), previewFileStore(), false, emptySet(), {}, {}, {}, {}, {}, {}, {}, {})
+    TrashScreen(listOf(previewDocument.copy(trashedAt = Instant.now())), previewFileStore(), false, emptySet(), {}, {}, {}, {}, {}, {})
 }
 
 @OScanPagePreview

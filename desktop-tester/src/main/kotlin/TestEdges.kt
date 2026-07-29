@@ -1,7 +1,6 @@
 import org.opencv.core.*
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
-import java.io.File
 
 fun main() {
     nu.pattern.OpenCV.loadLocally()

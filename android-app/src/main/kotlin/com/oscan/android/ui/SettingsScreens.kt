@@ -25,22 +25,26 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -48,7 +52,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -76,18 +79,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import com.oscan.android.R
 import com.oscan.android.data.preferences.AccentTheme
 import com.oscan.android.data.preferences.CameraLensPreference
 import com.oscan.android.data.preferences.JpegQuality
-import com.oscan.android.data.preferences.PdfPageSize
 import com.oscan.android.data.preferences.ThemeChoice
 import com.oscan.android.data.preferences.UserPreferences
 import com.oscan.android.data.storage.DocumentFileStore
 import com.oscan.android.ui.theme.createColorScheme
 import com.oscan.android.ui.theme.swatchColors
 import com.oscan.core.model.FilterType
-import java.io.File
 
 @Composable
 fun AccentTheme.label(): String = when (this) {
@@ -558,98 +561,6 @@ private fun PaletteGridItemCard(
     }
 }
 
-@Composable
-private fun AccentThemeOptionCard(
-    accentTheme: AccentTheme,
-    isDark: Boolean,
-    selected: Boolean,
-    onSelect: () -> Unit
-) {
-    val (primary, secondary, tertiary) = accentTheme.swatchColors(isDark)
-    
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onSelect)
-            .then(
-                if (selected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium)
-                else Modifier
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
-        ),
-        shape = MaterialTheme.shapes.medium
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                RadioButton(selected = selected, onClick = onSelect)
-                Column {
-                    Text(accentTheme.label(), style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        if (selected) "Active color scheme" else "Tap to apply palette",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .background(primary, CircleShape)
-                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape)
-                )
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .background(secondary, CircleShape)
-                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape)
-                )
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .background(tertiary, CircleShape)
-                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ThemeChoiceOption(
-    title: String,
-    subtitle: String,
-    selected: Boolean,
-    onSelect: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onSelect)
-            .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        RadioButton(selected = selected, onClick = onSelect)
-        Spacer(Modifier.width(12.dp))
-        Column {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StorageSettingsScreen(
@@ -665,7 +576,12 @@ fun StorageSettingsScreen(
         String.format("%.1f MB", totalBytes / (1024.0 * 1024.0))
     }
     val cacheSizeMb = remember(context) {
-        val cacheBytes = context.cacheDir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+        // Android Studio's preview context may not provide a cache directory.
+        val cacheBytes = context.cacheDir
+            ?.walkTopDown()
+            ?.filter { it.isFile }
+            ?.sumOf { it.length() }
+            ?: 0L
         String.format("%.1f MB", cacheBytes / (1024.0 * 1024.0))
     }
 
@@ -745,6 +661,8 @@ fun StorageSettingsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrivacyScreen(onBack: () -> Unit) {
+    var expandedSection by remember { mutableStateOf(0) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -762,34 +680,146 @@ fun PrivacyScreen(onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.medium) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.PrivacyTip, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                    Spacer(Modifier.width(16.dp))
-                    Text(stringResource(R.string.privacy_on_device), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.PrivacyTip,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
+
+                Text(
+                    stringResource(R.string.privacy_intro_title),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Text(
+                    stringResource(R.string.privacy_intro_body),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            Text(stringResource(R.string.privacy_local_offline), style = MaterialTheme.typography.titleLarge)
-            Text(
-                stringResource(R.string.privacy_local_body),
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                PrivacyPolicySection(
+                    title = stringResource(R.string.privacy_local_offline),
+                    body = stringResource(R.string.privacy_local_body),
+                    icon = Icons.Default.PrivacyTip,
+                    expanded = expandedSection == 0,
+                    onClick = { expandedSection = if (expandedSection == 0) -1 else 0 }
+                )
+                PrivacyPolicySection(
+                    title = stringResource(R.string.privacy_no_accounts),
+                    body = stringResource(R.string.privacy_accounts_body),
+                    icon = Icons.Default.CloudOff,
+                    expanded = expandedSection == 1,
+                    onClick = { expandedSection = if (expandedSection == 1) -1 else 1 }
+                )
+                PrivacyPolicySection(
+                    title = stringResource(R.string.privacy_explicit_sharing),
+                    body = stringResource(R.string.privacy_sharing_body),
+                    icon = Icons.Default.Share,
+                    expanded = expandedSection == 2,
+                    onClick = { expandedSection = if (expandedSection == 2) -1 else 2 }
+                )
+                PrivacyPolicySection(
+                    title = stringResource(R.string.privacy_storage_title),
+                    body = stringResource(R.string.privacy_storage_body),
+                    icon = Icons.Default.Storage,
+                    expanded = expandedSection == 3,
+                    onClick = { expandedSection = if (expandedSection == 3) -1 else 3 }
+                )
+                PrivacyPolicySection(
+                    title = stringResource(R.string.privacy_permissions_title),
+                    body = stringResource(R.string.privacy_permissions_body),
+                    icon = Icons.Default.CameraAlt,
+                    expanded = expandedSection == 4,
+                    onClick = { expandedSection = if (expandedSection == 4) -1 else 4 }
+                )
+                PrivacyPolicySection(
+                    title = stringResource(R.string.privacy_deletion_title),
+                    body = stringResource(R.string.privacy_deletion_body),
+                    icon = Icons.Default.Delete,
+                    expanded = expandedSection == 5,
+                    onClick = { expandedSection = if (expandedSection == 5) -1 else 5 }
+                )
+                PrivacyPolicySection(
+                    title = stringResource(R.string.privacy_vault_title),
+                    body = stringResource(R.string.privacy_vault_body),
+                    icon = Icons.Default.Lock,
+                    expanded = expandedSection == 6,
+                    onClick = { expandedSection = if (expandedSection == 6) -1 else 6 }
+                )
+            }
 
-            Text(stringResource(R.string.privacy_no_accounts), style = MaterialTheme.typography.titleLarge)
             Text(
-                stringResource(R.string.privacy_accounts_body),
-                style = MaterialTheme.typography.bodyMedium
+                stringResource(R.string.privacy_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
 
-            Text(stringResource(R.string.privacy_explicit_sharing), style = MaterialTheme.typography.titleLarge)
-            Text(
-                stringResource(R.string.privacy_sharing_body),
-                style = MaterialTheme.typography.bodyMedium
-            )
+@Composable
+private fun PrivacyPolicySection(
+    title: String,
+    body: String,
+    icon: ImageVector,
+    expanded: Boolean,
+    onClick: () -> Unit
+) {
+    val sectionState = stringResource(
+        if (expanded) R.string.privacy_section_expanded else R.string.privacy_section_collapsed
+    )
+    Surface(
+        color = if (expanded) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { stateDescription = sectionState }
+                    .clickable(onClick = onClick)
+                    .heightIn(min = 64.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(12.dp))
+                Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Icon(
+                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (expanded) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+                Text(
+                    body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
         }
     }
 }

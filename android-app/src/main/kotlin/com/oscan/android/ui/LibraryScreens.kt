@@ -8,7 +8,6 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -41,19 +40,19 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.RotateLeft
+import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.automirrored.filled.NavigateBefore
 import androidx.compose.material.icons.automirrored.filled.NavigateNext
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.BrokenImage
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Crop
@@ -69,8 +68,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material.icons.filled.RotateLeft
-import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
@@ -146,15 +143,12 @@ import kotlinx.coroutines.withContext
 fun HomeLibraryScreen(
     state: LibraryUiState,
     fileStore: DocumentFileStore,
-    gridState: LazyGridState,
     listState: LazyListState,
     onOpenDocument: (DocumentId) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onFilterChange: (DocumentFilter) -> Unit,
     onToggleSelectionMode: (DocumentId?) -> Unit,
     onToggleDocumentSelection: (DocumentId) -> Unit,
-    onOpenFolder: (FolderId) -> Unit,
-    onCreateFolderRequested: () -> Unit,
     onOpenVault: (() -> Unit)? = null,
     emptyContent: @Composable () -> Unit
 ) {
@@ -185,7 +179,6 @@ fun HomeLibraryScreen(
         FilterChipsRow(
             currentFilter = state.filter,
             onFilterChange = onFilterChange,
-            foldersCount = state.folders.size,
             onOpenVault = onOpenVault,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
         )
@@ -208,8 +201,7 @@ fun HomeLibraryScreen(
                 listState = listState,
                 onOpenDocument = onOpenDocument,
                 onToggleSelectionMode = onToggleSelectionMode,
-                onToggleDocumentSelection = onToggleDocumentSelection,
-                onOpenFolder = onOpenFolder
+                onToggleDocumentSelection = onToggleDocumentSelection
             )
         }
     }
@@ -232,7 +224,6 @@ private fun EmptyFavoritesState() {
 private fun FilterChipsRow(
     currentFilter: DocumentFilter,
     onFilterChange: (DocumentFilter) -> Unit,
-    foldersCount: Int,
     onOpenVault: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -282,63 +273,13 @@ private fun NoSearchResultsState(query: String) {
 }
 
 @Composable
-private fun DocumentGrid(
-    state: LibraryUiState,
-    fileStore: DocumentFileStore,
-    gridState: LazyGridState,
-    onOpenDocument: (DocumentId) -> Unit,
-    onToggleSelectionMode: (DocumentId?) -> Unit,
-    onToggleDocumentSelection: (DocumentId) -> Unit,
-    onOpenFolder: (FolderId) -> Unit
-) {
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(156.dp),
-        state = gridState,
-        contentPadding = PaddingValues(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        if (state.searchQuery.isEmpty() && state.recentDocuments.isNotEmpty() && !state.selectionMode) {
-            item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle(stringResource(R.string.library_recent)) }
-            items(state.recentDocuments, key = { "recent-${it.id.value}" }) { document ->
-                DocumentCard(
-                    document = document,
-                    fileStore = fileStore,
-                    selectionMode = false,
-                    isSelected = false,
-                    onOpenDocument = onOpenDocument,
-                    onToggleSelectionMode = onToggleSelectionMode,
-                    onToggleDocumentSelection = onToggleDocumentSelection
-                )
-            }
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                SectionTitle(stringResource(R.string.library_all_documents), Modifier.padding(top = 12.dp))
-            }
-        }
-        items(state.documents, key = { "all-${it.id.value}" }) { document ->
-            val isSelected = state.selectedDocumentIds.contains(document.id)
-            DocumentCard(
-                document = document,
-                fileStore = fileStore,
-                selectionMode = state.selectionMode,
-                isSelected = isSelected,
-                onOpenDocument = onOpenDocument,
-                onToggleSelectionMode = onToggleSelectionMode,
-                onToggleDocumentSelection = onToggleDocumentSelection
-            )
-        }
-    }
-}
-
-@Composable
 private fun DocumentList(
     state: LibraryUiState,
     fileStore: DocumentFileStore,
     listState: LazyListState,
     onOpenDocument: (DocumentId) -> Unit,
     onToggleSelectionMode: (DocumentId?) -> Unit,
-    onToggleDocumentSelection: (DocumentId) -> Unit,
-    onOpenFolder: (FolderId) -> Unit
+    onToggleDocumentSelection: (DocumentId) -> Unit
 ) {
     LazyColumn(
         state = listState,
@@ -740,8 +681,6 @@ fun TrashScreen(
     onToggleDocumentSelection: (DocumentId) -> Unit,
     onRestoreDocument: (DocumentId) -> Unit,
     onPermanentlyDeleteDocument: (DocumentId) -> Unit,
-    onRestoreMultiple: (List<DocumentId>) -> Unit,
-    onPermanentlyDeleteMultiple: (List<DocumentId>) -> Unit,
     onEmptyTrash: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -911,8 +850,8 @@ fun DocumentDetailScreen(
     defaultPageSize: PdfPageSize = PdfPageSize.A4,
     onSavePdf: (Context, Document, Uri) -> Unit = { _, _, _ -> },
     onSharePdf: (Context, Document) -> Unit = { _, _ -> },
-    onExport: (Context, Document, Uri, com.oscan.android.engine.ExportFormat, com.oscan.android.data.preferences.JpegQuality) -> Unit = { ctx, doc, uri, fmt, q -> onSavePdf(ctx, doc, uri) },
-    onShare: (Context, Document, com.oscan.android.engine.ExportFormat, com.oscan.android.data.preferences.JpegQuality) -> Unit = { ctx, doc, fmt, q -> onSharePdf(ctx, doc) },
+    onExport: (Context, Document, Uri, com.oscan.android.engine.ExportFormat, com.oscan.android.data.preferences.JpegQuality) -> Unit = { ctx, doc, uri, _, _ -> onSavePdf(ctx, doc, uri) },
+    onShare: (Context, Document, com.oscan.android.engine.ExportFormat, com.oscan.android.data.preferences.JpegQuality) -> Unit = { ctx, doc, _, _ -> onSharePdf(ctx, doc) },
     onOpenPage: (Int) -> Unit,
     onReorderPages: (List<PageId>) -> Unit = {},
     onRotatePage: (PageId, Int) -> Unit = { _, _ -> },
@@ -1090,12 +1029,12 @@ fun DocumentDetailScreen(
                                         DropdownMenu(expanded = pageMenuOpen, onDismissRequest = { pageMenuOpen = false }) {
                                             DropdownMenuItem(
                                                 text = { Text(stringResource(R.string.page_rotate_left)) },
-                                                leadingIcon = { Icon(Icons.Default.RotateLeft, null) },
+                                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.RotateLeft, null) },
                                                 onClick = { pageMenuOpen = false; onRotatePage(page.id, -90) }
                                             )
                                             DropdownMenuItem(
                                                 text = { Text(stringResource(R.string.page_rotate_right)) },
-                                                leadingIcon = { Icon(Icons.Default.RotateRight, null) },
+                                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.RotateRight, null) },
                                                 onClick = { pageMenuOpen = false; onRotatePage(page.id, 90) }
                                             )
                                             DropdownMenuItem(
@@ -1409,12 +1348,6 @@ private fun Thumbnail(
         }
     }
 }
-
-@Composable
-private fun rememberManagedBitmap(fileStore: DocumentFileStore, maxDimension: Int) =
-    produceState<ManagedBitmap>(initialValue = ManagedBitmap.Loading, maxDimension) {
-        value = ManagedBitmap.Missing
-    }
 
 @Composable
 private fun rememberManagedBitmap(

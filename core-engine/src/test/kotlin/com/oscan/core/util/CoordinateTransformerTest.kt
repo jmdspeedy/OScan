@@ -1,6 +1,5 @@
 package com.oscan.core.util
 
-import com.oscan.core.model.CornerPoints
 import com.oscan.core.model.ImageDimensions
 import org.opencv.core.Point
 import kotlin.test.Test

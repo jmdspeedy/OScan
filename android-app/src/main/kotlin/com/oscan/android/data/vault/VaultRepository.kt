@@ -11,7 +11,6 @@ import com.oscan.android.data.storage.DocumentFileStore
 import com.oscan.android.data.vault.crypto.KdfParameters
 import com.oscan.android.data.vault.crypto.PasscodeValidationResult
 import com.oscan.android.data.vault.crypto.VaultCrypto
-import com.oscan.android.data.vault.crypto.VaultCryptoException
 import com.oscan.android.data.vault.journal.TransactionRecord
 import com.oscan.android.data.vault.journal.TransactionStatus
 import com.oscan.android.data.vault.journal.TransactionType

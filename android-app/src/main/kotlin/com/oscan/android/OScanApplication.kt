@@ -5,7 +5,6 @@ import com.oscan.android.data.db.OScanDatabase
 import com.oscan.android.data.preferences.UserPreferencesStore
 import com.oscan.android.data.repository.DocumentRepository
 import com.oscan.android.data.repository.LocalDocumentRepository
-import com.oscan.android.data.repository.NewPage
 import com.oscan.android.data.session.ScanSessionStore
 import com.oscan.android.data.storage.DocumentFileStore
 import com.oscan.android.data.vault.LocalVaultRepository

@@ -2,7 +2,6 @@ package com.oscan.android.data.vault
 
 import androidx.test.core.app.ApplicationProvider
 import com.oscan.android.data.repository.NewPage
-import com.oscan.core.model.CornerPoints
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -12,7 +11,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
