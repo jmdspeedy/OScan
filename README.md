@@ -1,6 +1,6 @@
 # OScan
 
-[![Build APK](https://github.com/jmdspeedy/OScan/actions/workflows/build-apk.yml/badge.svg)](https://github.com/jmdspeedy/OScan/actions/workflows/build-apk.yml)
+[![Build APK](https://github.com/jmdspeedy/OScan/actions/workflows/build-apk.yml/badge.svg?event=push)](https://github.com/jmdspeedy/OScan/actions/workflows/build-apk.yml)
 
 OScan is a privacy-first Android document scanner and local document library. It turns photos into clean, perspective-corrected documents entirely on the device—no accounts, cloud processing, telemetry, or app-initiated document uploads.
 
