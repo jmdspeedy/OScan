@@ -1,5 +1,6 @@
 package com.oscan.android.data.vault
 
+import com.oscan.android.data.vault.crypto.VaultCrypto
 import com.oscan.core.model.CornerPoints
 
 data class VaultPage(
@@ -35,9 +36,9 @@ data class VaultConfig(
     val kdfAlgorithm: String = "Argon2id",
     val kdfVersion: Int = 1,
     val saltHex: String,
-    val iterations: Int = 3,
-    val memoryKb: Int = 65536,
-    val parallelism: Int = 1,
+    val iterations: Int = VaultCrypto.CURRENT_KDF_ITERATIONS,
+    val memoryKb: Int = VaultCrypto.CURRENT_KDF_MEMORY_KB,
+    val parallelism: Int = VaultCrypto.CURRENT_KDF_PARALLELISM,
     val wrappedVmkNonceHex: String,
     val wrappedVmkCiphertextHex: String,
     val failedAttempts: Int = 0,

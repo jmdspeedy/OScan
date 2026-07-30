@@ -2,7 +2,7 @@
 
 [![Build APK](https://github.com/jmdspeedy/OScan/actions/workflows/build-apk.yml/badge.svg)](https://github.com/jmdspeedy/OScan/actions/workflows/build-apk.yml)
 
-OScan is a privacy-first Android document scanner and local document library. It turns photos into clean, perspective-corrected documents entirely on the device—no accounts, cloud processing, telemetry, or document uploads.
+OScan is a privacy-first Android document scanner and local document library. It turns photos into clean, perspective-corrected documents entirely on the device—no accounts, cloud processing, telemetry, or app-initiated document uploads.
 
 ## What OScan can do
 
@@ -39,7 +39,25 @@ OScan is a privacy-first Android document scanner and local document library. It
 
 ## Privacy by design
 
-Document detection, image enhancement, library management, encryption, and export all run locally. OScan does not require an account and does not send images or telemetry to a remote service.
+Document detection, image enhancement, library management, encryption, and export all run locally. OScan does not require an account, request internet access, or send images or telemetry to a remote service.
+
+### Android system backup
+
+Android may include standard-library documents, scan sessions, database metadata, and preferences in system backup or device-to-device transfer, depending on the device and the user's Android backup settings. This behavior is provided by Android rather than by an OScan server. Encrypted Vault files and biometric unlock data are explicitly excluded from both cloud backup and device transfer.
+
+Users who do not want standard OScan data included in Android backup can disable app-data backup in their device settings. Exporting or sharing a document sends it only to the location or app the user selects.
+
+## Download
+
+GitHub Releases provide a signed release APK and its SHA-256 checksum. Android may ask users to allow installation from their browser or file manager because OScan is distributed outside an app store.
+
+The signing certificate is kept stable between releases so Android can verify upgrades. Download APKs only from the [official OScan releases](https://github.com/jmdspeedy/OScan/releases).
+
+Release certificate SHA-256 fingerprint:
+
+```text
+EC:B8:BB:C2:AE:84:55:57:FE:79:51:0C:D5:CE:5E:07:C9:B2:4F:DF:97:7E:DF:55:EC:20:D4:CA:AA:3D:20:DE
+```
 
 ## Project structure
 
@@ -86,6 +104,8 @@ Run the desktop visual harness with:
 The desktop harness expects local test fixtures in the ignored `test-images/` directory.
 
 See the [complete testing guide](docs/testing_guide.md) for automated, desktop, Android, Vault, localization, accessibility, privacy, and release validation.
+
+Maintainers should also follow the [release and signing guide](docs/releasing.md) before creating a version tag.
 
 ## Ownership
 

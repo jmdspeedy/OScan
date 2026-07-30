@@ -1,26 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Application Name -->
-    <string name="app_name" translatable="false">OScan</string>
+    <string name="app_name">OScan</string>
 
     <!-- General / Common UI -->
     <string name="action_cancel">取消</string>
-    <string name="action_confirm">确认</string>
     <string name="action_save">保存</string>
-    <string name="action_delete">删除</string>
     <string name="action_done">完成</string>
-    <string name="action_back">返回</string>
     <string name="action_close">关闭</string>
-    <string name="action_retry">重试</string>
     <string name="action_share">分享</string>
-    <string name="action_export">导出</string>
     <string name="action_edit">编辑</string>
     <string name="action_rename">重命名</string>
     <string name="action_move">移动</string>
-    <string name="action_restore">还原</string>
     <string name="cd_back_button">返回上页</string>
-    <string name="cd_close_button">关闭界面</string>
-    <string name="cd_more_options">更多选项</string>
 
     <!-- Navigation items -->
     <string name="nav_library">文档库</string>
@@ -32,62 +24,28 @@
     <string name="settings_language_heading">应用语言</string>
     <string name="settings_language_subtitle">选择 OScan 中使用的语言。</string>
     <string name="language_system">跟随系统</string>
-    <string name="language_system_current">当前：%1$s</string>
-    <string name="language_english" translatable="false">English</string>
-    <string name="language_simplified_chinese" translatable="false">简体中文</string>
-    <string name="language_japanese" translatable="false">日本語</string>
+    <string name="language_english">English</string>
+    <string name="language_simplified_chinese">简体中文</string>
+    <string name="language_japanese">日本語</string>
 
     <!-- Me / Settings Screen Groups & Items -->
-    <string name="settings_section_capture">扫描与采集</string>
-    <string name="settings_section_appearance">外观设置</string>
-    <string name="settings_section_storage">存储管理</string>
-    <string name="settings_section_security">安全与保险箱</string>
-    <string name="settings_section_about">关于</string>
 
     <!-- Settings items -->
-    <string name="settings_default_treatment">默认滤镜处理</string>
-    <string name="settings_default_page_size">默认 PDF 页面尺寸</string>
-    <string name="settings_jpeg_quality">JPEG 导出质量</string>
-    <string name="settings_grid_lines">相机网格线</string>
-    <string name="settings_grid_lines_desc">在相机视图中显示构图网格</string>
-    <string name="settings_auto_capture">自动拍照</string>
-    <string name="settings_auto_capture_desc">文档稳定时自动拍摄</string>
-    <string name="settings_edge_guidance">边缘检测引导</string>
-    <string name="settings_edge_guidance_desc">显示文档边缘的视觉提示</string>
 
     <string name="settings_theme">主题模式</string>
-    <string name="settings_accent">主题配色</string>
-    <string name="settings_theme_system">跟随系统</string>
     <string name="settings_theme_light">浅色模式</string>
     <string name="settings_theme_dark">深色模式</string>
 
-    <string name="settings_trash_retention">回收站自动清理</string>
-    <string name="settings_clear_cache">清理图片缓存</string>
-    <string name="settings_clear_cache_desc">释放临时处理文件</string>
-    <string name="settings_cache_cleared">缓存已成功清理</string>
 
-    <string name="settings_vault_setup">设置加密保险箱</string>
-    <string name="settings_vault_status_enabled">已受保护</string>
-    <string name="settings_vault_status_disabled">未配置</string>
-    <string name="settings_biometrics">生物识别解锁</string>
-    <string name="settings_biometrics_desc">使用指纹或人脸识别解锁保险箱</string>
 
-    <string name="settings_version">版本信息</string>
-    <string name="settings_licenses">开源许可协议</string>
-    <string name="settings_privacy_policy">隐私政策</string>
 
     <!-- Treatments / Filters -->
     <string name="treatment_magic">神奇色彩</string>
-    <string name="treatment_color">彩色</string>
     <string name="treatment_grayscale">灰度</string>
     <string name="treatment_bw">黑白</string>
     <string name="treatment_photo">原图</string>
 
     <!-- PDF Page Sizes -->
-    <string name="page_size_auto">自动（匹配图像）</string>
-    <string name="page_size_a4" translatable="false">A4</string>
-    <string name="page_size_us_letter" translatable="false">US Letter</string>
-    <string name="page_size_legal" translatable="false">Legal</string>
 
     <!-- JPEG Quality -->
     <string name="jpeg_quality_low">低 (60%)</string>
@@ -107,114 +65,49 @@
     <string name="accent_slate">木炭灰</string>
 
     <!-- Trash Retention options -->
-    <string name="retention_never">从不</string>
-    <string name="retention_7_days">7 天后</string>
-    <string name="retention_30_days">30 天后</string>
-    <string name="retention_90_days">90 天后</string>
 
     <!-- Start / Welcome Screen -->
     <string name="start_welcome_title">欢迎使用 OScan</string>
     <string name="start_welcome_subtitle">快速、私密的本地文档扫描工具。</string>
-    <string name="start_action_scan">开始扫描</string>
     <string name="start_action_import">导入文件</string>
 
     <!-- Library Screen -->
     <string name="library_title">文档库</string>
-    <string name="library_search_placeholder">搜索文档与文件夹…</string>
-    <string name="library_tab_all">全部</string>
-    <string name="library_tab_documents">文档</string>
-    <string name="library_tab_folders">文件夹</string>
     <string name="library_tab_trash">回收站</string>
-    <string name="library_empty_title">暂无文档</string>
-    <string name="library_empty_subtitle">扫描您的第一份文档或导入文件开始使用。</string>
     <string name="library_trash_empty">回收站为空</string>
 
-    <string name="library_sort_by">排序方式</string>
     <string name="library_sort_date_desc">更新时间（最新）</string>
     <string name="library_sort_date_asc">更新时间（最旧）</string>
     <string name="library_sort_name_asc">名称（A 到 Z）</string>
     <string name="library_sort_name_desc">名称（Z 到 A）</string>
-    <string name="library_sort_pages_desc">页数</string>
 
-    <string name="library_action_new_folder">新建文件夹</string>
-    <string name="library_action_empty_trash">清空回收站</string>
 
     <!-- Dialogs -->
-    <string name="dialog_new_folder_title">新建文件夹</string>
-    <string name="dialog_folder_name_hint">文件夹名称</string>
-    <string name="dialog_rename_title">重命名</string>
-    <string name="dialog_rename_hint">名称</string>
-    <string name="dialog_delete_doc_title">删除文档</string>
-    <string name="dialog_delete_doc_msg">确定将“%1$s”移至回收站？</string>
-    <string name="dialog_delete_folder_title">删除文件夹</string>
-    <string name="dialog_delete_folder_msg">确定将文件夹“%1$s”及其所有内容移至回收站？</string>
-    <string name="dialog_empty_trash_title">清空回收站</string>
-    <string name="dialog_empty_trash_msg">确定永久删除回收站中的所有项目？此操作不可撤销。</string>
 
     <!-- Document Page position -->
     <string name="page_position_format">第 %1$d 页，共 %2$d 页</string>
 
     <!-- Camera Screen & Guidance -->
-    <string name="camera_guidance_steady">请保持设备稳定</string>
-    <string name="camera_guidance_position">请将文档对准框内</string>
-    <string name="camera_guidance_ready">就绪</string>
-    <string name="camera_guidance_processing">正在处理页面…</string>
-    <string name="camera_mode_single">单页</string>
-    <string name="camera_mode_batch">连续</string>
-    <string name="camera_flash_auto">闪光灯 自动</string>
-    <string name="camera_flash_on">闪光灯 开启</string>
-    <string name="camera_flash_off">闪光灯 关闭</string>
-    <string name="camera_permission_title">需要相机权限</string>
-    <string name="camera_permission_msg">OScan 需要访问相机才能扫描文档。</string>
-    <string name="camera_permission_grant">授予权限</string>
-    <string name="cd_shutter">拍摄照片</string>
-    <string name="cd_toggle_flash">切换闪光灯</string>
-    <string name="cd_switch_mode">切换扫描模式</string>
 
     <!-- Crop Screen -->
-    <string name="crop_title">裁剪与边缘微调</string>
-    <string name="crop_rotate_left">向左旋转</string>
-    <string name="crop_rotate_right">向右旋转</string>
-    <string name="crop_reset">重置</string>
-    <string name="cd_crop_handle">调整边缘顶点</string>
 
     <!-- Preview / Editor Screen -->
-    <string name="preview_title">预览扫描</string>
-    <string name="preview_retake">重拍</string>
-    <string name="preview_keep_scanning">加页</string>
-    <string name="preview_save_document">保存文档</string>
-    <string name="editor_title">编辑文档</string>
-    <string name="editor_reorder">调整页序</string>
-    <string name="editor_apply_all">应用滤镜至所有页面</string>
 
     <!-- Export Screen -->
     <string name="export_success_title">导出完成</string>
     <string name="export_saved_to">已保存至：%1$s</string>
-    <string name="export_action_open">打开文件</string>
     <string name="export_action_share">分享文件</string>
 
     <!-- Vault Screens -->
     <string name="vault_title">加密保险箱</string>
-    <string name="vault_subtitle">安全加密存储敏感文档</string>
     <string name="vault_enter_passcode">输入密码</string>
-    <string name="vault_set_passcode">设置密码</string>
     <string name="vault_confirm_passcode">确认密码</string>
-    <string name="vault_passcode_mismatch">两次输入的密码不一致，请重试。</string>
     <string name="vault_incorrect_passcode">密码错误</string>
-    <string name="vault_locked">保险箱已锁定</string>
     <string name="vault_unlock">解锁保险箱</string>
     <string name="vault_move_to_vault">移入保险箱</string>
-    <string name="vault_remove_from_vault">移出保险箱</string>
-    <string name="vault_empty">保险箱中暂无文档</string>
 
     <!-- Errors and Status Messages -->
-    <string name="error_generic">发生未知错误</string>
-    <string name="error_file_not_found">文件未找到</string>
-    <string name="error_storage_full">存储空间不足</string>
-    <string name="error_import_failed">导入文档失败</string>
-    <string name="error_export_failed">导出文档失败</string>
     <string name="error_camera_unavailable">相机不可用</string>
-    <string name="error_vault_access">保险箱访问被拒绝</string>
 
     <string name="action_ok">确定</string>
     <string name="action_create">创建</string>
@@ -277,14 +170,12 @@
     <string name="privacy_summary">OScan 无需账户、云服务、分析统计或广告即可运行。</string>
     <string name="privacy_section_expanded">已展开</string>
     <string name="privacy_section_collapsed">已折叠</string>
-    <string name="privacy_on_device">所有处理均在此设备上完成</string>
     <string name="privacy_local_offline">100% 本地离线</string>
     <string name="privacy_no_accounts">无需账户或云服务</string>
     <string name="privacy_explicit_sharing">仅通过系统明确分享</string>
     <string name="about_title">关于 OScan</string>
     <string name="about_github">查看应用代码仓库（GitHub）</string>
     <string name="developer_title">开发者</string>
-    <string name="developer_row_desc">了解 OScan 背后的故事与开发者</string>
     <string name="developer_name">James Wu</string>
     <string name="developer_role">OScan 独立开发者</string>
     <string name="developer_why_title">我为什么开发 OScan</string>
@@ -327,7 +218,6 @@
     <string name="vault_create">创建保险箱</string>
     <string name="vault_locked_title">保险箱已锁定</string>
     <string name="vault_fingerprint_unlock">使用指纹解锁</string>
-    <string name="vault_passcode">密码</string>
     <string name="vault_forgot_passcode">忘记密码？</string>
     <string name="vault_reset_title">重置并删除保险箱？</string>
     <string name="vault_reset_body">OScan 无法找回忘记的密码。重置保险箱将永久删除其中所有加密文档。</string>
@@ -348,7 +238,6 @@
     <string name="vault_empty_trash_title">清空保险箱回收站？</string>
     <string name="vault_empty_trash_body">保险箱回收站中的所有项目都将被永久删除。</string>
     <string name="vault_settings_title">保险箱设置</string>
-    <string name="vault_settings_row_desc">无需解锁文档即可管理保险箱安全设置</string>
     <string name="vault_not_configured_title">尚未设置保险箱</string>
     <string name="vault_not_configured_body">保险箱会在此设备上加密敏感文档，并使用密码进行保护。保险箱尚未设置。要现在设置吗？</string>
     <string name="vault_forgot_passcode_settings_desc">无需密码即可永久删除保险箱</string>
@@ -381,7 +270,6 @@
     <string name="folders_title">文件夹</string>
     <string name="folders_empty_title">暂无文件夹</string>
     <string name="folders_empty_body">创建文件夹来整理文档。</string>
-    <string name="folder_create">创建文件夹</string>
     <string name="folder_create_new">创建新文件夹</string>
     <string name="folder_rename">重命名文件夹</string>
     <string name="folder_delete">删除文件夹</string>
@@ -452,7 +340,6 @@
     <string name="camera_capturing">正在拍摄</string>
     <string name="state_ready">就绪</string>
     <string name="state_unavailable">不可用</string>
-    <string name="camera_access_off">相机访问权限已关闭</string>
     <string name="camera_allow_access">允许访问相机</string>
     <string name="crop_valid">裁剪区域有效</string>
     <string name="crop_invalid">裁剪区域无效，边缘交叉</string>
@@ -480,7 +367,6 @@
     <string name="crop_drag_hint">拖动边缘 · 缓慢移动以提高精度</string>
     <string name="crop_edges_cross">边缘不能交叉</string>
     <string name="crop_fine_adjust">精细调整</string>
-    <string name="scanner_review_count">已接受 %1$d / %2$d 页</string>
     <string name="biometric_secure_key_missing">指纹验证未提供安全密钥</string>
     <string name="biometric_unavailable">此界面无法使用指纹验证</string>
     <string name="biometric_subtitle">验证指纹以访问加密的保险箱密钥</string>
@@ -497,15 +383,8 @@
     <string name="vault_fingerprint_enroll_first">请先在 Android 设置中录入高安全性指纹</string>
     <string name="vault_passcode_fallback">保险箱密码始终可作为备用方式</string>
     <string name="settings_capture_row">拍摄</string>
-    <string name="settings_capture_row_desc">快门反馈与相机偏好</string>
     <string name="settings_enhancement_row">增强</string>
-    <string name="settings_enhancement_row_desc">默认处理效果（Magic 或原图）</string>
     <string name="settings_appearance_row">外观</string>
-    <string name="settings_appearance_row_desc">更改 OScan 主题</string>
-    <string name="settings_storage_row_desc">本地用量概览与缓存清理</string>
-    <string name="settings_privacy_row_desc">100% 本地，无遥测或账户</string>
-    <string name="settings_about_row_desc">版本 %1$s 与开源声明</string>
-    <string name="camera_permission_denied_body">OScan 需要相机访问权限才能扫描文档。</string>
     <string name="camera_permission_body">允许访问相机以扫描文档。</string>
     <string name="action_try_again">重试</string>
     <string name="action_continue">继续</string>
@@ -602,10 +481,6 @@
     <string name="vault_favorite_remove">从保险箱收藏中移除</string>
 
     <!-- Plural Quantity Resources -->
-    <plurals name="plural_documents">
-        <item quantity="other">%1$d 份文档</item>
-    </plurals>
-
     <plurals name="plural_folders">
         <item quantity="other">%1$d 个文件夹</item>
     </plurals>

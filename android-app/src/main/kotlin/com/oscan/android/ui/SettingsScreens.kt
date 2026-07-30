@@ -61,6 +61,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -91,6 +92,7 @@ import com.oscan.android.data.storage.DocumentFileStore
 import com.oscan.android.ui.theme.createColorScheme
 import com.oscan.android.ui.theme.swatchColors
 import com.oscan.core.model.FilterType
+import java.util.Locale
 
 @Composable
 fun AccentTheme.label(): String = when (this) {
@@ -573,7 +575,7 @@ fun StorageSettingsScreen(
 
     val docsSizeMb = remember(fileStore) {
         val totalBytes = fileStore.getStorageSize()
-        String.format("%.1f MB", totalBytes / (1024.0 * 1024.0))
+        String.format(Locale.getDefault(), "%.1f MB", totalBytes / (1024.0 * 1024.0))
     }
     val cacheSizeMb = remember(context) {
         // Android Studio's preview context may not provide a cache directory.
@@ -582,7 +584,7 @@ fun StorageSettingsScreen(
             ?.filter { it.isFile }
             ?.sumOf { it.length() }
             ?: 0L
-        String.format("%.1f MB", cacheBytes / (1024.0 * 1024.0))
+        String.format(Locale.getDefault(), "%.1f MB", cacheBytes / (1024.0 * 1024.0))
     }
 
     Scaffold(
@@ -661,7 +663,7 @@ fun StorageSettingsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrivacyScreen(onBack: () -> Unit) {
-    var expandedSection by remember { mutableStateOf(0) }
+    var expandedSection by remember { mutableIntStateOf(0) }
 
     Scaffold(
         topBar = {

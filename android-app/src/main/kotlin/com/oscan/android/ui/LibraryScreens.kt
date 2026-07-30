@@ -101,6 +101,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -224,8 +225,8 @@ private fun EmptyFavoritesState() {
 private fun FilterChipsRow(
     currentFilter: DocumentFilter,
     onFilterChange: (DocumentFilter) -> Unit,
-    onOpenVault: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenVault: (() -> Unit)? = null
 ) {
     LazyRow(
         modifier = modifier,
@@ -1268,7 +1269,7 @@ fun PageViewerScreen(
     fileStore: DocumentFileStore,
     onBack: () -> Unit
 ) {
-    var pageIndex by rememberSaveable(document.id.value) { mutableStateOf(initialPage.coerceIn(0, document.pages.lastIndex)) }
+    var pageIndex by rememberSaveable(document.id.value) { mutableIntStateOf(initialPage.coerceIn(0, document.pages.lastIndex)) }
     val page = document.pages[pageIndex]
     var scale by remember(page.id.value) { mutableFloatStateOf(1f) }
     var offset by remember(page.id.value) { mutableStateOf(Offset.Zero) }

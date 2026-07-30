@@ -6,6 +6,7 @@ gradle-bin/
 
 # Local Android/SDK configuration
 local.properties
+.signing/
 
 # IDE files
 .idea/

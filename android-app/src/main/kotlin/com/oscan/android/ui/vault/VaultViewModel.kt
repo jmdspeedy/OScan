@@ -59,6 +59,7 @@ class VaultViewModel(
     val uiState: StateFlow<VaultUiState> = _uiState.asStateFlow()
     private var lockoutCountdownJob: Job? = null
     private var pendingBiometricEnrollmentKeys: ActiveVaultKeys? = null
+    private var unlockInProgress = false
 
     private fun clearPendingBiometricEnrollmentKeys() {
         pendingBiometricEnrollmentKeys?.wipe()
@@ -161,8 +162,10 @@ class VaultViewModel(
     }
 
     fun unlockVault(passcode: String) {
+        if (unlockInProgress) return
+        unlockInProgress = true
+        _uiState.value = _uiState.value.copy(errorMessage = null)
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(errorMessage = null)
             try {
                 val keys = withContext(Dispatchers.IO) {
                     vaultRepository.unlock(passcode)
@@ -178,6 +181,8 @@ class VaultViewModel(
                 _uiState.value = _uiState.value.copy(errorMessage = "Incorrect passcode")
             } catch (error: Throwable) {
                 _uiState.value = _uiState.value.copy(errorMessage = "Unlock failed: ${error.message}")
+            } finally {
+                unlockInProgress = false
             }
         }
     }

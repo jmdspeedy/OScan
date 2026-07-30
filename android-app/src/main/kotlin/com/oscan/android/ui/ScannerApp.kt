@@ -7,6 +7,13 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +31,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
@@ -46,10 +54,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.DisposableEffect
@@ -60,10 +72,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -74,6 +89,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.oscan.android.data.model.DocumentId
 import com.oscan.android.data.model.Folder
 import com.oscan.android.data.model.FolderId
@@ -81,6 +97,9 @@ import com.oscan.android.data.session.ScanSession
 import com.oscan.android.data.session.SessionPage
 import com.oscan.android.data.session.SessionPageStatus
 import com.oscan.android.data.storage.DocumentFileStore
+import kotlin.math.roundToInt
+
+private const val REVIEW_REORDER_LONG_PRESS_MILLIS = 350L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -406,6 +425,7 @@ private fun SessionPositionHeader(session: ScanSession, position: Int, thumbnail
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SessionReviewScreen(
     state: ScannerUiState.Review,
@@ -419,125 +439,223 @@ private fun SessionReviewScreen(
 ) {
     val pending = state.pages.any { it.status == SessionPageStatus.CROP_REVIEW || it.status == SessionPageStatus.TREATMENT_REVIEW }
     val haptics = LocalHapticFeedback.current
-    Column(Modifier.fillMaxSize()) {
-        Text(
-            stringResource(R.string.scanner_review_count, state.session.acceptedPages.size, state.pages.size),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(16.dp)
-        )
-        LazyColumn(Modifier.weight(1f)) {
+    var draggedPageId by remember { mutableStateOf<String?>(null) }
+    var draggedPageOffsetY by remember { mutableFloatStateOf(0f) }
+    val platformViewConfiguration = LocalViewConfiguration.current
+    val reorderViewConfiguration = remember(platformViewConfiguration) {
+        object : ViewConfiguration by platformViewConfiguration {
+            override val longPressTimeoutMillis = REVIEW_REORDER_LONG_PRESS_MILLIS
+        }
+    }
+    CompositionLocalProvider(LocalViewConfiguration provides reorderViewConfiguration) {
+        Column(Modifier.fillMaxSize()) {
+            LazyColumn(Modifier.weight(1f)) {
             items(state.pages, key = SessionPageSummary::id) { page ->
-                var rowHeightPx by remember(page.id) { mutableStateOf(1) }
+                var rowHeightPx by remember(page.id) { mutableIntStateOf(1) }
+                val currentPosition by rememberUpdatedState(page.position)
+                val isDragging = draggedPageId == page.id
                 val moveUpLabel = stringResource(R.string.cd_move_page_up)
                 val moveDownLabel = stringResource(R.string.cd_move_page_down)
                 val reorderDescription = stringResource(R.string.cd_drag_to_reorder_page, page.position + 1)
-                Row(
+                val selectedScale by animateFloatAsState(
+                    targetValue = if (isDragging) 1.02f else 1f,
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    label = "reviewPageScale"
+                )
+                val selectedElevation by animateDpAsState(
+                    targetValue = if (isDragging) 10.dp else 0.dp,
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    label = "reviewPageElevation"
+                )
+                val selectedColor by animateColorAsState(
+                    targetValue = if (isDragging) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
+                    label = "reviewPageColor"
+                )
+                val handleColor by animateColorAsState(
+                    targetValue = if (isDragging) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                    label = "reviewHandleColor"
+                )
+                val settlingDragOffsetY by animateFloatAsState(
+                    targetValue = if (isDragging) draggedPageOffsetY else 0f,
+                    animationSpec = if (isDragging) snap() else spring(stiffness = Spring.StiffnessMediumLow),
+                    label = "reviewPageDragOffset"
+                )
+                val placementModifier = if (isDragging) {
+                    Modifier
+                } else {
+                    Modifier.animateItemPlacement(
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                    )
+                }
+
+                Column(
                     Modifier
                         .fillMaxWidth()
-                        .onSizeChanged { rowHeightPx = it.height.coerceAtLeast(1) }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (page.thumbnail != null) {
-                        Image(page.thumbnail.asImageBitmap(), stringResource(R.string.cd_page_thumbnail, page.position + 1), Modifier.size(56.dp))
-                    } else {
-                        Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.size(56.dp)) {
-                            Box(contentAlignment = Alignment.Center) { Icon(Icons.AutoMirrored.Filled.InsertDriveFile, contentDescription = null) }
+                        .then(placementModifier)
+                        .zIndex(if (isDragging) 1f else 0f)
+                        .graphicsLayer {
+                            // During an active drag, use the pointer offset directly. Routing it
+                            // through animateFloatAsState delays the swap compensation by one frame,
+                            // which makes the held row briefly flash at its list position.
+                            translationY = if (isDragging) draggedPageOffsetY else settlingDragOffsetY
                         }
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.scanner_page_number, page.position + 1), fontWeight = FontWeight.SemiBold)
-                        Text(page.status.readableLabel(), style = MaterialTheme.typography.bodySmall)
-                        page.message?.let { Text(localizedRuntimeMessage(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            when (page.status) {
-                                SessionPageStatus.ACCEPTED, SessionPageStatus.CROP_REVIEW, SessionPageStatus.TREATMENT_REVIEW ->
-                                    TextButton(onClick = { onOpen(page.id) }) {
-                                        Text(
-                                            if (page.status == SessionPageStatus.ACCEPTED) {
-                                                stringResource(R.string.action_edit)
-                                            } else {
-                                                stringResource(R.string.action_review)
+                        .onSizeChanged { rowHeightPx = it.height.coerceAtLeast(1) }
+                ) {
+                    Surface(
+                        color = selectedColor,
+                        shape = RoundedCornerShape(16.dp),
+                        tonalElevation = if (isDragging) 4.dp else 0.dp,
+                        shadowElevation = selectedElevation,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .graphicsLayer {
+                                scaleX = selectedScale
+                                scaleY = selectedScale
+                            }
+                    ) {
+                        Row(
+                            Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (page.thumbnail != null) {
+                                Image(page.thumbnail.asImageBitmap(), stringResource(R.string.cd_page_thumbnail, page.position + 1), Modifier.size(56.dp))
+                            } else {
+                                Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.size(56.dp)) {
+                                    Box(contentAlignment = Alignment.Center) { Icon(Icons.AutoMirrored.Filled.InsertDriveFile, contentDescription = null) }
+                                }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(stringResource(R.string.scanner_page_number, page.position + 1), fontWeight = FontWeight.SemiBold)
+                                if (page.status != SessionPageStatus.ACCEPTED) {
+                                    Text(page.status.readableLabel(), style = MaterialTheme.typography.bodySmall)
+                                }
+                                page.message?.let { Text(localizedRuntimeMessage(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    when (page.status) {
+                                        SessionPageStatus.ACCEPTED, SessionPageStatus.CROP_REVIEW, SessionPageStatus.TREATMENT_REVIEW ->
+                                            TextButton(onClick = { onOpen(page.id) }) {
+                                                Text(
+                                                    if (page.status == SessionPageStatus.ACCEPTED) {
+                                                        stringResource(R.string.action_edit)
+                                                    } else {
+                                                        stringResource(R.string.action_review)
+                                                    }
+                                                )
+                                            }
+                                        SessionPageStatus.FAILED -> TextButton(onClick = {
+                                            if (page.canRetryDirectly) onRetry(page.id) else onReplace(page.id)
+                                        }) {
+                                            Text(
+                                                if (page.canRetryDirectly) {
+                                                    stringResource(R.string.action_try_again)
+                                                } else {
+                                                    stringResource(R.string.action_choose_again)
+                                                }
+                                            )
+                                        }
+                                        else -> Unit
+                                    }
+                                    TextButton(onClick = { onRemove(page.id) }) { Text(stringResource(R.string.action_remove)) }
+                                }
+                            }
+                            Surface(
+                                color = handleColor,
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .semantics {
+                                        contentDescription = reorderDescription
+                                        role = Role.Button
+                                        customActions = buildList {
+                                            if (page.position > 0) {
+                                                add(CustomAccessibilityAction(moveUpLabel) {
+                                                    onMove(page.id, -1)
+                                                    true
+                                                })
+                                            }
+                                            if (page.position < state.pages.lastIndex) {
+                                                add(CustomAccessibilityAction(moveDownLabel) {
+                                                    onMove(page.id, 1)
+                                                    true
+                                                })
+                                            }
+                                        }
+                                    }
+                                    .pointerInput(page.id, rowHeightPx, state.pages.size) {
+                                        var totalDragY = 0f
+                                        var appliedPositionShift = 0
+                                        var startPosition = 0
+
+                                        detectDragGesturesAfterLongPress(
+                                            onDragStart = {
+                                                startPosition = currentPosition
+                                                totalDragY = 0f
+                                                appliedPositionShift = 0
+                                                draggedPageOffsetY = 0f
+                                                draggedPageId = page.id
+                                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            },
+                                            onDragCancel = {
+                                                draggedPageId = null
+                                                draggedPageOffsetY = 0f
+                                            },
+                                            onDragEnd = {
+                                                draggedPageId = null
+                                                draggedPageOffsetY = 0f
+                                            },
+                                            onDrag = { change, dragAmount ->
+                                                change.consume()
+                                                totalDragY += dragAmount.y
+                                                val itemHeight = rowHeightPx.toFloat().coerceAtLeast(1f)
+                                                val requestedShift = (totalDragY / itemHeight)
+                                                    .roundToInt()
+                                                    .coerceIn(-startPosition, state.pages.lastIndex - startPosition)
+                                                val compensatedOffset = (totalDragY - requestedShift * itemHeight)
+                                                    .coerceIn(-itemHeight * 0.55f, itemHeight * 0.55f)
+
+                                                if (requestedShift != appliedPositionShift) {
+                                                    val direction = if (requestedShift > appliedPositionShift) 1 else -1
+                                                    val moveCount = kotlin.math.abs(requestedShift - appliedPositionShift)
+
+                                                    // Commit the visual compensation before changing
+                                                    // the backing list order so both are ready for the
+                                                    // same frame, even though the order arrives via StateFlow.
+                                                    appliedPositionShift = requestedShift
+                                                    draggedPageOffsetY = compensatedOffset
+                                                    repeat(moveCount) {
+                                                        onMove(page.id, direction)
+                                                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    }
+                                                } else {
+                                                    draggedPageOffsetY = compensatedOffset
+                                                }
                                             }
                                         )
                                     }
-                                SessionPageStatus.FAILED -> TextButton(onClick = {
-                                    if (page.canRetryDirectly) onRetry(page.id) else onReplace(page.id)
-                                }) {
-                                    Text(
-                                        if (page.canRetryDirectly) {
-                                            stringResource(R.string.action_try_again)
-                                        } else {
-                                            stringResource(R.string.action_choose_again)
-                                        }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.DragHandle,
+                                        contentDescription = null,
+                                        tint = if (isDragging) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
                                     )
                                 }
-                                else -> Unit
                             }
-                            TextButton(onClick = { onRemove(page.id) }) { Text(stringResource(R.string.action_remove)) }
                         }
                     }
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .semantics {
-                                contentDescription = reorderDescription
-                                role = Role.Button
-                                customActions = buildList {
-                                    if (page.position > 0) {
-                                        add(CustomAccessibilityAction(moveUpLabel) {
-                                            onMove(page.id, -1)
-                                            true
-                                        })
-                                    }
-                                    if (page.position < state.pages.lastIndex) {
-                                        add(CustomAccessibilityAction(moveDownLabel) {
-                                            onMove(page.id, 1)
-                                            true
-                                        })
-                                    }
-                                }
-                            }
-                            .pointerInput(page.id, rowHeightPx) {
-                                var accumulatedDragY = 0f
-                                detectDragGesturesAfterLongPress(
-                                    onDragStart = {
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    },
-                                    onDragCancel = { accumulatedDragY = 0f },
-                                    onDragEnd = { accumulatedDragY = 0f },
-                                    onDrag = { change, dragAmount ->
-                                        change.consume()
-                                        accumulatedDragY += dragAmount.y
-                                        val threshold = (rowHeightPx * 0.45f).coerceAtLeast(1f)
-                                        while (accumulatedDragY >= threshold) {
-                                            onMove(page.id, 1)
-                                            accumulatedDragY -= threshold
-                                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        }
-                                        while (accumulatedDragY <= -threshold) {
-                                            onMove(page.id, -1)
-                                            accumulatedDragY += threshold
-                                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        }
-                                    }
-                                )
-                            }
-                    ) {
-                        Icon(Icons.Default.DragHandle, contentDescription = null)
-                    }
+                    HorizontalDivider()
                 }
-                HorizontalDivider()
             }
         }
-        AdaptiveActionGroup(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalAlignment = Alignment.End
-        ) {
-            OutlinedButton(onClick = onAdd) { Text(stringResource(R.string.action_add_pages)) }
-            Button(onClick = onFinish, enabled = state.session.acceptedPages.isNotEmpty() && !pending) { Text(stringResource(R.string.action_finish)) }
+            AdaptiveActionGroup(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalAlignment = Alignment.End
+            ) {
+                OutlinedButton(onClick = onAdd) { Text(stringResource(R.string.action_add_pages)) }
+                Button(onClick = onFinish, enabled = state.session.acceptedPages.isNotEmpty() && !pending) { Text(stringResource(R.string.action_finish)) }
+            }
         }
     }
 }

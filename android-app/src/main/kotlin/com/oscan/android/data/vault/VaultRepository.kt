@@ -11,6 +11,8 @@ import com.oscan.android.data.storage.DocumentFileStore
 import com.oscan.android.data.vault.crypto.KdfParameters
 import com.oscan.android.data.vault.crypto.PasscodeValidationResult
 import com.oscan.android.data.vault.crypto.VaultCrypto
+import com.oscan.android.data.vault.crypto.VaultCryptoException
+import com.oscan.android.data.vault.crypto.WrappedVmkEnvelope
 import com.oscan.android.data.vault.journal.TransactionRecord
 import com.oscan.android.data.vault.journal.TransactionStatus
 import com.oscan.android.data.vault.journal.TransactionType
@@ -110,9 +112,13 @@ class LocalVaultRepository(
         val vaultId = newId()
         val salt = VaultCrypto.generateSalt()
         val kdfParams = KdfParameters(salt = salt)
-        val pdk = VaultCrypto.derivePdk(passcode, kdfParams)
         val vmk = VaultCrypto.generateVmk()
-        val wrapped = VaultCrypto.wrapVmk(vmk, pdk)
+        val pdk = VaultCrypto.derivePdk(passcode, kdfParams)
+        val wrapped = try {
+            VaultCrypto.wrapVmk(vmk, pdk)
+        } finally {
+            VaultCrypto.wipe(pdk)
+        }
 
         val config = VaultConfig(
             vaultId = vaultId,
@@ -152,14 +158,14 @@ class LocalVaultRepository(
         )
 
         val pdk = VaultCrypto.derivePdk(passcode, kdfParams)
-        val wrapped = com.oscan.android.data.vault.crypto.WrappedVmkEnvelope(
+        val wrapped = WrappedVmkEnvelope(
             nonce = config.wrappedVmkNonceHex.hexToByteArray(),
             ciphertext = config.wrappedVmkCiphertextHex.hexToByteArray()
         )
 
         val vmk = try {
             VaultCrypto.unwrapVmk(wrapped, pdk)
-        } catch (error: Throwable) {
+        } catch (error: VaultCryptoException.AuthenticationFailed) {
             val newFailures = config.failedAttempts + 1
             val delaySeconds = calculateLockoutDelaySeconds(newFailures)
             val nextAllowed = if (delaySeconds > 0) clock.millis() + (delaySeconds * 1000L) else 0L
@@ -175,6 +181,8 @@ class LocalVaultRepository(
                 val attemptsLeft = (5 - newFailures).coerceAtLeast(0)
                 throw VaultRepositoryError.IncorrectPasscode(attemptsLeft)
             }
+        } finally {
+            VaultCrypto.wipe(pdk)
         }
 
         if (config.failedAttempts > 0 || config.nextAllowedAttemptEpochMillis > 0) {
@@ -411,23 +419,31 @@ class LocalVaultRepository(
             parallelism = config.parallelism
         )
         val curPdk = VaultCrypto.derivePdk(currentPasscode, kdfParams)
-        val wrapped = com.oscan.android.data.vault.crypto.WrappedVmkEnvelope(
+        val wrapped = WrappedVmkEnvelope(
             nonce = config.wrappedVmkNonceHex.hexToByteArray(),
             ciphertext = config.wrappedVmkCiphertextHex.hexToByteArray()
         )
 
         // Verify current passcode
+        var verifiedVmk: ByteArray? = null
         try {
-            VaultCrypto.unwrapVmk(wrapped, curPdk)
-        } catch (error: Throwable) {
+            verifiedVmk = VaultCrypto.unwrapVmk(wrapped, curPdk)
+        } catch (error: VaultCryptoException.AuthenticationFailed) {
             throw VaultRepositoryError.IncorrectPasscode(0)
+        } finally {
+            VaultCrypto.wipe(curPdk)
+            verifiedVmk?.let(VaultCrypto::wipe)
         }
 
         // Re-wrap VMK with new passcode
         val newSalt = VaultCrypto.generateSalt()
         val newKdfParams = KdfParameters(salt = newSalt)
         val newPdk = VaultCrypto.derivePdk(newPasscode, newKdfParams)
-        val newWrapped = VaultCrypto.wrapVmk(keys.vmk, newPdk)
+        val newWrapped = try {
+            VaultCrypto.wrapVmk(keys.vmk, newPdk)
+        } finally {
+            VaultCrypto.wipe(newPdk)
+        }
 
         val newConfig = config.copy(
             saltHex = newSalt.toHex(),

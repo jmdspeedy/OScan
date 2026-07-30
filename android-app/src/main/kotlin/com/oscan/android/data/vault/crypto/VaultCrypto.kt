@@ -27,8 +27,8 @@ data class KdfParameters(
     val algorithm: String = "Argon2id",
     val version: Int = 1,
     val salt: ByteArray,
-    val iterations: Int = 3,
-    val memoryKb: Int = 65536,
+    val iterations: Int = VaultCrypto.CURRENT_KDF_ITERATIONS,
+    val memoryKb: Int = VaultCrypto.CURRENT_KDF_MEMORY_KB,
     val parallelism: Int = 1
 ) {
     override fun equals(other: Any?): Boolean {
@@ -73,6 +73,12 @@ data class WrappedVmkEnvelope(
 }
 
 object VaultCrypto {
+    // OWASP's mobile-friendly Argon2id baseline. The previous 64 MiB / 3-pass
+    // profile took several seconds in Bouncy Castle on typical Android devices.
+    const val CURRENT_KDF_ITERATIONS = 2
+    const val CURRENT_KDF_MEMORY_KB = 19 * 1024
+    const val CURRENT_KDF_PARALLELISM = 1
+
     private const val GCM_NONCE_LENGTH = 12
     private const val GCM_TAG_LENGTH_BITS = 128
     private const val KEY_LENGTH_BYTES = 32

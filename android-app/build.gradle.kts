@@ -4,6 +4,17 @@ plugins {
     id("org.jetbrains.kotlin.kapt")
 }
 
+val releaseKeystoreFile = providers.environmentVariable("OSCAN_KEYSTORE_FILE").orNull
+val releaseKeystorePassword = providers.environmentVariable("OSCAN_KEYSTORE_PASSWORD").orNull
+val releaseKeyAlias = providers.environmentVariable("OSCAN_KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("OSCAN_KEY_PASSWORD").orNull
+val hasReleaseSigning = listOf(
+    releaseKeystoreFile,
+    releaseKeystorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword
+).all { !it.isNullOrBlank() }
+
 kapt {
     arguments {
         arg("room.schemaLocation", "$projectDir/schemas")
@@ -18,8 +29,8 @@ android {
         applicationId = "com.oscan.android"
         minSdk = 26
         targetSdk = 34
-        versionCode = 7
-        versionName = "0.7.0"
+        versionCode = 8
+        versionName = "0.8.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -27,14 +38,40 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(checkNotNull(releaseKeystoreFile))
+                storePassword = checkNotNull(releaseKeystorePassword)
+                keyAlias = checkNotNull(releaseKeyAlias)
+                keyPassword = checkNotNull(releaseKeyPassword)
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
+    }
+
+    lint {
+        // These checks represent deliberate release policy choices rather than defects:
+        // dependency/KSP upgrades are handled separately, API 34 remains the GitHub build
+        // target for this release, and count-bearing accessibility/status text is localized
+        // as complete strings instead of English-style quantity fragments.
+        disable += setOf(
+            "GradleDependency",
+            "KaptUsageInsteadOfKsp",
+            "ObsoleteSdkInt",
+            "OldTargetApi",
+            "PluralsCandidate"
+        )
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

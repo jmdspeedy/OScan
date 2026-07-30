@@ -26,6 +26,7 @@ import androidx.lifecycle.viewModelScope
 import com.oscan.android.R
 import com.oscan.android.engine.AndroidScannerEngine
 import java.io.File
+import java.lang.ref.WeakReference
 import java.nio.ByteBuffer
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -68,7 +69,7 @@ class CameraViewModel(
     private var lastAnalysisAt = 0L
     private var smoothedCorners: List<PreviewPoint>? = null
     private var bindingGeneration = 0
-    private var boundPreviewView: PreviewView? = null
+    private var boundPreviewView: WeakReference<PreviewView>? = null
     @Volatile private var previewAspect = 3f / 4f
 
     fun bind(owner: LifecycleOwner, previewView: PreviewView, rotation: Int = Surface.ROTATION_0) {
@@ -100,7 +101,7 @@ class CameraViewModel(
                     .build()
                     .also { it.setAnalyzer(analysisExecutor, ::analyze) }
                 cameraProvider.unbindAll()
-                boundPreviewView = previewView
+                boundPreviewView = WeakReference(previewView)
                 val useCases = UseCaseGroup.Builder().apply {
                     previewView.viewPort?.let(::setViewPort)
                     addUseCase(preview)
@@ -129,6 +130,7 @@ class CameraViewModel(
         provider = null
         camera = null
         imageCapture = null
+        boundPreviewView?.clear()
         boundPreviewView = null
     }
 
@@ -205,7 +207,7 @@ class CameraViewModel(
                         PreviewPoint(old.x * .2f + fresh.x * .8f, old.y * .2f + fresh.y * .8f)
                     }
                 }
-                val preview = boundPreviewView
+                val preview = boundPreviewView?.get()
                 val nearEdge = mapped?.any {
                     it.x < 28f || it.y < 28f || it.x > (preview?.width ?: Int.MAX_VALUE) - 28f || it.y > (preview?.height ?: Int.MAX_VALUE) - 28f
                 } == true
@@ -232,7 +234,7 @@ class CameraViewModel(
 
     private suspend fun mapToPreview(points: List<Point>, source: OutputTransform): List<PreviewPoint>? =
         withContext(Dispatchers.Main.immediate) {
-            val target = boundPreviewView?.outputTransform ?: return@withContext null
+            val target = boundPreviewView?.get()?.outputTransform ?: return@withContext null
             val values = FloatArray(points.size * 2)
             points.forEachIndexed { index, point ->
                 values[index * 2] = point.x.toFloat()

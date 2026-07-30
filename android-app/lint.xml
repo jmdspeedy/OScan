@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- Camera preview coordinates intentionally use CameraX's transform API.
+         Keep the opt-in explicit so API changes remain visible during upgrades. -->
+    <issue id="UnsafeOptInUsageError">
+        <option
+            name="opt-in"
+            value="androidx.camera.view.TransformExperimental" />
+    </issue>
+</lint>

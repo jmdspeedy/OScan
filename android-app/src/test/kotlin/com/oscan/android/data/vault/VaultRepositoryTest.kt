@@ -2,11 +2,13 @@ package com.oscan.android.data.vault
 
 import androidx.test.core.app.ApplicationProvider
 import com.oscan.android.data.repository.NewPage
+import com.oscan.android.data.vault.crypto.VaultCrypto
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.ByteArrayInputStream
+import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -16,11 +18,12 @@ import kotlin.test.assertTrue
 @RunWith(RobolectricTestRunner::class)
 class VaultRepositoryTest {
 
+    private lateinit var context: android.content.Context
     private lateinit var repository: LocalVaultRepository
 
     @Before
     fun setUp() {
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        context = ApplicationProvider.getApplicationContext()
         repository = LocalVaultRepository(context)
         repository.resetVault()
     }
@@ -50,6 +53,16 @@ class VaultRepositoryTest {
 
         val unlockedKeys = repository.unlock(passcode)
         assertNotNull(unlockedKeys)
+    }
+
+    @Test
+    fun testSetupUsesCurrentMobileKdfProfile() {
+        repository.setupVault("948201")
+
+        val config = vaultConfigFile().readText()
+        assertTrue(config.contains("iterations=${VaultCrypto.CURRENT_KDF_ITERATIONS}"))
+        assertTrue(config.contains("memoryKb=${VaultCrypto.CURRENT_KDF_MEMORY_KB}"))
+        assertTrue(config.contains("parallelism=${VaultCrypto.CURRENT_KDF_PARALLELISM}"))
     }
 
     @Test
@@ -130,4 +143,7 @@ class VaultRepositoryTest {
 
         assertFalse(repository.isConfigured())
     }
+
+    private fun vaultConfigFile(): File = File(context.filesDir, "vault/vault_config.json")
+
 }
