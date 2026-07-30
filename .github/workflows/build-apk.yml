@@ -19,7 +19,6 @@ jobs:
     timeout-minutes: 40
     env:
       OSCAN_KEYSTORE_BASE64: ${{ secrets.OSCAN_KEYSTORE_BASE64 }}
-      OSCAN_KEYSTORE_FILE: ${{ runner.temp }}/oscan-release.jks
       OSCAN_KEYSTORE_PASSWORD: ${{ secrets.OSCAN_KEYSTORE_PASSWORD }}
       OSCAN_KEY_ALIAS: ${{ secrets.OSCAN_KEY_ALIAS }}
       OSCAN_KEY_PASSWORD: ${{ secrets.OSCAN_KEY_PASSWORD }}
@@ -47,7 +46,9 @@ jobs:
             echo "Required OScan release-signing secrets are missing."
             exit 1
           fi
+          OSCAN_KEYSTORE_FILE="$RUNNER_TEMP/oscan-release.jks"
           printf '%s' "$OSCAN_KEYSTORE_BASE64" | base64 --decode > "$OSCAN_KEYSTORE_FILE"
+          echo "OSCAN_KEYSTORE_FILE=$OSCAN_KEYSTORE_FILE" >> "$GITHUB_ENV"
 
       - name: Test, lint, and build release APK
         run: ./gradlew :core-engine:test :android-app:testDebugUnitTest :android-app:lintDebug :android-app:assembleRelease --no-daemon
