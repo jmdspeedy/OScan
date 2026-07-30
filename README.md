@@ -1,7 +1,7 @@
 # OScan
 
 [![Build APK](https://github.com/jmdspeedy/OScan/actions/workflows/build-apk.yml/badge.svg?event=push)](https://github.com/jmdspeedy/OScan/actions/workflows/build-apk.yml)
-[![Release](https://img.shields.io/badge/release-v0.8.0-blue)](https://github.com/jmdspeedy/OScan/releases/latest)
+[![Release](https://img.shields.io/badge/release-v0.8.1-blue)](https://github.com/jmdspeedy/OScan/releases/latest)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)](https://github.com/jmdspeedy/OScan/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9.22-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
@@ -53,7 +53,7 @@ Users who do not want standard OScan data included in Android backup can disable
 
 ## Download
 
-GitHub Releases provide a signed release APK and its SHA-256 checksum. Android may ask users to allow installation from their browser or file manager because OScan is distributed outside an app store.
+GitHub Releases provide signed, ABI-specific APKs and SHA-256 checksums. Most current Android phones use `arm64-v8a`; older 32-bit phones generally use `armeabi-v7a`. The `x86` and `x86_64` builds are intended primarily for compatible emulators and devices. Android may ask users to allow installation from their browser or file manager because OScan is distributed outside an app store.
 
 The signing certificate is kept stable between releases so Android can verify upgrades. Download APKs only from the [official OScan releases](https://github.com/jmdspeedy/OScan/releases).
 
@@ -91,12 +91,12 @@ Requirements: JDK 17 or newer, Android SDK 34, and internet access for the first
 .\gradlew.bat :android-app:assembleDebug
 ```
 
-The debug APK is written to `android-app/build/outputs/apk/debug/android-app-debug.apk`.
+The ABI-specific debug APKs are written to `android-app/build/outputs/apk/debug/`.
 
 Run the unit tests with:
 
 ```powershell
-.\gradlew.bat :core-engine:test :android-app:test
+.\gradlew.bat :core-engine:test :android-app:testDebugUnitTest
 ```
 
 Run the desktop visual harness with:
@@ -117,4 +117,4 @@ OScan is a personal project maintained by its owner. The repository is published
 
 ## License
 
-OScan is released under the [MIT License](LICENSE). Third-party models and libraries retain their respective licenses and notices.
+OScan is released under the [MIT License](LICENSE). Third-party models and libraries retain their respective licenses and notices; see the [complete third-party notices](core-engine/src/main/resources/THIRD_PARTY_NOTICES.txt), which are also bundled and viewable inside the app.

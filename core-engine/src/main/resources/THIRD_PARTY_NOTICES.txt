@@ -1,0 +1,94 @@
+OScan third-party software notices
+==================================
+
+This file covers the third-party software and model distributed with the OScan
+Android application. Test-only dependencies are not included in the application.
+
+Apache License 2.0 components
+-----------------------------
+
+The complete Apache License 2.0 text follows these notices in the in-app viewer
+and is also packaged as docquad/LICENSE.txt.
+
+- AndroidX, Jetpack Compose, Material 3, CameraX, Room, DataStore, AppCompat,
+  Biometric, Activity, Fragment, Lifecycle, ExifInterface, and their AndroidX
+  transitive modules. Copyright their respective Android Open Source Project
+  contributors. https://github.com/androidx/androidx
+- Kotlin standard library and Kotlin coroutines. Copyright JetBrains s.r.o. and
+  Kotlin contributors. https://github.com/JetBrains/kotlin and
+  https://github.com/Kotlin/kotlinx.coroutines
+- JetBrains annotations. Copyright JetBrains s.r.o.
+  https://github.com/JetBrains/java-annotations
+- Okio. Copyright 2013 Square, Inc. https://github.com/square/okio
+- Guava ListenableFuture and AutoValue annotations. Copyright Google LLC.
+  https://github.com/google/guava and https://github.com/google/auto
+- javax.inject. Copyright 2009 The JSR-330 Expert Group.
+  https://github.com/javax-inject/javax-inject
+- OpenCV 4.12.0 Android. Copyright OpenCV contributors.
+  https://github.com/opencv/opencv
+- DocQuadNet-256 ONNX model. Copyright 2025 Christian Kierdorf / MakeACopy
+  contributors. The unmodified model is used for local document-corner
+  detection. Source: https://github.com/egdels/makeacopy
+  Model SHA-256: AAEF348EB81709D26F7E8974401795B141D70BA88BC69792C779FBAE102EADAA
+
+MIT License component: Microsoft ONNX Runtime 1.22.0
+---------------------------------------------------
+
+Copyright (c) Microsoft Corporation.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Bouncy Castle License: bcprov-jdk18on 1.78.1
+------------------------------------------------
+
+Copyright (c) 2000-2023 The Legion of the Bouncy Castle Inc.
+(https://www.bouncycastle.org)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Desktop development and visual-test tooling
+-------------------------------------------
+
+These components are present in the source/build tooling but are excluded from
+the Android APK:
+
+- Apache PDFBox 3.0.1 and FontBox 3.0.1 — Apache License 2.0
+- Apache Commons Logging 1.2 — Apache License 2.0
+- OpenPnP OpenCV 4.9.0-0 — BSD-3-Clause packaging around Apache-2.0 OpenCV
+
+Their source and license information is available from:
+https://pdfbox.apache.org/
+https://commons.apache.org/proper/commons-logging/
+https://github.com/openpnp/opencv

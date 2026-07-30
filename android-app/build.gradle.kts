@@ -29,8 +29,8 @@ android {
         applicationId = "com.oscan.android"
         minSdk = 26
         targetSdk = 34
-        versionCode = 8
-        versionName = "0.8.0"
+        versionCode = 9
+        versionName = "0.8.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -100,6 +100,15 @@ android {
         }
     }
 
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+            isUniversalApk = false
+        }
+    }
+
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
@@ -122,6 +131,9 @@ dependencies {
     implementation(project(":core-engine")) {
         exclude(group = "com.microsoft.onnxruntime", module = "onnxruntime")
         exclude(group = "org.openpnp", module = "opencv")
+        // Android uses PdfDocument through AndroidPdfExporter. Keep desktop PDFBox and
+        // its transitive dependencies out of the Android runtime and APK.
+        exclude(group = "org.apache.pdfbox")
     }
 
     // Native ONNX Runtime for Android

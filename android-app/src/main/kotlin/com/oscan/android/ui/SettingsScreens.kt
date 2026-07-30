@@ -35,7 +35,6 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Storage
@@ -943,57 +942,104 @@ private fun DeveloperLinkButton(label: String, icon: ImageVector, onClick: () ->
 private data class OpenSourceLibrary(
     val name: String,
     val description: String,
+    val license: String,
     val repoUrl: String,
     val icon: ImageVector
 )
+
+private fun loadThirdPartyNotices(): String {
+    val classLoader = OpenSourceLibrary::class.java.classLoader ?: return ""
+    val notices = classLoader.getResourceAsStream("THIRD_PARTY_NOTICES.txt")
+        ?.bufferedReader()
+        ?.use { it.readText() }
+        .orEmpty()
+    val apacheLicense = classLoader.getResourceAsStream("docquad/LICENSE.txt")
+        ?.bufferedReader()
+        ?.use { it.readText() }
+        .orEmpty()
+    return listOf(notices, apacheLicense)
+        .filter { it.isNotBlank() }
+        .joinToString("\n\n")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
+    var showThirdPartyNotices by remember { mutableStateOf(false) }
+    val thirdPartyNotices = remember { loadThirdPartyNotices() }
 
     val versionName = remember(context) { com.oscan.android.util.AppVersionUtils.getVersionName(context) }
     val versionCode = remember(context) { com.oscan.android.util.AppVersionUtils.getVersionCode(context) }
 
     val libraries = listOf(
             OpenSourceLibrary(
-                name = "Android Jetpack Compose & Material 3",
+                name = "AndroidX, Jetpack Compose & Material 3",
                 description = stringResource(R.string.oss_compose_desc),
+                license = "Apache License 2.0",
                 repoUrl = "https://github.com/androidx/androidx",
                 icon = Icons.Default.Palette
             ),
             OpenSourceLibrary(
-                name = "Room Persistence Library (SQLite)",
-                description = stringResource(R.string.oss_room_desc),
-                repoUrl = "https://github.com/androidx/androidx",
-                icon = Icons.Default.Storage
+                name = "Kotlin & kotlinx.coroutines",
+                description = stringResource(R.string.oss_kotlin_desc),
+                license = "Apache License 2.0",
+                repoUrl = "https://github.com/JetBrains/kotlin",
+                icon = Icons.Default.Code
             ),
             OpenSourceLibrary(
                 name = "OpenCV Android Native Library",
                 description = stringResource(R.string.oss_opencv_desc),
+                license = "Apache License 2.0",
                 repoUrl = "https://github.com/opencv/opencv",
                 icon = Icons.Default.AutoAwesome
             ),
             OpenSourceLibrary(
                 name = "Microsoft ONNX Runtime Android",
                 description = stringResource(R.string.oss_onnx_desc),
+                license = "MIT License",
                 repoUrl = "https://github.com/microsoft/onnxruntime",
                 icon = Icons.Default.Psychology
             ),
             OpenSourceLibrary(
-                name = "AndroidX CameraX & DataStore",
-                description = stringResource(R.string.oss_camerax_desc),
-                repoUrl = "https://github.com/androidx/androidx",
-                icon = Icons.Default.CameraAlt
+                name = "Bouncy Castle",
+                description = stringResource(R.string.oss_bouncycastle_desc),
+                license = "Bouncy Castle License",
+                repoUrl = "https://github.com/bcgit/bc-java",
+                icon = Icons.Default.Lock
             ),
             OpenSourceLibrary(
-                name = "Apache PDFBox",
-                description = stringResource(R.string.oss_pdfbox_desc),
-                repoUrl = "https://github.com/apache/pdfbox",
-                icon = Icons.Default.PictureAsPdf
+                name = "DocQuadNet-256",
+                description = stringResource(R.string.oss_docquad_desc),
+                license = "Apache License 2.0",
+                repoUrl = "https://github.com/egdels/makeacopy",
+                icon = Icons.Default.CameraAlt
             )
         )
+
+    if (showThirdPartyNotices) {
+        AlertDialog(
+            onDismissRequest = { showThirdPartyNotices = false },
+            title = { Text(stringResource(R.string.about_notices_title)) },
+            text = {
+                Text(
+                    text = thirdPartyNotices.ifBlank {
+                        stringResource(R.string.about_notices_unavailable)
+                    },
+                    modifier = Modifier
+                        .heightIn(max = 520.dp)
+                        .verticalScroll(rememberScrollState()),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showThirdPartyNotices = false }) {
+                    Text(stringResource(R.string.action_close))
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -1106,6 +1152,15 @@ fun AboutScreen(onBack: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
+                OutlinedButton(
+                    onClick = { showThirdPartyNotices = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.about_view_notices))
+                }
+
                 libraries.forEach { lib ->
                     LibraryCard(
                         library = lib,
@@ -1175,6 +1230,12 @@ private fun LibraryCard(
                 text = library.description,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Text(
+                text = library.license,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
             )
 
             Row(

@@ -10,6 +10,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.oscan.android.ui.AdaptiveActionGroup
@@ -47,6 +48,9 @@ class Milestone9AccessibilityTest {
     @Test
     fun cropExplainsDirectManipulationAndValidity() {
         val bitmap = Bitmap.createBitmap(200, 300, Bitmap.Config.ARGB_8888)
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val hintText = context.getString(R.string.crop_drag_hint)
+        val boundaryDescription = context.getString(R.string.crop_boundary_description)
         composeRule.setContent {
             OScanTheme {
                 CropScreen(
@@ -59,14 +63,13 @@ class Milestone9AccessibilityTest {
                         bottomLeft = Point(20.0, 280.0)
                     ),
                     isValidGeometry = true,
+                    hintAutoDismissMillis = null,
                     onCornerMoved = { _, _, _ -> }
                 )
             }
         }
 
-        composeRule.onNodeWithText("Drag an edge  •  Move slowly for precision").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription(
-            "Adjustable crop boundary. Drag a corner or edge. Move slowly for precision."
-        ).assertExists()
+        composeRule.onNodeWithText(hintText).assertExists()
+        composeRule.onNodeWithContentDescription(boundaryDescription).assertExists()
     }
 }

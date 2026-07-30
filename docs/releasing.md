@@ -24,10 +24,10 @@ The public certificate SHA-256 fingerprint is recorded in the project README so 
 
 1. Update `versionCode` and `versionName` in `android-app/build.gradle.kts`.
 2. Run the JVM tests, Android lint, and a locally signed release build.
-3. Verify the resulting APK with Android SDK `apksigner`.
+3. Verify all four ABI-specific APKs (`arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`) with Android SDK `apksigner`.
 4. Commit and push the exact release candidate.
-5. Create and push a `vMAJOR.MINOR.PATCH` tag, such as `v0.8.0`.
-6. Confirm the `Build signed release APK` workflow succeeds.
-7. Download the release assets and verify the included SHA-256 checksum before announcing the release.
+5. Create and push a `vMAJOR.MINOR.PATCH` tag, such as `v0.8.1`.
+6. Confirm the `Build APK` workflow succeeds.
+7. Download each release APK and verify its included SHA-256 checksum before announcing the release.
 
-The workflow refuses to build when any required signing secret is missing. It runs the unit tests and lint before building, verifies the APK signature, and publishes only the signed release APK and checksum.
+The workflow refuses to build a tagged release when any required signing secret is missing. Pushes and pull requests run tests, lint, a debug build, and packaging checks without access to signing secrets. Tagged builds publish only signed ABI-specific release APKs and their checksums.

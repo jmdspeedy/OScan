@@ -81,13 +81,15 @@ fun CropScreen(
     sourceDimensions: ImageDimensions,
     corners: CornerPoints,
     isValidGeometry: Boolean,
+    hintAutoDismissMillis: Long? = 4_500L,
     onCornerMoved: (handleIndex: Int, newDisplayPoint: Point, containerDimensions: ImageDimensions) -> Unit
 ) {
     val oscanColors = OScanTheme.colors
     var showHint by remember(previewBitmap) { mutableStateOf(true) }
 
-    LaunchedEffect(previewBitmap) {
-        delay(4_500)
+    LaunchedEffect(previewBitmap, hintAutoDismissMillis) {
+        val dismissAfter = hintAutoDismissMillis ?: return@LaunchedEffect
+        delay(dismissAfter)
         showHint = false
     }
 
