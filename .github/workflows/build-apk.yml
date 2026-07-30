@@ -52,8 +52,16 @@ jobs:
           printf '%s' "$OSCAN_KEYSTORE_BASE64" | base64 --decode > "$OSCAN_KEYSTORE_FILE"
           echo "OSCAN_KEYSTORE_FILE=$OSCAN_KEYSTORE_FILE" >> "$GITHUB_ENV"
 
-      - name: Test, lint, and build release APK
-        run: ./gradlew :core-engine:test :android-app:testDebugUnitTest :android-app:lintDebug :android-app:assembleRelease --no-daemon
+      - name: Run tests
+        shell: bash
+        run: |
+          # Robolectric resolves its Android runtime on first use. Retry once so a transient
+          # Maven connection reset does not invalidate an otherwise healthy release.
+          ./gradlew :core-engine:test :android-app:testDebugUnitTest --no-daemon || \
+            ./gradlew :core-engine:test :android-app:testDebugUnitTest --no-daemon
+
+      - name: Lint and build release APK
+        run: ./gradlew :android-app:lintDebug :android-app:assembleRelease --no-daemon
 
       - name: Verify and checksum signed APK
         shell: bash
