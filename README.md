@@ -8,6 +8,16 @@
 
 OScan is a privacy-first Android document scanner and local document library. It turns photos into clean, perspective-corrected documents entirely on the device—no accounts, cloud processing, telemetry, or app-initiated document uploads.
 
+## Download OScan
+
+### Most users: download `arm64-v8a`
+
+**[Go to the latest OScan release and download the APK ending in `arm64-v8a.apk`](https://github.com/jmdspeedy/OScan/releases/latest)**
+
+This is the correct version for almost all current Android phones and tablets. If you know that your device is older and 32-bit, choose `armeabi-v7a` instead. The `x86` and `x86_64` APKs are primarily for emulators and specialist devices.
+
+All APKs on the official release page are signed release builds. Android may ask you to allow installation from your browser or file manager because OScan is distributed outside an app store.
+
 ## What OScan can do
 
 ### Scan and enhance
@@ -51,11 +61,9 @@ Android may include standard-library documents, scan sessions, database metadata
 
 Users who do not want standard OScan data included in Android backup can disable app-data backup in their device settings. Exporting or sharing a document sends it only to the location or app the user selects.
 
-## Download
+## Release verification
 
-GitHub Releases provide signed, ABI-specific APKs and SHA-256 checksums. Most current Android phones use `arm64-v8a`; older 32-bit phones generally use `armeabi-v7a`. The `x86` and `x86_64` builds are intended primarily for compatible emulators and devices. Android may ask users to allow installation from their browser or file manager because OScan is distributed outside an app store.
-
-The signing certificate is kept stable between releases so Android can verify upgrades. Download APKs only from the [official OScan releases](https://github.com/jmdspeedy/OScan/releases).
+GitHub Releases provide signed, ABI-specific APKs and SHA-256 checksums. The signing certificate is kept stable between releases so Android can verify upgrades. Download APKs only from the [official OScan releases](https://github.com/jmdspeedy/OScan/releases/latest).
 
 Release certificate SHA-256 fingerprint:
 
