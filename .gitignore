@@ -23,6 +23,9 @@ desktop.ini
 .agents/
 .codex/
 
+# Local video showcase project
+/OScan-video/
+
 # Internal product and development specifications
 docs/DESIGN.md
 docs/FEATURES.md
