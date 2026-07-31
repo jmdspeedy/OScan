@@ -96,20 +96,47 @@ class ImageEnhancer {
     fun applyBlackWhiteFilter(source: Mat): Mat {
         val gray = Mat()
         Imgproc.cvtColor(source, gray, Imgproc.COLOR_BGR2GRAY)
-        val normalized = normalizeIllumination(gray)
-        val binary = Mat()
+        val denoised = Mat()
+        Imgproc.medianBlur(gray, denoised, 3)
+        val normalized = normalizeIllumination(denoised)
+        val adaptive = Mat()
         val blockSize = ((min(source.width(), source.height()) / 55) or 1).coerceIn(21, 81)
         Imgproc.adaptiveThreshold(
             normalized,
-            binary,
+            adaptive,
             255.0,
             Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C,
             Imgproc.THRESH_BINARY,
             blockSize,
-            9.0
+            13.0
         )
+
+        // Adaptive thresholding alone interprets paper grain and sensor noise as tiny ink marks.
+        // Gate it with a conservative global threshold: a pixel is black only when it is both
+        // locally ink-like and meaningfully darker than normalized paper.
+        val global = Mat()
+        val otsuThreshold = Imgproc.threshold(
+            normalized,
+            global,
+            0.0,
+            255.0,
+            Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU
+        )
+        Imgproc.threshold(
+            normalized,
+            global,
+            (otsuThreshold - 8.0).coerceIn(120.0, 205.0),
+            255.0,
+            Imgproc.THRESH_BINARY
+        )
+        val binary = Mat()
+        Core.bitwise_or(adaptive, global, binary)
+
         gray.release()
+        denoised.release()
         normalized.release()
+        adaptive.release()
+        global.release()
         return binary
     }
 

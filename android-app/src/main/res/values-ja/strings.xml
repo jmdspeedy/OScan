@@ -133,6 +133,8 @@
     <string name="folders_overview">フォルダ一覧</string>
     <string name="settings_title">設定</string>
     <string name="product_information">製品情報</string>
+    <string name="product_website">OScan ウェブサイト</string>
+    <string name="send_feedback">フィードバックを送信</string>
     <string name="profile_edit_name">表示名を編集</string>
     <string name="profile_display_name_label">ローカル表示名</string>
     <string name="profile_avatar_color">アバターの色を選択</string>
@@ -395,6 +397,7 @@
     <string name="camera_no_rear">この端末には利用できる背面カメラがありません。</string>
     <string name="camera_start_failed">カメラを起動できませんでした。画像のインポートは利用できます。</string>
     <string name="camera_capture_failed">写真を撮影できませんでした。もう一度お試しください。</string>
+    <string name="camera_processing_capture">スキャンを準備しています…</string>
     <string name="camera_more_light">明るくするかフラッシュをオンにしてください</string>
     <string name="camera_hold_sharp">鮮明に撮影するため端末を固定してください</string>
     <string name="camera_whole_document">書類全体が見える位置まで移動してください</string>

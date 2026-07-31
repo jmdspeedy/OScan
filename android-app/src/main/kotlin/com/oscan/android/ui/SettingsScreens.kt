@@ -828,6 +828,8 @@ private fun PrivacyPolicySection(
 private const val DEVELOPER_GITHUB_URL = "https://github.com/jmdspeedy"
 private const val DEVELOPER_LINKEDIN_URL = "https://www.linkedin.com/in/james-wu-qld/"
 private const val DEVELOPER_WEBSITE_URL = "https://www.jameswu.me/"
+internal const val OSCAN_WEBSITE_URL = "https://oscan.jameswu.me"
+internal const val OSCAN_FEEDBACK_URL = "https://oscan.jameswu.me/feedback"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

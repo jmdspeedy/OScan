@@ -21,6 +21,7 @@ import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.Point
 import org.opencv.imgproc.Imgproc
+import kotlin.math.max
 import kotlin.math.min
 
 /**
@@ -80,26 +81,29 @@ class AndroidScannerEngine(private val context: Context) : ScannerEngine {
     override suspend fun decodeAndDetect(uri: Uri): DetectionResult = withContext(Dispatchers.IO) {
         require(initialize()) { "Failed to initialize OpenCV native libraries" }
 
-        val decodedBitmap = decodeUriWithExif(uri)
+        val decoded = decodeUriForDetection(uri)
             ?: throw IllegalArgumentException("Could not decode image from provided URI")
 
-        val sourceMat = bitmapToMat(decodedBitmap)
-
-        val dimensions = ImageDimensions(sourceMat.cols(), sourceMat.rows())
+        val sourceMat = bitmapToMat(decoded.bitmap)
+        val dimensions = decoded.sourceDimensions
 
         // Run ML/classical document corner detection
         val rawCorners = detectorMutex.withLock { scanner.detectCorners(sourceMat) }
         val (corners, autoDetected) = if (rawCorners != null && rawCorners.size == 4) {
-            CornerPoints.fromArray(rawCorners) to true
+            CornerPoints.fromArray(
+                rawCorners.map { point ->
+                    Point(point.x * decoded.scaleX, point.y * decoded.scaleY)
+                }.toTypedArray()
+            ) to true
         } else {
             CornerPoints.defaultInset(dimensions.width, dimensions.height, 0.10) to false
         }
 
         // Generate downsampled preview bitmap for fast UI rendering
-        val previewBitmap = createDisplayPreview(decodedBitmap, maxDimension = 1200)
+        val previewBitmap = createDisplayPreview(decoded.bitmap, maxDimension = DETECTION_MAX_DIMENSION)
 
         sourceMat.release()
-        decodedBitmap.recycle()
+        decoded.bitmap.recycle()
 
         DetectionResult(
             sourceDimensions = dimensions,
@@ -116,25 +120,28 @@ class AndroidScannerEngine(private val context: Context) : ScannerEngine {
      */
     override suspend fun decodeForIdCard(uri: Uri): DetectionResult = withContext(Dispatchers.IO) {
         require(initialize()) { "Failed to initialize OpenCV native libraries" }
-        val decodedBitmap = decodeUriWithExif(uri)
+        val decoded = decodeUriForDetection(uri)
             ?: throw IllegalArgumentException("Could not decode image from provided URI")
         try {
-            val dimensions = ImageDimensions(decodedBitmap.width, decodedBitmap.height)
-            val sourceMat = bitmapToMat(decodedBitmap)
+            val dimensions = decoded.sourceDimensions
+            val sourceMat = bitmapToMat(decoded.bitmap)
             val detected = try {
                 detectorMutex.withLock { scanner.detectCorners(sourceMat) }
             } finally {
                 sourceMat.release()
             }
-            val (corners, autoDetected) = idCardCornersOrGuide(detected, dimensions)
+            val scaledDetected = detected?.map { point ->
+                Point(point.x * decoded.scaleX, point.y * decoded.scaleY)
+            }?.toTypedArray()
+            val (corners, autoDetected) = idCardCornersOrGuide(scaledDetected, dimensions)
             DetectionResult(
                 sourceDimensions = dimensions,
                 corners = corners,
                 isAutoDetected = autoDetected,
-                previewBitmap = createDisplayPreview(decodedBitmap, maxDimension = 1200)
+                previewBitmap = createDisplayPreview(decoded.bitmap, maxDimension = DETECTION_MAX_DIMENSION)
             )
         } finally {
-            decodedBitmap.recycle()
+            decoded.bitmap.recycle()
         }
     }
 
@@ -245,16 +252,7 @@ class AndroidScannerEngine(private val context: Context) : ScannerEngine {
 
     private fun decodeUriWithExif(uri: Uri): Bitmap? {
         val contentResolver = context.contentResolver
-
-        val rotationDegrees = contentResolver.openInputStream(uri)?.use { stream ->
-            val exif = ExifInterface(stream)
-            when (exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
-                ExifInterface.ORIENTATION_ROTATE_90 -> 90
-                ExifInterface.ORIENTATION_ROTATE_180 -> 180
-                ExifInterface.ORIENTATION_ROTATE_270 -> 270
-                else -> 0
-            }
-        } ?: 0
+        val rotationDegrees = readExifRotation(uri)
 
         val originalBitmap = contentResolver.openInputStream(uri)?.use { stream ->
             BitmapFactory.decodeStream(stream)
@@ -273,6 +271,63 @@ class AndroidScannerEngine(private val context: Context) : ScannerEngine {
         return rotated
     }
 
+    /**
+     * Decodes only enough pixels for edge detection and the crop preview. Camera photos can be
+     * tens of megapixels, while both DocQuadNet and the classical detector operate on a much
+     * smaller working image. Avoiding a full-resolution Bitmap and Mat here substantially reduces
+     * the pause between the shutter and edge adjustment without changing saved image quality.
+     */
+    private fun decodeUriForDetection(uri: Uri): DetectionDecode? {
+        val contentResolver = context.contentResolver
+        val rotationDegrees = readExifRotation(uri)
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        contentResolver.openInputStream(uri)?.use { stream ->
+            BitmapFactory.decodeStream(stream, null, bounds)
+        }
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+        val sampleSize = detectionSampleSize(
+            width = bounds.outWidth,
+            height = bounds.outHeight,
+            maxDimension = DETECTION_MAX_DIMENSION
+        )
+        val sampled = contentResolver.openInputStream(uri)?.use { stream ->
+            BitmapFactory.decodeStream(
+                stream,
+                null,
+                BitmapFactory.Options().apply {
+                    inSampleSize = sampleSize
+                    inPreferredConfig = Bitmap.Config.ARGB_8888
+                }
+            )
+        } ?: return null
+
+        val oriented = if (rotationDegrees == 0) {
+            sampled
+        } else {
+            val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
+            Bitmap.createBitmap(sampled, 0, 0, sampled.width, sampled.height, matrix, true)
+                .also { if (it !== sampled) sampled.recycle() }
+        }
+        val sourceWidth = if (rotationDegrees % 180 == 0) bounds.outWidth else bounds.outHeight
+        val sourceHeight = if (rotationDegrees % 180 == 0) bounds.outHeight else bounds.outWidth
+        return DetectionDecode(
+            bitmap = oriented,
+            sourceDimensions = ImageDimensions(sourceWidth, sourceHeight),
+            scaleX = sourceWidth.toDouble() / oriented.width.toDouble(),
+            scaleY = sourceHeight.toDouble() / oriented.height.toDouble()
+        )
+    }
+
+    private fun readExifRotation(uri: Uri): Int = context.contentResolver.openInputStream(uri)?.use { stream ->
+        when (ExifInterface(stream).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> 90
+            ExifInterface.ORIENTATION_ROTATE_180 -> 180
+            ExifInterface.ORIENTATION_ROTATE_270 -> 270
+            else -> 0
+        }
+    } ?: 0
+
     private fun createDisplayPreview(bitmap: Bitmap, maxDimension: Int): Bitmap {
         val width = bitmap.width
         val height = bitmap.height
@@ -284,6 +339,26 @@ class AndroidScannerEngine(private val context: Context) : ScannerEngine {
         val targetHeight = (height * scale).toInt()
         return Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
     }
+
+    private data class DetectionDecode(
+        val bitmap: Bitmap,
+        val sourceDimensions: ImageDimensions,
+        val scaleX: Double,
+        val scaleY: Double
+    )
+
+    private companion object {
+        const val DETECTION_MAX_DIMENSION = 1200
+    }
+}
+
+internal fun detectionSampleSize(width: Int, height: Int, maxDimension: Int): Int {
+    require(width > 0 && height > 0 && maxDimension > 0)
+    var sampleSize = 1
+    while (max(width / sampleSize, height / sampleSize) > maxDimension) {
+        sampleSize *= 2
+    }
+    return sampleSize
 }
 
 internal fun idCardGuideCorners(dimensions: ImageDimensions): CornerPoints {

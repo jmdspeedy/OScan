@@ -133,6 +133,8 @@
     <string name="folders_overview">文件夹概览</string>
     <string name="settings_title">设置</string>
     <string name="product_information">产品信息</string>
+    <string name="product_website">OScan 网站</string>
+    <string name="send_feedback">发送反馈</string>
     <string name="profile_edit_name">编辑显示名称</string>
     <string name="profile_display_name_label">本地显示名称</string>
     <string name="profile_avatar_color">选择头像颜色</string>
@@ -395,6 +397,7 @@
     <string name="camera_no_rear">此设备没有可用的后置相机。</string>
     <string name="camera_start_failed">无法启动相机，您仍可导入图片。</string>
     <string name="camera_capture_failed">无法拍摄照片，请重试。</string>
+    <string name="camera_processing_capture">正在准备扫描…</string>
     <string name="camera_more_light">增加光线或打开闪光灯</string>
     <string name="camera_hold_sharp">保持稳定以获得更清晰的照片</string>
     <string name="camera_whole_document">移动相机，直到整个文档可见</string>

@@ -33,4 +33,10 @@ class IdCardDetectionPolicyTest {
         assertFalse(autoDetected)
         assertEquals(idCardGuideCorners(dimensions), corners)
     }
+
+    @Test
+    fun largeCameraCapturesAreSampledBeforeDetection() {
+        assertEquals(4, detectionSampleSize(width = 4032, height = 3024, maxDimension = 1200))
+        assertEquals(1, detectionSampleSize(width = 1080, height = 720, maxDimension = 1200))
+    }
 }

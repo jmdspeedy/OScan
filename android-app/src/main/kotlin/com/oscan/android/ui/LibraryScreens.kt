@@ -366,8 +366,15 @@ private fun DocumentCard(
                     description = stringResource(R.string.cd_document_thumbnail, document.name),
                     modifier = Modifier.fillMaxWidth().aspectRatio(3f / 4f)
                 )
-                Column(Modifier.padding(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(
+                    Modifier
+                        .height(104.dp)
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.height(48.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
                         Text(
                             document.name,
                             style = MaterialTheme.typography.titleMedium,

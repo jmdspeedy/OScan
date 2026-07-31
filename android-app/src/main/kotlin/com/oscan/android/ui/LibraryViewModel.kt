@@ -1,5 +1,6 @@
 package com.oscan.android.ui
 
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -541,7 +542,7 @@ class LibraryViewModel(
                                 documentName = document.name
                             )
                         }
-                        uris.add(FileProvider.getUriForFile(context, "com.oscan.android.fileprovider", pdfFile))
+                        uris.add(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", pdfFile))
                     } else {
                         if (pageSpecs.size == 1) {
                             val imageFile = File(exportDir, "$safeName.${format.extension}")
@@ -555,7 +556,7 @@ class LibraryViewModel(
                                     documentName = document.name
                                 )
                             }
-                            uris.add(FileProvider.getUriForFile(context, "com.oscan.android.fileprovider", imageFile))
+                            uris.add(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", imageFile))
                         } else {
                             pageSpecs.forEachIndexed { index, spec ->
                                 val imageFile = File(exportDir, "${safeName}_page_${index + 1}.${format.extension}")
@@ -569,7 +570,7 @@ class LibraryViewModel(
                                         documentName = document.name
                                     )
                                 }
-                                uris.add(FileProvider.getUriForFile(context, "com.oscan.android.fileprovider", imageFile))
+                                uris.add(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", imageFile))
                             }
                         }
                     }
@@ -587,7 +588,14 @@ class LibraryViewModel(
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
                     }
-                    Intent.createChooser(shareIntent, "Share ${document.name}")
+                    // ClipData is required for URI permission propagation on several Android
+                    // versions and receiving apps, especially for ACTION_SEND_MULTIPLE.
+                    shareIntent.clipData = ClipData.newRawUri("OScan export", uris.first()).apply {
+                        uris.drop(1).forEach { addItem(ClipData.Item(it)) }
+                    }
+                    Intent.createChooser(shareIntent, "Share ${document.name}").apply {
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
                 }
                 onLaunchShare(chooserIntent)
             } catch (e: Exception) {

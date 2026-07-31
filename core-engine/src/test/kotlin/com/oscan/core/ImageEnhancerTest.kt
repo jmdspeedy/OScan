@@ -79,6 +79,26 @@ class ImageEnhancerTest {
         source.release()
     }
 
+    @Test
+    fun blackWhiteRemovesPaperNoiseWithoutDroppingDarkText() {
+        val source = noisyPaperSource()
+        source.submat(Rect(35, 45, 120, 12)).setTo(Scalar(45.0, 45.0, 45.0))
+
+        val result = ImageEnhancer().applyFilter(source, FilterType.BLACK_WHITE)
+        val paper = result.submat(Rect(0, 0, 30, 180))
+        val text = result.submat(Rect(35, 45, 120, 12))
+
+        val paperWhiteRatio = Core.countNonZero(paper).toDouble() / paper.total().toDouble()
+        val textWhiteRatio = Core.countNonZero(text).toDouble() / text.total().toDouble()
+        assertTrue(paperWhiteRatio > 0.995, "Expected clean white paper, got $paperWhiteRatio")
+        assertTrue(textWhiteRatio < 0.05, "Expected dark text to remain black, got $textWhiteRatio")
+
+        paper.release()
+        text.release()
+        result.release()
+        source.release()
+    }
+
     private fun noisyPaperSource(): Mat {
         val source = Mat(180, 240, CvType.CV_8UC3)
         for (row in 0 until source.rows()) {

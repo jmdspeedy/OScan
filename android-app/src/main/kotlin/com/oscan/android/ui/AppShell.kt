@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
@@ -95,6 +96,7 @@ import com.oscan.android.ui.vault.VaultSettingsRoute
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -861,6 +863,10 @@ private fun MeScreen(
 ) {
     var editNameDialogOpen by remember { mutableStateOf(false) }
     var editAvatarDialogOpen by remember { mutableStateOf(false) }
+    val uriHandler = LocalUriHandler.current
+    val openProductLink: (String) -> Unit = { url ->
+        runCatching { uriHandler.openUri(url) }
+    }
 
     val avatarBgColor = when (userPreferences.avatarPreset) {
         "INDIGO" -> androidx.compose.ui.graphics.Color(0xFF3F51B5)
@@ -985,6 +991,8 @@ private fun MeScreen(
             Spacer(Modifier.height(8.dp))
 
             MeSettingRow(stringResource(R.string.privacy_title), Icons.Default.PrivacyTip) { onOpenSubRoute(SettingsSubRoute.PRIVACY) }
+            MeSettingRow(stringResource(R.string.product_website), Icons.Default.Language) { openProductLink(OSCAN_WEBSITE_URL) }
+            MeSettingRow(stringResource(R.string.send_feedback), Icons.Default.Feedback) { openProductLink(OSCAN_FEEDBACK_URL) }
             MeSettingRow(stringResource(R.string.about_title), Icons.Default.Info) { onOpenSubRoute(SettingsSubRoute.ABOUT) }
             MeSettingRow(stringResource(R.string.developer_title), Icons.Default.Person) { onOpenSubRoute(SettingsSubRoute.DEVELOPER) }
         }

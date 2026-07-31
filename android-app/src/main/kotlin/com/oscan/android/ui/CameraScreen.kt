@@ -298,6 +298,35 @@ fun LiveCameraScreen(
             )
         }
 
+        if (captureState.isProcessing) {
+            Surface(
+                color = chrome.floatingSurface.copy(alpha = .96f),
+                contentColor = chrome.onPanel,
+                shape = RoundedCornerShape(24.dp),
+                tonalElevation = 8.dp,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .semantics { liveRegion = LiveRegionMode.Polite }
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 22.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(32.dp),
+                        color = chrome.accent,
+                        strokeWidth = 3.dp
+                    )
+                    Text(
+                        text = stringResource(R.string.camera_processing_capture),
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+
         Box(
             Modifier
                 .size(1.dp)
